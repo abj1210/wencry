@@ -18,35 +18,33 @@ int main(int argc, char *argv[]) {
     printf("Invalid values.\n");
     return 1;
   }
+  if(v1.fp==NULL)return 1;
   if (v1.mode=='e' || v1.mode=='E'){
-      if(v1.fp==NULL)return 0;
-      t1 = time(NULL);
-      enc(v1.fp, v1.out, v1.key);
-      t2 = time(NULL);
+    t1 = time(NULL);
+    enc(v1.fp, v1.out, v1.key);
+    t2 = time(NULL);
 
-      printf("Encrypt over! Key is: \n");
-      for (int i = 0; i < 16; i++) printf("%02x", v1.key[i]);
-      printf("\n");
+    printf("Encrypt over! Key is: \n");
+    for (int i = 0; i < 16; i++) printf("%02x", v1.key[i]);
+    printf("\n");
+  } else {
+    t1 = time(NULL);
+    int res = dec(v1.fp, v1.out, v1.key);
+    t2 = time(NULL);
 
-      free(v1.key);
-      fclose(v1.fp);
-      fclose(v1.out);
-    } else {
-      t1 = time(NULL);
-      int res = dec(v1.fp, v1.out, v1.key);
-      t2 = time(NULL);
-      if (res == 0)
-        printf("Decrypt over!\n");
-      else if (res == 1)
-        printf("File too short.\n");
-      else if (res == 2)
-        printf("Wrong key.\n");
-      else if (res == 3)
-        printf("File not complete.\n");
-      free(v1.key);
-      fclose(v1.fp);
-      fclose(v1.out);
-    }
+    if (res == 0)
+      printf("Decrypt over!\n");
+    else if (res == 1)
+      printf("File too short.\n");
+    else if (res == 2)
+      printf("Wrong key.\n");
+    else if (res == 3)
+      printf("File not complete.\n");
+  }
+
+  free(v1.key);
+  fclose(v1.fp);
+  fclose(v1.out);
   printf("Time: %lds\n", t2 - t1);
   return 0;
 }

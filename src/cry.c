@@ -153,7 +153,7 @@ int dec(FILE* fp, FILE* out, unsigned char* key) {
   unsigned char tail;
   unsigned short round = 0;
   unsigned int bnum = 0;
-  int r=fread(&tail, 1, 1, fp);
+  int rx=fread(&tail, 1, 1, fp);
 
   chash = getsha1f(fp);
   if (cmphash(chash, hash) != 0) {
@@ -170,7 +170,6 @@ int dec(FILE* fp, FILE* out, unsigned char* key) {
   fflush(stdout);
   unsigned char block[16];
   unsigned char res[16];
-  unsigned char flag = 0;
   initgen(key);
   while (1) {
     round++;
@@ -181,16 +180,14 @@ int dec(FILE* fp, FILE* out, unsigned char* key) {
       fflush(stdout);
     }
     unsigned char sum = read_buffer(fp, block);
-    if (flag != 0) {
-      if (bufferover()) {
-        final_write(out);
-        fwrite(res, 1, tail, out);
-        break;
-      } else
-        write_buffer(out, res);
-    } else
-      flag = 1;
     decaes_128bit(block, res);
+    if (bufferover()) {
+      final_write(out);
+      fwrite(res, 1, tail, out);
+      break;
+    } else
+      write_buffer(out, res);
+    
   }
   printf("\n Decrypted.\n");
 
