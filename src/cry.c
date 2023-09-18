@@ -153,7 +153,7 @@ int dec(FILE* fp, FILE* out, unsigned char* key) {
   unsigned char tail;
   unsigned short round = 0;
   unsigned int bnum = 0;
-  fread(&tail, 1, 1, fp);
+  int r=fread(&tail, 1, 1, fp);
 
   chash = getsha1f(fp);
   if (cmphash(chash, hash) != 0) {

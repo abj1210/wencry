@@ -3,12 +3,15 @@ F= -O2
 SRC= ./src/
 INC= ./include/
 
-wencry: main.o cry.o sha1.o aese.o aesd.o tab.o
-	gcc $(F)  main.o cry.o sha1.o aese.o aesd.o tab.o -o wencry
+wencry: main.o cry.o  sha1.o aese.o aesd.o tab.o getv.o
+	gcc $(F)  main.o cry.o sha1.o aese.o aesd.o tab.o  getv.o -o wencry
 	rm -rf *.o
 
 main.o: $(SRC)main.c $(INC)cry.h
 	gcc $(F) -c $(SRC)main.c -o main.o 
+
+getv.o: $(SRC)getval.c $(INC)getval.h $(INC)cry.h
+	gcc $(F) -c $(SRC)getval.c -o getv.o
 
 cry.o: $(SRC)cry.c $(INC)cry.h $(INC)sha1.h $(INC)aes.h
 	gcc $(F) -c $(SRC)cry.c -o cry.o
