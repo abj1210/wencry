@@ -6,6 +6,8 @@
 #define lrot(x, i) (((x) << (i)) | ((x) >> (32 - i)))
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
 #define GMul(u, v) ((v) ? Alogtable[mod255(Logtable[(u)] + Logtable[(v)])] : 0)
+#define Gidx(u, v) (Logtable[(u)] + Logtable[(v)])
+#define Gmul(idx, v) ((v) ? Alogtable[mod255(idx)] : 0)
 #define mod255(x) ((x & 255) + (x >> 8))
 
 #define HASH0 0x67452301

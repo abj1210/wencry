@@ -21,7 +21,7 @@ struct hash {
   unsigned h[5];
 };
 
-#define BUF_SZ 0x100000
+#define BUF_SZ 0x1000000
 
 struct buffer {
   unsigned char b[BUF_SZ][0x10];
@@ -31,7 +31,7 @@ struct buffer {
   unsigned char load;
 };
 
-#define HBUF_SZ 0x40000
+#define HBUF_SZ 0x400000
 
 struct buffer64 {
   unsigned char b[HBUF_SZ][0x40];

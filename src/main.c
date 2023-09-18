@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   if (v1.fp == NULL)
-    return 1;
+    return -1;
   if (v1.mode == 'e' || v1.mode == 'E') {
     t1 = time(NULL);
     enc(v1.fp, v1.out, v1.key);

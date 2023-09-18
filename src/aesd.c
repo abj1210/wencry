@@ -24,14 +24,19 @@ void recolumnmix(struct state *w) {
   for (int j = 0; j < 4; ++j) {
     unsigned char b0 = w->s[0][j], b1 = w->s[1][j], b2 = w->s[2][j],
                   b3 = w->s[3][j];
+    unsigned short idx0, idx1, idx2, idx3;
+    idx0 = Gidx(0x0e, b0) , idx1 = Gidx(0x0b, b1) , idx2 = Gidx(0x0d, b2) , idx3 = Gidx(0x09, b3);
     w->s[0][j] =
-        GMul(0x0e, b0) ^ GMul(0x0b, b1) ^ GMul(0x0d, b2) ^ GMul(0x09, b3);
+        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+    idx0 = Gidx(0x09, b0) , idx1 = Gidx(0x0e, b1) , idx2 = Gidx(0x0b, b2) , idx3 = Gidx(0x0d, b3);
     w->s[1][j] =
-        GMul(0x09, b0) ^ GMul(0x0e, b1) ^ GMul(0x0b, b2) ^ GMul(0x0d, b3);
+        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+    idx0 = Gidx(0x0d, b0) , idx1 = Gidx(0x09, b1) , idx2 = Gidx(0x0e, b2) , idx3 = Gidx(0x0b, b3);
     w->s[2][j] =
-        GMul(0x0d, b0) ^ GMul(0x09, b1) ^ GMul(0x0e, b2) ^ GMul(0x0b, b3);
+        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+    idx0 = Gidx(0x0b, b0) , idx1 = Gidx(0x0d, b1) , idx2 = Gidx(0x09, b2) , idx3 = Gidx(0x0e, b3);
     w->s[3][j] =
-        GMul(0x0b, b0) ^ GMul(0x0d, b1) ^ GMul(0x09, b2) ^ GMul(0x0e, b3);
+        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
   }
 }
 
@@ -49,11 +54,9 @@ void firstdec(struct state *data) {
   addroundkey(data, &keyg[9]);
 }
 
-void decaes_128bit(unsigned char *s, unsigned char *out) {
-  struct state data;
-  memcpy(data.s, s, 16);
-  firstdec(&data);
+void decaes_128bit(unsigned char *s) {
+  struct state * data = (struct state * ) s;
+  firstdec(data);
   for (int i = 8; i >= 0; --i)
-    commondec(&data, i);
-  memcpy(out, data.s, 16);
+    commondec(data, i);
 }

@@ -25,7 +25,7 @@ void lastround(struct state *data);
 void commondec(struct state *data, int round);
 void firstdec(struct state *data);
 
-void runaes_128bit(unsigned char *s, unsigned char *out);
-void decaes_128bit(unsigned char *s, unsigned char *out);
+void runaes_128bit(unsigned char *s);
+void decaes_128bit(unsigned char *s);
 
 #endif

@@ -74,9 +74,10 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   printf("Begin to encrypt.\n");
   printf("Encrypted: 00000000 MB.");
   fflush(stdout);
+
   unsigned char block[16];
-  unsigned char res[16];
   initgen(key);
+  
   while (1) {
     round++;
     if (round == 0) {
@@ -85,9 +86,10 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
       printf("%08d MB.", bnum);
       fflush(stdout);
     }
+
     unsigned char sum = read_buffer(fp, block);
-    runaes_128bit(block, res);
-    write_buffer(out, res);
+    runaes_128bit(block);
+    write_buffer(out, block);
     if (sum != 16) {
       final_write(out);
       fseek(out, 40, SEEK_SET);
@@ -142,9 +144,10 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
   printf("Begin to decrypt.\n");
   printf("Decrypted: 00000000 MB.");
   fflush(stdout);
+
   unsigned char block[16];
-  unsigned char res[16];
   initgen(key);
+
   while (1) {
     round++;
     if (round == 0) {
@@ -154,13 +157,14 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
       fflush(stdout);
     }
     unsigned char sum = read_buffer(fp, block);
-    decaes_128bit(block, res);
+    decaes_128bit(block);
     if (bufferover()) {
       final_write(out);
-      fwrite(res, 1, tail, out);
+      fwrite(block, 1, tail, out);
       break;
-    } else
-      write_buffer(out, res);
+    }
+    else
+      write_buffer(out, block);
   }
   printf("\n Decrypted.\n");
 
