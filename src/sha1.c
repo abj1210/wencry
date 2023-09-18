@@ -1,16 +1,10 @@
-#include "../include/sha1.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-struct buffer64 {
-  unsigned char b[HBUF_SZ][0x40];
-  unsigned int total;
-  unsigned int now;
-  unsigned char tail;
-  unsigned char load;
-};
+#include "../include/sha1.h"
+#include "../include/util.h"
+
 struct buffer64 ibuf64;
 unsigned int read_buffer64(FILE *fp, unsigned char *block) {
   unsigned int res = 0;
@@ -40,7 +34,7 @@ struct wdata *getwdata(unsigned char *s, struct wdata *w) {
       w->w[i] = ((unsigned)s[(i << 2) | 3]) | ((unsigned)s[(i << 2) | 2] << 8) |
                 ((unsigned)s[(i << 2) | 1] << 16) | ((unsigned)s[i << 2] << 24);
     else
-      w->w[i] = leftrot(
+      w->w[i] = lrot(
           ((w->w[i - 3]) ^ (w->w[i - 8]) ^ (w->w[i - 14]) ^ (w->w[i - 16])), 1);
   }
   return w;
@@ -53,32 +47,32 @@ void gethash(struct hash *h, struct wdata *w) {
 
   for (unsigned i = 0; i < 80; i++) {
     switch (i / 20) {
-      case (0): {
-        f = (temph.h[1] & temph.h[2]) | ((~temph.h[1]) & temph.h[3]);
-        k = 0x5A827999;
-        break;
-      }
-      case (1): {
-        f = temph.h[1] ^ temph.h[2] ^ temph.h[3];
-        k = 0x6ED9EBA1;
-        break;
-      }
-      case (2): {
-        f = (temph.h[1] & temph.h[2]) | (temph.h[1] & temph.h[3]) |
-            (temph.h[2] & temph.h[3]);
-        k = 0x8F1BBCDC;
-        break;
-      }
-      case (3): {
-        f = temph.h[1] ^ temph.h[2] ^ temph.h[3];
-        k = 0xCA62C1D6;
-        break;
-      }
+    case (0): {
+      f = (temph.h[1] & temph.h[2]) | ((~temph.h[1]) & temph.h[3]);
+      k = 0x5A827999;
+      break;
     }
-    temp = leftrot(temph.h[0], 5) + f + k + temph.h[4] + w->w[i];
+    case (1): {
+      f = temph.h[1] ^ temph.h[2] ^ temph.h[3];
+      k = 0x6ED9EBA1;
+      break;
+    }
+    case (2): {
+      f = (temph.h[1] & temph.h[2]) | (temph.h[1] & temph.h[3]) |
+          (temph.h[2] & temph.h[3]);
+      k = 0x8F1BBCDC;
+      break;
+    }
+    case (3): {
+      f = temph.h[1] ^ temph.h[2] ^ temph.h[3];
+      k = 0xCA62C1D6;
+      break;
+    }
+    }
+    temp = lrot(temph.h[0], 5) + f + k + temph.h[4] + w->w[i];
     temph.h[4] = temph.h[3];
     temph.h[3] = temph.h[2];
-    temph.h[2] = leftrot(temph.h[1], 30);
+    temph.h[2] = lrot(temph.h[1], 30);
     temph.h[1] = temph.h[0];
     temph.h[0] = temp;
   }
@@ -91,7 +85,8 @@ void gethash(struct hash *h, struct wdata *w) {
 }
 
 unsigned char *getsha1f(FILE *fp) {
-  if (fp == NULL) return NULL;
+  if (fp == NULL)
+    return NULL;
   struct hash *h = malloc(sizeof(struct hash));
   h->h[0] = HASH0;
   h->h[1] = HASH1;
