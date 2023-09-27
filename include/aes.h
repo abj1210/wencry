@@ -9,8 +9,6 @@ extern const unsigned char Logtable[256], Alogtable[256];
 extern struct state keyg[11];
 extern struct buffer ibuf, obuf;
 
-
-
 struct state genkey(struct state last_key, int round);
 void addroundkey(struct state *w, struct state *key);
 void subbytes(struct state *w);

@@ -16,7 +16,8 @@ struct vpak get_v_mod1() {
   while (1) {
     r = scanf("%s", fn);
     res.fp = fopen(fn, "rb");
-    if(res.fp != NULL)break;
+    if (res.fp != NULL)
+      break;
     printf("File not found.\n");
   }
   if (res.mode == 'e' || res.mode == 'E') {

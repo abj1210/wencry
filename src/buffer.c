@@ -3,10 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-
-
-unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer * ibuf) {
+unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer *ibuf) {
   unsigned int res = 0;
   if (ibuf->now == BUF_SZ || ibuf->load == 0) {
     unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
@@ -27,10 +24,11 @@ unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer * ibuf) {
   }
   return res;
 }
-unsigned int bufferover(struct buffer * ibuf) {
-  return (ibuf->now == ibuf->total) && (ibuf->total != BUF_SZ) && (ibuf->tail == 0);
+unsigned int bufferover(struct buffer *ibuf) {
+  return (ibuf->now == ibuf->total) && (ibuf->total != BUF_SZ) &&
+         (ibuf->tail == 0);
 }
-void write_buffer(FILE *fp, unsigned char *block, struct buffer * obuf) {
+void write_buffer(FILE *fp, unsigned char *block, struct buffer *obuf) {
   memcpy(obuf->b[obuf->total], block, 16);
   obuf->total++;
   if (obuf->total == BUF_SZ) {
@@ -38,10 +36,12 @@ void write_buffer(FILE *fp, unsigned char *block, struct buffer * obuf) {
     obuf->total = 0;
   }
 }
-void final_write(FILE *fp, struct buffer * obuf) { fwrite(obuf->b, 1, obuf->total << 4, fp); }
+void final_write(FILE *fp, struct buffer *obuf) {
+  fwrite(obuf->b, 1, obuf->total << 4, fp);
+}
 
-
-unsigned int read_buffer64(FILE *fp, unsigned char *block, struct buffer64 * ibuf64) {
+unsigned int read_buffer64(FILE *fp, unsigned char *block,
+                           struct buffer64 *ibuf64) {
   unsigned int res = 0;
   if (ibuf64->now == HBUF_SZ || ibuf64->load == 0) {
     unsigned int sum = fread(ibuf64->b, 1, HBUF_SZ << 6, fp);
@@ -63,33 +63,34 @@ unsigned int read_buffer64(FILE *fp, unsigned char *block, struct buffer64 * ibu
   return res;
 }
 
-unsigned int load_buffer(FILE * fp, struct buffer * ibuf){
+unsigned int load_buffer(FILE *fp, struct buffer *ibuf) {
 
-    unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
-    ibuf->tail = sum & 0xf;
-    ibuf->total = sum >> 4;
-    return sum;
+  unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
+  ibuf->tail = sum & 0xf;
+  ibuf->total = sum >> 4;
+  return sum;
 }
-int wread_buffer(unsigned int idx, unsigned char *block, struct buffer * ibuf){
-    int res;
-    if (idx == ibuf->total) {
+int wread_buffer(unsigned int idx, unsigned char *block, struct buffer *ibuf) {
+  int res;
+  if (idx == ibuf->total) {
     memcpy(block, ibuf->b[idx], ibuf->tail);
     res = ibuf->tail;
-    ibuf->now=idx;
-    ibuf->tail=0;
-  } else if(idx < ibuf->total) {
+    ibuf->now = idx;
+    ibuf->tail = 0;
+  } else if (idx < ibuf->total) {
     memcpy(block, ibuf->b[idx], 16);
     res = 16;
-    ibuf->now=idx+1;
-  }
-  else res=-1;
+    ibuf->now = idx + 1;
+  } else
+    res = -1;
   return res;
 }
-void store_buffer(FILE * fp, struct buffer * obuf){
-    fwrite(obuf->b, 1, BUF_SZ << 4, fp);
-    obuf->total = 0;
+void store_buffer(FILE *fp, struct buffer *obuf) {
+  fwrite(obuf->b, 1, BUF_SZ << 4, fp);
+  obuf->total = 0;
 }
-void wwrite_buffer(unsigned int idx, unsigned char *block, struct buffer * obuf){
+void wwrite_buffer(unsigned int idx, unsigned char *block,
+                   struct buffer *obuf) {
   memcpy(obuf->b[idx], block, 16);
-  obuf->total = idx + 1 > obuf->total? idx + 1 : obuf->total;
+  obuf->total = idx + 1 > obuf->total ? idx + 1 : obuf->total;
 }

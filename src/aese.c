@@ -61,19 +61,23 @@ void columnmix(struct state *w) {
     unsigned char b0 = w->s[0][j], b1 = w->s[1][j], b2 = w->s[2][j],
                   b3 = w->s[3][j];
     unsigned short idx0, idx1, idx2, idx3;
-    idx0 = Gidx(0x02, b0) , idx1 = Gidx(0x03, b1) , idx2 = Gidx(0x01, b2) , idx3 = Gidx(0x01, b3);
+    idx0 = Gidx(0x02, b0), idx1 = Gidx(0x03, b1), idx2 = Gidx(0x01, b2),
+    idx3 = Gidx(0x01, b3);
     w->s[0][j] =
         Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
-        
-    idx0 = Gidx(0x01, b0) , idx1 = Gidx(0x02, b1) , idx2 = Gidx(0x03, b2) , idx3 = Gidx(0x01, b3);
+
+    idx0 = Gidx(0x01, b0), idx1 = Gidx(0x02, b1), idx2 = Gidx(0x03, b2),
+    idx3 = Gidx(0x01, b3);
     w->s[1][j] =
         Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
 
-    idx0 = Gidx(0x01, b0) , idx1 = Gidx(0x01, b1) , idx2 = Gidx(0x02, b2) , idx3 = Gidx(0x03, b3);
+    idx0 = Gidx(0x01, b0), idx1 = Gidx(0x01, b1), idx2 = Gidx(0x02, b2),
+    idx3 = Gidx(0x03, b3);
     w->s[2][j] =
         Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
 
-    idx0 = Gidx(0x03, b0) , idx1 = Gidx(0x01, b1) , idx2 = Gidx(0x01, b2) , idx3 = Gidx(0x02, b3);
+    idx0 = Gidx(0x03, b0), idx1 = Gidx(0x01, b1), idx2 = Gidx(0x01, b2),
+    idx3 = Gidx(0x02, b3);
     w->s[3][j] =
         Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
   }
@@ -94,7 +98,7 @@ void lastround(struct state *data) {
 }
 
 void runaes_128bit(unsigned char *s) {
-  struct state * data = (struct state * ) s;
+  struct state *data = (struct state *)s;
   for (int i = 0; i < 9; ++i)
     commonround(data, i);
   lastround(data);

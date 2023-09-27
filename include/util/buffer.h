@@ -22,18 +22,16 @@ struct buffer64 {
   unsigned char load;
 };
 
+unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer *ibuf);
+unsigned int bufferover(struct buffer *ibuf);
+void write_buffer(FILE *fp, unsigned char *block, struct buffer *obuf);
+void final_write(FILE *fp, struct buffer *obuf);
+unsigned int read_buffer64(FILE *fp, unsigned char *block,
+                           struct buffer64 *ibuf64);
 
-
-unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer * ibuf);
-unsigned int bufferover(struct buffer * ibuf);
-void write_buffer(FILE *fp, unsigned char *block, struct buffer * obuf);
-void final_write(FILE *fp, struct buffer * obuf);
-unsigned int read_buffer64(FILE *fp, unsigned char *block, struct buffer64 * ibuf64);
-
-unsigned int load_buffer(FILE * fp, struct buffer * ibuf);
-int wread_buffer(unsigned int idx, unsigned char *block, struct buffer * ibuf);
-void store_buffer(FILE * fp, struct buffer * obuf);
-void wwrite_buffer(unsigned int idx, unsigned char *block, struct buffer * obuf);
-
+unsigned int load_buffer(FILE *fp, struct buffer *ibuf);
+int wread_buffer(unsigned int idx, unsigned char *block, struct buffer *ibuf);
+void store_buffer(FILE *fp, struct buffer *obuf);
+void wwrite_buffer(unsigned int idx, unsigned char *block, struct buffer *obuf);
 
 #endif

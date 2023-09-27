@@ -10,10 +10,10 @@
 
 struct buffer ibuf, obuf;
 
-void init() { 
-  srand(time(NULL)); 
+void init() {
+  srand(time(NULL));
   obuf.total = 0;
-  }
+}
 
 unsigned char *gen_key() {
   unsigned char *key = malloc(16 * sizeof(unsigned char));
@@ -46,6 +46,7 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   fflush(stdout);
 
   unsigned char block[16];
+  memset(block, 0, sizeof(0));
   initgen(key);
 #ifndef MUTI_ENABLE
   int tsum = load_buffer(fp, &ibuf), idx = 0;
@@ -53,21 +54,20 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
     round++;
     if (round == 0) {
       bnum++;
-      printf("\b\b\b\b\b\b\b\b\b\b\b\b");
-      printf("%08d MB.", bnum);
+      printf("\b\b\b\b\b\b\b\b\b");
+      printf("%05d MB.", bnum);
       fflush(stdout);
     }
-    memset(block, 0, sizeof(0));
     char sum = wread_buffer(idx, block, &ibuf);
-    if(sum == -1){
+    if (sum == -1) {
       tsum = load_buffer(fp, &ibuf);
-      if(tsum == 0){
+      if (tsum == 0) {
         final_write(out, &obuf);
         fseek(out, 40, SEEK_SET);
         fwrite(&sum, 1, 1, out);
         break;
       }
-      idx=0;
+      idx = 0;
       store_buffer(out, &obuf);
       sum = wread_buffer(idx, block, &ibuf);
     }
@@ -94,12 +94,6 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   printf("Execute over!\n");
   return;
 }
-
-
-
-
-
-
 
 int dec(FILE *fp, FILE *out, unsigned char *key) {
   printf("Begin to check.\n");
@@ -145,19 +139,19 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
     round++;
     if (round == 0) {
       bnum++;
-      printf("\b\b\b\b\b\b\b\b\b\b\b\b");
-      printf("%08d MB.", bnum);
+      printf("\b\b\b\b\b\b\b\b\b");
+      printf("%05d MB.", bnum);
       fflush(stdout);
     }
     char sum = wread_buffer(idx, block, &ibuf);
-    if(sum == -1){
+    if (sum == -1) {
       tsum = load_buffer(fp, &ibuf);
-      if(tsum == 0){
+      if (tsum == 0) {
         final_write(out, &obuf);
         fwrite(block, 1, tail, out);
         break;
       }
-      idx=0;
+      idx = 0;
       store_buffer(out, &obuf);
       sum = wread_buffer(idx, block, &ibuf);
     }
@@ -166,8 +160,7 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
       final_write(out, &obuf);
       fwrite(block, 1, tail, out);
       break;
-    }
-    else
+    } else
       wwrite_buffer(idx, block, &obuf);
     idx++;
   }

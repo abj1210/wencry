@@ -23,6 +23,4 @@ struct hash {
   unsigned h[5];
 };
 
-
-
 #endif

@@ -4,8 +4,6 @@
 #include "util.h"
 #include <stdio.h>
 
-
-
 struct wdata *getwdata(unsigned char *s, struct wdata *w);
 void gethash(struct hash *h, struct wdata *w);
 
