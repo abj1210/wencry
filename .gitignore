@@ -83,8 +83,12 @@ dkms.conf
 *.sln
 *.vcxproj
 *.filters
+<<<<<<< HEAD
 *.rar
 *.wenc
+=======
+
+>>>>>>> 9284939146f16796eee0300d3652310c29501570
 # User-specific files
 *.rsuser
 *.suo

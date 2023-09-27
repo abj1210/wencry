@@ -13,6 +13,11 @@ test_once:
 	./wencry -e $(TST)t2.txt ABEiM0RVZneImaq7zN3u/w==
 	./wencry -d $(TST)t2.txt.wenc ABEiM0RVZneImaq7zN3u/w== $(TST)t2out.txt
 	./cmp $(TST)t2.txt $(TST)t2out.txt
+<<<<<<< HEAD
+=======
+	./wencry -e $(TST)a.rar ABEiM0RVZneImaq7zN3u/w==
+	./wencry -d $(TST)a.rar.wenc ABEiM0RVZneImaq7zN3u/w== $(TST)ab.rar
+>>>>>>> 9284939146f16796eee0300d3652310c29501570
 	rm -rf $(TST)testfile.txt.wenc $(TST)testout.txt
 
 format:
