@@ -7,7 +7,8 @@ extern const unsigned char RC[11];
 extern const unsigned char s_box[256], rs_box[256];
 extern const unsigned char Logtable[256], Alogtable[256];
 extern struct state keyg[11];
-extern struct Wthread tlist[NUM_THREADS];
+extern struct buffer ibuf, obuf;
+
 
 
 struct state genkey(struct state last_key, int round);

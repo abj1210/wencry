@@ -2,7 +2,6 @@
 #define STU
 
 #include <stdio.h>
-#include <pthread.h>
 
 #include "def.h"
 
@@ -22,12 +21,6 @@ struct wdata {
 
 struct hash {
   unsigned h[5];
-};
-
-struct Wthread {
-  pthread_t pts;
-  int tid;
-  char taskover;
 };
 
 
