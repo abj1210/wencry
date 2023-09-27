@@ -3,11 +3,6 @@
 
 #include <stdio.h>
 
-unsigned int read_buffer(FILE *fp, unsigned char *block);
-unsigned int bufferover();
-void write_buffer(FILE *fp, unsigned char *block);
-void final_write(FILE *fp);
-
 void enc(FILE *fp, FILE *out, unsigned char *key);
 int dec(FILE *fp, FILE *out, unsigned char *key);
 unsigned char *gen_key();

@@ -10,6 +10,11 @@ test_once:
 	./wencry -e $(TST)testfile.txt ABEiM0RVZneImaq7zN3u/w==
 	./wencry -d $(TST)testfile.txt.wenc ABEiM0RVZneImaq7zN3u/w== $(TST)testout.txt
 	./cmp $(TST)testfile.txt $(TST)testout.txt
+	./wencry -e $(TST)t2.txt ABEiM0RVZneImaq7zN3u/w==
+	./wencry -d $(TST)t2.txt.wenc ABEiM0RVZneImaq7zN3u/w== $(TST)t2out.txt
+	./cmp $(TST)t2.txt $(TST)t2out.txt
+	./wencry -e $(TST)a.rar ABEiM0RVZneImaq7zN3u/w==
+	./wencry -d $(TST)a.rar.wenc ABEiM0RVZneImaq7zN3u/w== $(TST)ab.rar
 	rm -rf $(TST)testfile.txt.wenc $(TST)testout.txt
 
 format:
@@ -19,8 +24,8 @@ format:
 	clang-format -i $(INC)util/*.h
 	
 
-wencry: main.o cry.o  sha1.o aese.o aesd.o tab.o getv.o base64.o
-	gcc $(F)  main.o cry.o sha1.o aese.o aesd.o tab.o  getv.o base64.o -o wencry
+wencry: main.o cry.o  sha1.o aese.o aesd.o tab.o getv.o base64.o buffer.o
+	gcc $(F)  main.o cry.o sha1.o aese.o aesd.o tab.o  getv.o base64.o buffer.o -o wencry
 	rm -rf *.o
 
 main.o: $(SRC)main.c $(INC)cry.h $(INC)util.h
@@ -46,6 +51,9 @@ aesd.o: $(SRC)aesd.c $(INC)aes.h $(INC)util.h
 
 tab.o: $(SRC)tab.c $(INC)aes.h $(INC)util.h
 	gcc $(F) -c $(SRC)tab.c -o tab.o
+
+buffer.o: $(SRC)buffer.c 
+	gcc $(F) -c $(SRC)buffer.c -o buffer.o
 
 clean:
 	rm -rf *.o wencry cmp

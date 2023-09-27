@@ -8,50 +8,12 @@
 #include "../include/sha1.h"
 #include "../include/util.h"
 
-struct buffer * ibuf=NULL, * obuf=NULL;
-unsigned int read_buffer(FILE *fp, unsigned char *block) {
-    if (ibuf == NULL) {
-      ibuf = malloc(sizeof(struct buffer));
-      ibuf->load = 0;
-    }
-  unsigned int res = 0;
-  if (ibuf->now == BUF_SZ || ibuf->load == 0) {
-    unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
-    ibuf->tail = sum & 0xf;
-    ibuf->total = sum >> 4;
-    ibuf->now = 0;
-    ibuf->load = 1;
-  }
+struct buffer ibuf, obuf;
 
-  if (ibuf->now == ibuf->total) {
-    memcpy(block, ibuf->b[ibuf->now], ibuf->tail);
-    res = ibuf->tail;
-    ibuf->tail = 0;
-  } else {
-    memcpy(block, ibuf->b[ibuf->now], 16);
-    res = 16;
-    ibuf->now++;
+void init() { 
+  srand(time(NULL)); 
+  obuf.total = 0;
   }
-  return res;
-}
-unsigned int bufferover() {
-  return (ibuf->now == ibuf->total) && (ibuf->now != BUF_SZ) && (ibuf->tail == 0);
-}
-void write_buffer(FILE *fp, unsigned char *block) {
-  if (obuf == NULL) {
-    obuf = malloc(sizeof(struct buffer));
-    obuf->total = 0;
-  }
-  memcpy(obuf->b[obuf->total], block, 16);
-  obuf->total++;
-  if (obuf->total == BUF_SZ) {
-    fwrite(obuf->b, 1, BUF_SZ << 4, fp);
-    obuf->total = 0;
-  }
-}
-void final_write(FILE *fp) { fwrite(obuf->b, 1, obuf->total << 4, fp); }
-
-void init() { srand(time(NULL)); }
 
 unsigned char *gen_key() {
   unsigned char *key = malloc(16 * sizeof(unsigned char));
@@ -85,7 +47,8 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
 
   unsigned char block[16];
   initgen(key);
-  
+#ifndef MUTI_ENABLE
+  int tsum = load_buffer(fp, &ibuf), idx = 0;
   while (1) {
     round++;
     if (round == 0) {
@@ -94,21 +57,33 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
       printf("%08d MB.", bnum);
       fflush(stdout);
     }
-
-    unsigned char sum = read_buffer(fp, block);
+    memset(block, 0, sizeof(0));
+    char sum = wread_buffer(idx, block, &ibuf);
+    if(sum == -1){
+      tsum = load_buffer(fp, &ibuf);
+      if(tsum == 0){
+        final_write(out, &obuf);
+        fseek(out, 40, SEEK_SET);
+        fwrite(&sum, 1, 1, out);
+        break;
+      }
+      idx=0;
+      store_buffer(out, &obuf);
+      sum = wread_buffer(idx, block, &ibuf);
+    }
     runaes_128bit(block);
-    write_buffer(out, block);
+    wwrite_buffer(idx, block, &obuf);
+    idx++;
     if (sum != 16) {
-      final_write(out);
+      final_write(out, &obuf);
       fseek(out, 40, SEEK_SET);
       fwrite(&sum, 1, 1, out);
       break;
     }
   }
-  free(ibuf);
-  ibuf = NULL;
-  free(obuf);
-  obuf = NULL;
+#else
+
+#endif
   printf("\n Encrypted.\n");
   printf("Begin to hash.\n");
   fseek(out, 41, SEEK_SET);
@@ -119,6 +94,12 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   printf("Execute over!\n");
   return;
 }
+
+
+
+
+
+
 
 int dec(FILE *fp, FILE *out, unsigned char *key) {
   printf("Begin to check.\n");
@@ -156,10 +137,10 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
   printf("Begin to decrypt.\n");
   printf("Decrypted: 00000000 MB.");
   fflush(stdout);
-
   unsigned char block[16];
   initgen(key);
-
+#ifndef MUTI_ENABLE
+  int tsum = load_buffer(fp, &ibuf), idx = 0;
   while (1) {
     round++;
     if (round == 0) {
@@ -168,20 +149,31 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
       printf("%08d MB.", bnum);
       fflush(stdout);
     }
-    unsigned char sum = read_buffer(fp, block);
+    char sum = wread_buffer(idx, block, &ibuf);
+    if(sum == -1){
+      tsum = load_buffer(fp, &ibuf);
+      if(tsum == 0){
+        final_write(out, &obuf);
+        fwrite(block, 1, tail, out);
+        break;
+      }
+      idx=0;
+      store_buffer(out, &obuf);
+      sum = wread_buffer(idx, block, &ibuf);
+    }
     decaes_128bit(block);
-    if (bufferover()) {
-      final_write(out);
+    if (bufferover(&ibuf)) {
+      final_write(out, &obuf);
       fwrite(block, 1, tail, out);
       break;
     }
     else
-      write_buffer(out, block);
+      wwrite_buffer(idx, block, &obuf);
+    idx++;
   }
-  free(ibuf);
-  ibuf = NULL;
-  free(obuf);
-  obuf = NULL;
+#else
+
+#endif
   printf("\n Decrypted.\n");
 
   printf("Execute over!\n");

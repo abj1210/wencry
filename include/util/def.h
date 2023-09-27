@@ -9,6 +9,9 @@
 #define Gidx(u, v) (Logtable[(u)] + Logtable[(v)])
 #define Gmul(idx, v) ((v) ? Alogtable[mod255(idx)] : 0)
 #define mod255(x) ((x & 255) + (x >> 8))
+#define NUM_THREADS 4
+
+//#define MULTI_ENABLE
 
 #define HASH0 0x67452301
 #define HASH1 0xEFCDAB89

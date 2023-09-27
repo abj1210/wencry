@@ -2,6 +2,9 @@
 #define STU
 
 #include <stdio.h>
+#include <pthread.h>
+
+#include "def.h"
 
 struct state {
   unsigned char s[4][4];
@@ -21,24 +24,12 @@ struct hash {
   unsigned h[5];
 };
 
-#define BUF_SZ 0x1000000
-
-struct buffer {
-  unsigned char b[BUF_SZ][0x10];
-  unsigned int total;
-  unsigned int now;
-  unsigned char tail;
-  unsigned char load;
+struct Wthread {
+  pthread_t pts;
+  int tid;
+  char taskover;
 };
 
-#define HBUF_SZ 0x400000
 
-struct buffer64 {
-  unsigned char b[HBUF_SZ][0x40];
-  unsigned int total;
-  unsigned int now;
-  unsigned char tail;
-  unsigned char load;
-};
 
 #endif

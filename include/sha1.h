@@ -4,7 +4,7 @@
 #include "util.h"
 #include <stdio.h>
 
-unsigned int read_buffer64(FILE *fp, unsigned char *block);
+
 
 struct wdata *getwdata(unsigned char *s, struct wdata *w);
 void gethash(struct hash *h, struct wdata *w);
