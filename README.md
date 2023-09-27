@@ -16,6 +16,7 @@
 
 - include:头文件  
     - util:通用的结构体和宏  
+        - buffer.h:IO缓冲区的头文件  
         - def.h:宏定义  
         - struct.h:结构体  
     - util.h:包含了util文件夹下的所有头文件  
@@ -26,19 +27,22 @@
 
 - src:源代码
     - aesd.c:负责AES解密的各流程
-    - aese.c:负责AES加密的各流程
+    - aese.c:负责AES加密的各流程  
+    - base64.c:负责进行base64的编码和解码  
+    - buffer.c:实现IO缓冲区  
     - cry.c:负责整体加解密流程
     - main.c:主函数
     - sha1.c:负责产生sha1哈希的流程
     - tab.c:生成各种数表
 - test:测试
     - test.c:测试代码
-    - testfile.txt:测试文件
+    - testfile.txt t2.txt:测试文件
 
 ## 使用方法
 
 使用`make wencry`命令进行编译  
-使用`make test_once`命令进行自动测试
+使用`make test_once`命令进行自动测试  
+使用`make gprof`命令进行性能分析(此时应在F变量中加入`-pg`选项)
 
 ### 加密
 

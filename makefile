@@ -13,14 +13,18 @@ test_once:
 	./wencry -e $(TST)t2.txt ABEiM0RVZneImaq7zN3u/w==
 	./wencry -d $(TST)t2.txt.wenc ABEiM0RVZneImaq7zN3u/w== $(TST)t2out.txt
 	./cmp $(TST)t2.txt $(TST)t2out.txt
-	rm -rf $(TST)testfile.txt.wenc $(TST)testout.txt
+	rm -rf $(TST)*.wenc $(TST)testout.txt $(TST)t2out.txt
 
 format:
 	clang-format -i $(SRC)*.c
 	clang-format -i $(TST)*.c
 	clang-format -i $(INC)*.h
 	clang-format -i $(INC)util/*.h
-	
+
+gprof:
+	make wencry
+	./wencry -e $(TST)a.rar ABEiM0RVZneImaq7zN3u/w==
+	gprof wencry gmon.out > res.out
 
 wencry: main.o cry.o  sha1.o aese.o aesd.o tab.o getv.o base64.o buffer.o
 	gcc $(F)  main.o cry.o sha1.o aese.o aesd.o tab.o  getv.o base64.o buffer.o -o wencry

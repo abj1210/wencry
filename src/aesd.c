@@ -6,11 +6,9 @@
 #include "../include/util.h"
 
 void resubbytes(struct state *w) {
-  for (int j = 0; j < 4; ++j) {
-    for (int i = 0; i < 4; ++i) {
-      unsigned char t = w->s[i][j];
-      w->s[i][j] = r_sub_bytes(t);
-    }
+  for (int i = 0; i < 4; ++i) {
+    unsigned char t0 = w->s[i][0], t1=w->s[i][1], t2 = w->s[i][2], t3=w->s[i][3];
+    *((unsigned int *)w->s[i]) = ((unsigned int)r_sub_bytes(t0))|((unsigned int)r_sub_bytes(t1)<<8)|((unsigned int)r_sub_bytes(t2)<<16)|((unsigned int)r_sub_bytes(t3)<<24);
   }
 }
 
