@@ -25,7 +25,6 @@ int main(int argc, char *argv[]) {
     t1 = time(NULL);
     enc(v1.fp, v1.out, v1.key);
     t2 = time(NULL);
-
     unsigned char outk[128];
     memset(outk, 0, sizeof(outk));
     printf("Encrypt over! Key is: \n");
@@ -45,10 +44,9 @@ int main(int argc, char *argv[]) {
     else if (res == 3)
       printf("File not complete.\n");
   }
-
-  free(v1.key);
   fclose(v1.fp);
   fclose(v1.out);
   printf("Time: %lds\n", t2 - t1);
+  system("pause");
   return 0;
 }

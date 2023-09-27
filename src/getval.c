@@ -13,11 +13,11 @@ struct vpak get_v_mod1() {
   r = scanf("%c", &res.mode);
   printf("File name:\n");
   char fn[128], outn[138], kn[128];
-  r = scanf("%s", fn);
-  res.fp = fopen(fn, "rb");
-  if (res.fp == NULL) {
+  while (1) {
+    r = scanf("%s", fn);
+    res.fp = fopen(fn, "rb");
+    if(res.fp != NULL)break;
     printf("File not found.\n");
-    return res;
   }
   if (res.mode == 'e' || res.mode == 'E') {
     printf("Need generate a new key?(y/n) ");

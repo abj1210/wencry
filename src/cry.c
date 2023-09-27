@@ -8,40 +8,48 @@
 #include "../include/sha1.h"
 #include "../include/util.h"
 
-struct buffer ibuf, obuf;
+struct buffer * ibuf=NULL, * obuf=NULL;
 unsigned int read_buffer(FILE *fp, unsigned char *block) {
+    if (ibuf == NULL) {
+      ibuf = malloc(sizeof(struct buffer));
+      ibuf->load = 0;
+    }
   unsigned int res = 0;
-  if (ibuf.now == BUF_SZ || ibuf.load == 0) {
-    unsigned int sum = fread(ibuf.b, 1, BUF_SZ << 4, fp);
-    ibuf.tail = sum & 0xf;
-    ibuf.total = sum >> 4;
-    ibuf.now = 0;
-    ibuf.load = 1;
+  if (ibuf->now == BUF_SZ || ibuf->load == 0) {
+    unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
+    ibuf->tail = sum & 0xf;
+    ibuf->total = sum >> 4;
+    ibuf->now = 0;
+    ibuf->load = 1;
   }
 
-  if (ibuf.now == ibuf.total) {
-    memcpy(block, ibuf.b[ibuf.now], ibuf.tail);
-    res = ibuf.tail;
-    ibuf.tail = 0;
+  if (ibuf->now == ibuf->total) {
+    memcpy(block, ibuf->b[ibuf->now], ibuf->tail);
+    res = ibuf->tail;
+    ibuf->tail = 0;
   } else {
-    memcpy(block, ibuf.b[ibuf.now], 16);
+    memcpy(block, ibuf->b[ibuf->now], 16);
     res = 16;
-    ibuf.now++;
+    ibuf->now++;
   }
   return res;
 }
 unsigned int bufferover() {
-  return (ibuf.now == ibuf.total) && (ibuf.now != BUF_SZ) && (ibuf.tail == 0);
+  return (ibuf->now == ibuf->total) && (ibuf->now != BUF_SZ) && (ibuf->tail == 0);
 }
 void write_buffer(FILE *fp, unsigned char *block) {
-  memcpy(obuf.b[obuf.total], block, 16);
-  obuf.total++;
-  if (obuf.total == BUF_SZ) {
-    fwrite(obuf.b, 1, BUF_SZ << 4, fp);
-    obuf.total = 0;
+  if (obuf == NULL) {
+    obuf = malloc(sizeof(struct buffer));
+    obuf->total = 0;
+  }
+  memcpy(obuf->b[obuf->total], block, 16);
+  obuf->total++;
+  if (obuf->total == BUF_SZ) {
+    fwrite(obuf->b, 1, BUF_SZ << 4, fp);
+    obuf->total = 0;
   }
 }
-void final_write(FILE *fp) { fwrite(obuf.b, 1, obuf.total << 4, fp); }
+void final_write(FILE *fp) { fwrite(obuf->b, 1, obuf->total << 4, fp); }
 
 void init() { srand(time(NULL)); }
 
@@ -97,6 +105,10 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
       break;
     }
   }
+  free(ibuf);
+  ibuf = NULL;
+  free(obuf);
+  obuf = NULL;
   printf("\n Encrypted.\n");
   printf("Begin to hash.\n");
   fseek(out, 41, SEEK_SET);
@@ -166,6 +178,10 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
     else
       write_buffer(out, block);
   }
+  free(ibuf);
+  ibuf = NULL;
+  free(obuf);
+  obuf = NULL;
   printf("\n Decrypted.\n");
 
   printf("Execute over!\n");

@@ -5,25 +5,29 @@
 #include "../include/sha1.h"
 #include "../include/util.h"
 
-struct buffer64 ibuf64;
+struct buffer64 * ibuf64=NULL;
 unsigned int read_buffer64(FILE *fp, unsigned char *block) {
+  if (ibuf64 == NULL) {
+    ibuf64 = malloc(sizeof(struct buffer64));
+    ibuf64->load = 0;
+  }
   unsigned int res = 0;
-  if (ibuf64.now == HBUF_SZ || ibuf64.load == 0) {
-    unsigned int sum = fread(ibuf64.b, 1, HBUF_SZ << 6, fp);
-    ibuf64.tail = sum & 0x3f;
-    ibuf64.total = sum >> 6;
-    ibuf64.now = 0;
-    ibuf64.load = 1;
+  if (ibuf64->now == HBUF_SZ || ibuf64->load == 0) {
+    unsigned int sum = fread(ibuf64->b, 1, HBUF_SZ << 6, fp);
+    ibuf64->tail = sum & 0x3f;
+    ibuf64->total = sum >> 6;
+    ibuf64->now = 0;
+    ibuf64->load = 1;
   }
 
-  if (ibuf64.now == ibuf64.total) {
-    memcpy(block, ibuf64.b[ibuf64.now], ibuf64.tail);
-    res = ibuf64.tail;
-    ibuf64.tail = 0;
+  if (ibuf64->now == ibuf64->total) {
+    memcpy(block, ibuf64->b[ibuf64->now], ibuf64->tail);
+    res = ibuf64->tail;
+    ibuf64->tail = 0;
   } else {
-    memcpy(block, ibuf64.b[ibuf64.now], 64);
+    memcpy(block, ibuf64->b[ibuf64->now], 64);
     res = 64;
-    ibuf64.now++;
+    ibuf64->now++;
   }
   return res;
 }
@@ -119,6 +123,8 @@ unsigned char *getsha1f(FILE *fp) {
   for (int i = 0; i < 20; i++) {
     sha1res[i] = ((h->h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
   }
+  free(ibuf64);
+  ibuf64 = NULL;
   free(h);
   return sha1res;
 }
