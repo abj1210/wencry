@@ -23,7 +23,7 @@ format:
 
 gprof:
 	make wencry
-	./wencry -e $(TST)a.rar ABEiM0RVZneImaq7zN3u/w==
+	./wencry -e $(TST)a.mp4 ABEiM0RVZneImaq7zN3u/w==
 	gprof wencry gmon.out > res.out
 
 wencry: main.o cry.o  sha1.o aese.o aesd.o tab.o getv.o base64.o buffer.o

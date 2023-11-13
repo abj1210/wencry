@@ -5,12 +5,15 @@
 #define r_sub_bytes(x) rs_box[x]
 #define lrot(x, i) (((x) << (i)) | ((x) >> (32 - i)))
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
-#define GMul(u, v) ((v) ? Alogtable[mod255(Logtable[(u)] + Logtable[(v)])] : 0)
 #define Gidx(u, v) (Logtable[(u)] + Logtable[(v)])
 #define Gmul(idx, v) ((v) ? Alogtable[mod255(idx)] : 0)
 #define mod255(x) ((x & 255) + (x >> 8))
-#define NUM_THREADS 4
+#define GMline Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3)
+#define GIline(n0, n1, n2, n3)                                                 \
+  idx0 = Gidx(n0, b0), idx1 = Gidx(n1, b1), idx2 = Gidx(n2, b2),               \
+  idx3 = Gidx(n3, b3)
 
+//#define NUM_THREADS 4
 //#define MULTI_ENABLE
 
 #define HASH0 0x67452301

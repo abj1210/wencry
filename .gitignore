@@ -1,6 +1,10 @@
 # Created by https://www.toptal.com/developers/gitignore/api/c,c++,visualstudio
 # Edit at https://www.toptal.com/developers/gitignore?templates=c,c++,visualstudio
 
+
+*.mp4
+*.wenc
+
 ### C ###
 # Prerequisites
 *.d

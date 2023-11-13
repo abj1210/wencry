@@ -1,70 +1,71 @@
-# Êý¾Ý¼ÓÃÜ½âÃÜ³ÌÐò
+# æ•°æ®åŠ å¯†è§£å¯†ç¨‹åº
 
-×÷Õß£ºÎÅ¼ÎÑ¸  
-ÈÕÆÚ£º2023.9.27 (×îºóÐÞ¸Ä)  
-°æ±¾£ºv1.5  
+ä½œè€…ï¼šé—»å˜‰è¿…  
+æ—¥æœŸï¼š2023.11.13 (æœ€åŽä¿®æ”¹)  
+ç‰ˆæœ¬ï¼šv1.6  
 
-**´¦ÀíËÙ¶È¿É´ï25-30MB/s**
+**å¤„ç†é€Ÿåº¦å¯è¾¾25-30MB/s**
 
-## ¼ÓÃÜÔ­Àí
+## åŠ å¯†åŽŸç†
 
-¶ÔÓÚÄ¿±êÎÄ¼þ½øÐÐAES128¼ÓÃÜ  
-¶Ô¼ÓÃÜºóµÄÐÅÏ¢ºÍÃÜÔ¿½øÐÐsha1¹þÏ£²Ù×÷  
-µÃµ½×îÖÕµÄ¼ÓÃÜÎÄ¼þ  
+å¯¹äºŽç›®æ ‡æ–‡ä»¶è¿›è¡ŒAES128åŠ å¯†  
+å¯¹åŠ å¯†åŽçš„ä¿¡æ¯å’Œå¯†é’¥è¿›è¡Œsha1å“ˆå¸Œæ“ä½œ  
+å¾—åˆ°æœ€ç»ˆçš„åŠ å¯†æ–‡ä»¶  
 
-## ÎÄ¼þ½á¹¹
+## æ–‡ä»¶ç»“æž„
 
-- include:Í·ÎÄ¼þ  
-    - util:Í¨ÓÃµÄ½á¹¹ÌåºÍºê  
-        - buffer.h:IO»º³åÇøµÄÍ·ÎÄ¼þ  
-        - def.h:ºê¶¨Òå  
-        - struct.h:½á¹¹Ìå  
-    - util.h:°üº¬ÁËutilÎÄ¼þ¼ÐÏÂµÄËùÓÐÍ·ÎÄ¼þ  
-    - getval.h:»ñÈ¡²Ù×÷²ÎÊýÏà¹ØµÄÍ·ÎÄ¼þ
-    - aes.h:AES¼Ó½âÃÜÏà¹ØµÄÍ·ÎÄ¼þ
-    - cry.h:¼Ó½âÃÜÁ÷³ÌÏà¹ØµÄÍ·ÎÄ¼þ
-    - sha1.h:½øÐÐsha1¹þÏ£Ïà¹ØµÄÍ·ÎÄ¼þ
+- include:å¤´æ–‡ä»¶  
+    - util:é€šç”¨çš„ç»“æž„ä½“å’Œå®  
+        - buffer.h:IOç¼“å†²åŒºçš„å¤´æ–‡ä»¶  
+        - def.h:å®å®šä¹‰  
+        - struct.h:ç»“æž„ä½“  
+    - util.h:åŒ…å«äº†utilæ–‡ä»¶å¤¹ä¸‹çš„æ‰€æœ‰å¤´æ–‡ä»¶  
+    - getval.h:èŽ·å–æ“ä½œå‚æ•°ç›¸å…³çš„å¤´æ–‡ä»¶
+    - aes.h:AESåŠ è§£å¯†ç›¸å…³çš„å¤´æ–‡ä»¶
+    - cry.h:åŠ è§£å¯†æµç¨‹ç›¸å…³çš„å¤´æ–‡ä»¶
+    - sha1.h:è¿›è¡Œsha1å“ˆå¸Œç›¸å…³çš„å¤´æ–‡ä»¶
 
-- src:Ô´´úÂë
-    - aesd.c:¸ºÔðAES½âÃÜµÄ¸÷Á÷³Ì
-    - aese.c:¸ºÔðAES¼ÓÃÜµÄ¸÷Á÷³Ì  
-    - base64.c:¸ºÔð½øÐÐbase64µÄ±àÂëºÍ½âÂë  
-    - buffer.c:ÊµÏÖIO»º³åÇø  
-    - cry.c:¸ºÔðÕûÌå¼Ó½âÃÜÁ÷³Ì
-    - main.c:Ö÷º¯Êý
-    - sha1.c:¸ºÔð²úÉúsha1¹þÏ£µÄÁ÷³Ì
-    - tab.c:Éú³É¸÷ÖÖÊý±í
-- test:²âÊÔ
-    - test.c:²âÊÔ´úÂë
-    - testfile.txt t2.txt:²âÊÔÎÄ¼þ
+- src:æºä»£ç 
+    - aesd.c:è´Ÿè´£AESè§£å¯†çš„å„æµç¨‹
+    - aese.c:è´Ÿè´£AESåŠ å¯†çš„å„æµç¨‹  
+    - base64.c:è´Ÿè´£è¿›è¡Œbase64çš„ç¼–ç å’Œè§£ç   
+    - buffer.c:å®žçŽ°IOç¼“å†²åŒº  
+    - cry.c:è´Ÿè´£æ•´ä½“åŠ è§£å¯†æµç¨‹
+    - main.c:ä¸»å‡½æ•°
+    - sha1.c:è´Ÿè´£äº§ç”Ÿsha1å“ˆå¸Œçš„æµç¨‹
+    - tab.c:ç”Ÿæˆå„ç§æ•°è¡¨
+- test:æµ‹è¯•
+    - test.c:æµ‹è¯•ä»£ç 
+    - testfile.txt t2.txt:æµ‹è¯•æ–‡ä»¶
 
-## Ê¹ÓÃ·½·¨
+## ä½¿ç”¨æ–¹æ³•
 
-Ê¹ÓÃ`make wencry`ÃüÁî½øÐÐ±àÒë  
-Ê¹ÓÃ`make test_once`ÃüÁî½øÐÐ×Ô¶¯²âÊÔ  
-Ê¹ÓÃ`make gprof`ÃüÁî½øÐÐÐÔÄÜ·ÖÎö(´ËÊ±Ó¦ÔÚF±äÁ¿ÖÐ¼ÓÈë`-pg`Ñ¡Ïî)
+ä½¿ç”¨`make wencry`å‘½ä»¤è¿›è¡Œç¼–è¯‘  
+ä½¿ç”¨`make test_once`å‘½ä»¤è¿›è¡Œè‡ªåŠ¨æµ‹è¯•  
+ä½¿ç”¨`make gprof`å‘½ä»¤è¿›è¡Œæ€§èƒ½åˆ†æž(æ­¤æ—¶åº”åœ¨Få˜é‡ä¸­åŠ å…¥`-pg`é€‰é¡¹)
 
-### ¼ÓÃÜ
+### åŠ å¯†
 
-Ö±½ÓÊ¹ÓÃ`./wencry`ÃüÁî£¬°´ÌáÊ¾½øÐÐ²Ù×÷
+ç›´æŽ¥ä½¿ç”¨`./wencry`å‘½ä»¤ï¼ŒæŒ‰æç¤ºè¿›è¡Œæ“ä½œ
 
-Ê¹ÓÃ`./wencry -e [fin] [code] [fout]`ÃüÁî½øÐÐ¼ÓÃÜ  
-ÆäÖÐ -e ´ú±í¼ÓÃÜÑ¡Ïî fin ÎªÊäÈëÎÄ¼þµÄÂ·¾¶ code Îªase64±àÂëºóµÄ16×Ö½Ú16½øÖÆÊý(±àÂëºó¹²24Î»)£¬ÈôÊäÈëGÔòÎª³ÌÐòÉú³É fout ÎªÊä³öÎÄ¼þÃû£¬È±Ê¡Îª fin Öµ¡£  
+ä½¿ç”¨`./wencry -e [fin] [code] [fout]`å‘½ä»¤è¿›è¡ŒåŠ å¯†  
+å…¶ä¸­ -e ä»£è¡¨åŠ å¯†é€‰é¡¹ fin ä¸ºè¾“å…¥æ–‡ä»¶çš„è·¯å¾„ code ä¸ºase64ç¼–ç åŽçš„16å­—èŠ‚16è¿›åˆ¶æ•°(ç¼–ç åŽå…±24ä½),è‹¥è¾“å…¥Gåˆ™ä¸ºç¨‹åºç”Ÿæˆ fout ä¸ºè¾“å‡ºæ–‡ä»¶åï¼Œç¼ºçœä¸º fin å€¼.  
 
-¼ÓÃÜÍê±Ïºó»áÉú³ÉÃûÎª [fout].wenc µÄ¼ÓÃÜÎÄ¼þ
+åŠ å¯†å®Œæ¯•åŽä¼šç”Ÿæˆåä¸º [fout].wenc çš„åŠ å¯†æ–‡ä»¶.
 
-### ½âÃÜ
+### è§£å¯†
 
-Ö±½ÓÊ¹ÓÃ`./wencry`ÃüÁî£¬°´ÌáÊ¾½øÐÐ²Ù×÷
+ç›´æŽ¥ä½¿ç”¨`./wencry`å‘½ä»¤,æŒ‰æç¤ºè¿›è¡Œæ“ä½œ
 
-Ê¹ÓÃ`./wencry -d [fin] [code] [fout]`ÃüÁî½øÐÐ¼ÓÃÜ  
-ÆäÖÐ -e ´ú±í¼ÓÃÜÑ¡Ïî fin ÎªÊäÈëÎÄ¼þµÄÂ·¾¶ code Îªbase64±àÂëºóµÄ16×Ö½Ú16½øÖÆÊý(±àÂëºó¹²24Î»)£¬ fout ÎªÊä³öÎÄ¼þÃû£¬È±Ê¡Îª [fin].wdec ¡£
+ä½¿ç”¨`./wencry -d [fin] [code] [fout]`å‘½ä»¤è¿›è¡ŒåŠ å¯†  
+å…¶ä¸­ -e ä»£è¡¨åŠ å¯†é€‰é¡¹ fin ä¸ºè¾“å…¥æ–‡ä»¶çš„è·¯å¾„ code ä¸ºbase64ç¼–ç åŽçš„16å­—èŠ‚16è¿›åˆ¶æ•°(ç¼–ç åŽå…±24ä½), fout ä¸ºè¾“å‡ºæ–‡ä»¶å,ç¼ºçœä¸º [fin].wdec .
 
-½âÃÜÍê±ÏºóÈôÎÞÎóÔò»áÉú³ÉÃûÎª fout µÄ»¹Ô­ÎÄ¼þ¡£
+è§£å¯†å®Œæ¯•åŽè‹¥æ— è¯¯åˆ™ä¼šç”Ÿæˆåä¸º fout çš„è¿˜åŽŸæ–‡ä»¶.
 
 
-*v1.1 ÐÂÔö£ºÒÔbase64±àÂëÊäÈëÃÜÂë£¬²¢ÖØ¹¹ÁË²¿·Ö´úÂë¡£*  
-*v1.2 ÐÂÔö£ºgit actionsÓÃÓÚÌá½»×Ô¶¯²âÊÔ¡£*  
-*v1.3 ÐÂÔö£ºÉ¾³ý²¿·ÖÈßÓà´úÂë²¢ÖØ¹¹²¿·Ö´úÂëÒÔÌá¸ßÐ§ÂÊ¡£*  
-*v1.4 ÐÂÔö£º¸Ä±ä²¿·Ö´úÂë½á¹¹ÒÔÌá¸ßÐ§ÂÊ¡£*
-*v1.5 ÐÂÔö: ÖØÐ´buffer²¿·Ö£¬ÎªÎ´À´Ö§³Ö¶àÏß³ÌÌá¹©Ìõ¼þ¡£*
+*v1.1 æ–°å¢ž:ä»¥base64ç¼–ç è¾“å…¥å¯†ç ,å¹¶é‡æž„äº†éƒ¨åˆ†ä»£ç .*  
+*v1.2 æ–°å¢ž:git actionsç”¨äºŽæäº¤è‡ªåŠ¨æµ‹è¯•.*  
+*v1.3 æ–°å¢ž:åˆ é™¤éƒ¨åˆ†å†—ä½™ä»£ç å¹¶é‡æž„éƒ¨åˆ†ä»£ç ä»¥æé«˜æ•ˆçŽ‡.*  
+*v1.4 æ–°å¢ž:æ”¹å˜éƒ¨åˆ†ä»£ç ç»“æž„ä»¥æé«˜æ•ˆçŽ‡.*
+*v1.5 æ–°å¢ž:é‡å†™bufferéƒ¨åˆ†,ä¸ºæœªæ¥æ”¯æŒå¤šçº¿ç¨‹æä¾›æ¡ä»¶.*  
+*v1.6 æ–°å¢ž:é‡å†™éƒ¨åˆ†æ ¸å¿ƒå‡½æ•°,å°å¹…æé«˜è¿è¡Œæ•ˆçŽ‡.*

@@ -47,6 +47,5 @@ int main(int argc, char *argv[]) {
   fclose(v1.fp);
   fclose(v1.out);
   printf("Time: %lds\n", t2 - t1);
-  system("pause");
   return 0;
 }

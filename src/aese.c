@@ -37,47 +37,46 @@ void initgen(unsigned char *init_key) {
 
 void addroundkey(struct state *w, struct state *key) {
   for (int i = 0; i < 4; ++i) {
-    *((unsigned int *)w->s[i]) ^= *((unsigned int *)key->s[i]);
+    unsigned int *p = (unsigned int *)w->s[i];
+    *p ^= *((unsigned int *)key->s[i]);
   }
 }
 
 void subbytes(struct state *w) {
   for (int i = 0; i < 4; ++i) {
-    unsigned char t0 = w->s[i][0], t1=w->s[i][1], t2 = w->s[i][2], t3=w->s[i][3];
-    *((unsigned int *)w->s[i]) = ((unsigned int)sub_bytes(t0))|((unsigned int)sub_bytes(t1)<<8)|((unsigned int)sub_bytes(t2)<<16)|((unsigned int)sub_bytes(t3)<<24);
+    unsigned char t0 = w->s[i][0], t1 = w->s[i][1], t2 = w->s[i][2],
+                  t3 = w->s[i][3];
+    *((unsigned int *)w->s[i]) = ((unsigned int)sub_bytes(t0)) |
+                                 ((unsigned int)sub_bytes(t1) << 8) |
+                                 ((unsigned int)sub_bytes(t2) << 16) |
+                                 ((unsigned int)sub_bytes(t3) << 24);
   }
 }
 
 void rowshift(struct state *w) {
   for (int i = 0; i < 4; ++i) {
-    *((unsigned int *)w->s[i]) = rrot(*((unsigned int *)w->s[i]), i << 3);
+    unsigned int *p = (unsigned int *)w->s[i];
+    *p = rrot(*p, i << 3);
   }
 }
 
 void columnmix(struct state *w) {
-  for (int j = 0; j < 4; ++j) {
-    unsigned char b0 = w->s[0][j], b1 = w->s[1][j], b2 = w->s[2][j],
-                  b3 = w->s[3][j];
-    unsigned short idx0, idx1, idx2, idx3;
-    idx0 = Gidx(0x02, b0), idx1 = Gidx(0x03, b1), idx2 = Gidx(0x01, b2),
-    idx3 = Gidx(0x01, b3);
-    w->s[0][j] =
-        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+  unsigned char *p = ((unsigned char *)(w->s)), *pe = p + 0x4;
+  while (p != pe) {
+    unsigned char b0 = *p, b1 = *(p + 0x4), b2 = *(p + 0x8), b3 = *(p + 0xc);
+    unsigned short GIline(0x02, 0x03, 0x01, 0x01);
+    (*p) = GMline;
 
-    idx0 = Gidx(0x01, b0), idx1 = Gidx(0x02, b1), idx2 = Gidx(0x03, b2),
-    idx3 = Gidx(0x01, b3);
-    w->s[1][j] =
-        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+    GIline(0x01, 0x02, 0x03, 0x01);
+    (*(p + 0x4)) = GMline;
 
-    idx0 = Gidx(0x01, b0), idx1 = Gidx(0x01, b1), idx2 = Gidx(0x02, b2),
-    idx3 = Gidx(0x03, b3);
-    w->s[2][j] =
-        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+    GIline(0x01, 0x01, 0x02, 0x03);
+    (*(p + 0x8)) = GMline;
 
-    idx0 = Gidx(0x03, b0), idx1 = Gidx(0x01, b1), idx2 = Gidx(0x01, b2),
-    idx3 = Gidx(0x02, b3);
-    w->s[3][j] =
-        Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3);
+    GIline(0x03, 0x01, 0x01, 0x02);
+    (*(p + 0xc)) = GMline;
+
+    p++;
   }
 }
 

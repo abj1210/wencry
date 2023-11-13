@@ -7,7 +7,7 @@
 
 struct buffer64 ibuf64;
 struct wdata *getwdata(unsigned char *s, struct wdata *w) {
-  for (int i = 0; i < 80; i++) {
+  for (int i = 0; i < 80; ++i) {
     if (i < 16)
       w->w[i] = ((unsigned)s[(i << 2) | 3]) | ((unsigned)s[(i << 2) | 2] << 8) |
                 ((unsigned)s[(i << 2) | 1] << 16) | ((unsigned)s[i << 2] << 24);
@@ -20,10 +20,10 @@ struct wdata *getwdata(unsigned char *s, struct wdata *w) {
 
 void gethash(struct hash *h, struct wdata *w) {
   struct hash temph;
-  unsigned f, k, temp;
+  unsigned int f, k, temp;
   memcpy(&temph, h, sizeof(temph));
 
-  for (unsigned i = 0; i < 80; i++) {
+  for (unsigned int i = 0; i < 80; ++i) {
     switch (i / 20) {
     case (0): {
       f = (temph.h[1] & temph.h[2]) | ((~temph.h[1]) & temph.h[3]);
@@ -76,7 +76,7 @@ unsigned char *getsha1f(FILE *fp) {
   unsigned char s1[64];
   int flag = 0;
   struct wdata w;
-  for (unsigned long long i = 0; flag != 2; i++) {
+  for (unsigned int i = 0; flag != 2; ++i) {
     memset(s1, 0, sizeof(s1));
     unsigned sum = read_buffer64(fp, s1, &ibuf64);
     if (sum != 64 && flag == 0) {
@@ -85,7 +85,7 @@ unsigned char *getsha1f(FILE *fp) {
       flag = 1;
     }
     if (sum < 56) {
-      unsigned long long b = i * 512 + (sum - 1) * 8;
+      unsigned long long b = (unsigned long long)i * 512 + (sum - 1) * 8;
       for (int i = 0; i < 8; i++) {
         s1[56 + i] = ((b >> (7 - i) * 8) & 0xffu);
       }
@@ -121,7 +121,7 @@ unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
 
   unsigned char s1[64];
   struct wdata w;
-  for (unsigned long long i = 0; i < cnum; i++) {
+  for (unsigned int i = 0; i < cnum; ++i) {
     memset(s1, 0, sizeof(s1));
 
     if ((i << 6) < n) {
@@ -144,7 +144,7 @@ unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
     gethash(h, &w);
   }
   unsigned char *sha1res = malloc(20 * sizeof(unsigned char));
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 20; ++i) {
     sha1res[i] = ((h->h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
   }
   free(h);
