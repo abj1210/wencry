@@ -4,6 +4,9 @@
 
 #include "../include/aes.h"
 #include "../include/util.h"
+
+extern void addroundkey(struct state *w, struct state *key);
+
 /*
 resubbytes:aes的还原subbytes步骤
 w:待操作的aes加解密单元指针

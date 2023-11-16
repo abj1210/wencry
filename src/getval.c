@@ -6,6 +6,38 @@
 #include "../include/getval.h"
 #include "../include/util.h"
 /*
+getInputFilep:从输入中获取文件指针
+return:获取的文件指针
+*/
+FILE *getInputFilep() {
+  char fn[128];
+  FILE *fp;
+  while (1) {
+    int r = scanf("%s", fn);
+    fp = fopen(fn, "rb");
+    if (fp != NULL)
+      break;
+    printf("File not found.\n");
+  }
+  return fp;
+}
+/*
+getInputFilep:从输入中获取密钥
+return:获取的密钥序列
+*/
+unsigned char *getInputKey() {
+  char kn[128] = "";
+  printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
+  int r = scanf("%*[\n]");
+  while (scanf("%s", kn) == 0) {
+    r = scanf("%*[\n]");
+    printf("Sorry, please enter 128 bits (16 bytes) key in base64 mod:\n");
+  }
+  unsigned char *key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+  base64_to_hex((unsigned char *)kn, strlen(kn), key);
+  return key;
+}
+/*
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
@@ -15,14 +47,8 @@ struct vpak get_v_mod1() {
   printf("Need encrypt or decrypt?(e/d) ");
   r = scanf("%c", &res.mode);
   printf("File name:\n");
-  char fn[128], outn[138], kn[128];
-  while (1) {
-    r = scanf("%s", fn);
-    res.fp = fopen(fn, "rb");
-    if (res.fp != NULL)
-      break;
-    printf("File not found.\n");
-  }
+  char fn[] = "out", outn[138];
+  res.fp = getInputFilep();
   if (res.mode == 'e' || res.mode == 'E') {
     printf("Need generate a new key?(y/n) ");
     char flag;
@@ -30,10 +56,7 @@ struct vpak get_v_mod1() {
     if (flag == 'y' || flag == 'Y') {
       res.key = gen_key();
     } else {
-      printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
-      r = scanf("%s", kn);
-      res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
-      base64_to_hex((unsigned char *)kn, strlen(kn), res.key);
+      res.key = getInputKey();
     }
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
@@ -44,16 +67,14 @@ struct vpak get_v_mod1() {
     r = scanf("%*[\n]%c", &flag);
     if (flag == 'y' || flag == 'Y') {
       printf("Enter new name:\n");
+      r = scanf("%*[\n]");
       r = scanf("%s", decn);
       res.out = fopen(decn, "wb+");
     } else {
       sprintf(outn, "%s.wdec", fn);
       res.out = fopen(outn, "wb+");
     }
-    printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
-    r = scanf("%s", kn);
-    res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
-    base64_to_hex((unsigned char *)kn, strlen(kn), res.key);
+    res.key = getInputKey();
   }
   return res;
 }

@@ -112,9 +112,12 @@ return:读取的字节数,若失败返回-1
 int wread_buffer(unsigned int idx, unsigned char *block, struct buffer *ibuf) {
   int res;
   if (idx == ibuf->total) {
-    if(ibuf->tail!=0)memcpy(block, ibuf->b[idx], ibuf->tail);
-    if(ibuf->total!=BUF_SZ)res = ibuf->tail;
-    else res = -1;
+    if (ibuf->tail != 0)
+      memcpy(block, ibuf->b[idx], ibuf->tail);
+    if (ibuf->total != BUF_SZ)
+      res = ibuf->tail;
+    else
+      res = -1;
     ibuf->now = idx;
     ibuf->tail = 0;
   } else if (idx < ibuf->total) {

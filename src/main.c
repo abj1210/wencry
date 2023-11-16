@@ -12,7 +12,7 @@ encrypt: 根据传入的参数包设置加密参数并运行加密程序
 v1: 传入的参数包
 reutrn: 操作时间
 */
-time_t encrypt(struct vpak v1){
+time_t encrypt(struct vpak v1) {
   time_t t1, t2;
   t1 = time(NULL);
   enc(v1.fp, v1.out, v1.key);
@@ -22,7 +22,7 @@ time_t encrypt(struct vpak v1){
   printf("Encrypt over! Key is: \n");
   hex_to_base64(v1.key, 16, outk);
   printf("%s\n", outk);
-  return t2-t1;
+  return t2 - t1;
 }
 
 /*
@@ -30,7 +30,7 @@ decrypt: 根据传入的参数包设置加密参数并运行解密程序
 v1: 传入的参数包
 reutrn: 操作时间
 */
-time_t decrypt(struct vpak v1){
+time_t decrypt(struct vpak v1) {
   time_t t1, t2;
   t1 = time(NULL);
   int res = dec(v1.fp, v1.out, v1.key);
@@ -44,7 +44,16 @@ time_t decrypt(struct vpak v1){
     printf("Wrong key.\n");
   else if (res == 3)
     printf("File not complete.\n");
-  return t2-t1;
+  return t2 - t1;
+}
+/*
+over:关闭文件并释放空间
+v1:传入的参数包
+*/
+void over(struct vpak v1) {
+  free(v1.key);
+  fclose(v1.fp);
+  fclose(v1.out);
 }
 
 int main(int argc, char *argv[]) {
@@ -59,16 +68,15 @@ int main(int argc, char *argv[]) {
     printf("Invalid values.\n");
     return 1;
   }
-  if (vals.fp == NULL){
+  if (vals.fp == NULL) {
     printf("Invalid values.\n");
     return -1;
   }
   if (vals.mode == 'e' || vals.mode == 'E')
-    totalTime=encrypt(vals);
+    totalTime = encrypt(vals);
   else
-    totalTime=decrypt(vals);
-  fclose(vals.fp);
-  fclose(vals.out);
+    totalTime = decrypt(vals);
   printf("Time: %lds\n", totalTime);
+  over(vals);
   return 0;
 }
