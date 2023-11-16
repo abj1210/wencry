@@ -6,6 +6,12 @@
 #include "../include/util.h"
 
 struct buffer64 ibuf64;
+/*
+getwdata:根据每个输入单元生成sha1中w数组的值
+s:输入的单元
+w:生成的w数组
+return:w的地址
+*/
 struct wdata *getwdata(unsigned char *s, struct wdata *w) {
   for (int i = 0; i < 80; ++i) {
     if (i < 16)
@@ -17,7 +23,11 @@ struct wdata *getwdata(unsigned char *s, struct wdata *w) {
   }
   return w;
 }
-
+/*
+gethash:获取每一步的哈希值
+h:上一步的哈希值
+w:生成的w数组
+*/
 void gethash(struct hash *h, struct wdata *w) {
   struct hash temph;
   unsigned int f, k, temp;
@@ -61,7 +71,11 @@ void gethash(struct hash *h, struct wdata *w) {
   h->h[3] += temph.h[3];
   h->h[4] += temph.h[4];
 }
-
+/*
+getsha1f:获取文件的sha1哈希值
+fp:输入文件
+return:生成的sha1哈希序列
+*/
 unsigned char *getsha1f(FILE *fp) {
 
   if (fp == NULL)
@@ -101,7 +115,12 @@ unsigned char *getsha1f(FILE *fp) {
   free(h);
   return sha1res;
 }
-
+/*
+getsha1f:获取字符串的sha1哈希值
+s:输入字符串
+n:字符串长度
+return:生成的sha1哈希序列
+*/
 unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
   struct hash *h = (struct hash *)malloc(sizeof(struct hash));
   h->h[0] = HASH0;

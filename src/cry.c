@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 
 #include "../include/aes.h"
 #include "../include/cry.h"
@@ -9,12 +10,17 @@
 #include "../include/util.h"
 
 struct buffer ibuf, obuf;
-
+/*
+init:初始化设置
+*/
 void init() {
   srand(time(NULL));
   obuf.total = 0;
 }
-
+/*
+gen_key:随机产生一初始密钥
+return:产生的初始密钥
+*/
 unsigned char *gen_key() {
   unsigned char *key = (unsigned char *)malloc(16 * sizeof(unsigned char));
   for (int i = 0; i < 16; i++) {
@@ -22,7 +28,12 @@ unsigned char *gen_key() {
   }
   return key;
 }
-
+/*
+cmphash:比较哈希值
+h1:待比较的哈希数组
+h2:待比较的哈希数组
+return:若相同返回0,否则返回1
+*/
 int cmphash(unsigned char *h1, unsigned char *h2) {
   for (int i = 0; i < 20; i++) {
     if (h1[i] != h2[i])
@@ -30,26 +41,33 @@ int cmphash(unsigned char *h1, unsigned char *h2) {
   }
   return 0;
 }
-
+/*
+enc:将文件加密
+fp:输入文件
+out:加密后文件
+key:初始密钥序列
+*/
 void enc(FILE *fp, FILE *out, unsigned char *key) {
-  unsigned char *hash;
   unsigned short round = 0;
   unsigned int bnum = 0;
-  hash = getsha1s(key, 16);
+  unsigned char *hash = getsha1s(key, 16);
   fwrite(hash, 1, 20, out);
   fwrite(hash, 1, 20, out);
   free(hash);
   unsigned char z = 0;
   fwrite(&z, 1, 1, out);
+
+  initgen(key);
+  unsigned char block[16];
+#ifdef MULTI_ENABLE
+  int tsum = load_buffer(fp, &ibuf);
+#else
+  int tsum = load_buffer(fp, &ibuf);
+#endif
   printf("Begin to encrypt.\n");
   printf("Encrypted: 00000000 MB.");
   fflush(stdout);
-
-  unsigned char block[16];
-  memset(block, 0, sizeof(0));
-  initgen(key);
-#ifndef MUTI_ENABLE
-  int tsum = load_buffer(fp, &ibuf), idx = 0;
+  int idx = 0;
   while (1) {
     round++;
     if (round == 0) {
@@ -81,9 +99,6 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
       break;
     }
   }
-#else
-
-#endif
   printf("\n Encrypted.\n");
   printf("Begin to hash.\n");
   fseek(out, 41, SEEK_SET);
@@ -94,7 +109,12 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   printf("Execute over!\n");
   return;
 }
-
+/*
+enc:将文件解密
+fp:输入文件
+out:解密后文件
+key:初始密钥序列
+*/
 int dec(FILE *fp, FILE *out, unsigned char *key) {
   printf("Begin to check.\n");
   unsigned char hash[20];
@@ -128,13 +148,17 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
   printf("File check OK.\n");
 
   fseek(fp, 41, SEEK_SET);
+  unsigned char block[16];
+  initgen(key);
   printf("Begin to decrypt.\n");
   printf("Decrypted: 00000000 MB.");
   fflush(stdout);
-  unsigned char block[16];
-  initgen(key);
-#ifndef MUTI_ENABLE
-  int tsum = load_buffer(fp, &ibuf), idx = 0;
+#ifdef MULTI_ENABLE
+  int tsum = load_buffer(fp, &ibuf);
+#else
+  int tsum = load_buffer(fp, &ibuf);
+#endif
+  int idx = 0;
   while (1) {
     round++;
     if (round == 0) {
@@ -164,9 +188,6 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
       wwrite_buffer(idx, block, &obuf);
     idx++;
   }
-#else
-
-#endif
   printf("\n Decrypted.\n");
 
   printf("Execute over!\n");

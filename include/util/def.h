@@ -1,10 +1,14 @@
 #ifndef DEF
 #define DEF
-
+//转换subbyte
 #define sub_bytes(x) s_box[x]
+//还原subbyte
 #define r_sub_bytes(x) rs_box[x]
+//将x循环左移i位
 #define lrot(x, i) (((x) << (i)) | ((x) >> (32 - i)))
+//将x循环右移i位
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
+
 #define Gidx(u, v) (Logtable[(u)] + Logtable[(v)])
 #define Gmul(idx, v) ((v) ? Alogtable[mod255(idx)] : 0)
 #define mod255(x) ((x & 255) + (x >> 8))

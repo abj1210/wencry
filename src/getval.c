@@ -5,7 +5,10 @@
 #include "../include/cry.h"
 #include "../include/getval.h"
 #include "../include/util.h"
-
+/*
+get_v_mod1:根据用户输入获得参数包
+return:返回的参数包
+*/
 struct vpak get_v_mod1() {
   struct vpak res;
   int r;
@@ -54,7 +57,12 @@ struct vpak get_v_mod1() {
   }
   return res;
 }
-
+/*
+get_v_mod1:根据输入的变量获得参数包
+argc:变量数目
+argv:变量值列表
+return:返回的参数包
+*/
 struct vpak get_v_mod2(int argc, char *argv[]) {
   struct vpak res;
   res.mode = argv[1][1];

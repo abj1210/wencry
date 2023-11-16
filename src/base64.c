@@ -1,4 +1,9 @@
 #include "../include/getval.h"
+/*
+turn_base64:将一个十六进制位转化为base64编码
+in:输入的十六进制位
+return:转化的base64编码
+*/
 unsigned char turn_base64(unsigned char in) {
   unsigned char res;
   if (in < 26)
@@ -13,6 +18,11 @@ unsigned char turn_base64(unsigned char in) {
     res = '/';
   return res;
 }
+/*
+turn_base64:将base64编码转化为一个十六进制位
+in:输入的base64编码
+return:转化的十六进制位
+*/
 unsigned char turn_hex(unsigned char in) {
   unsigned char res;
   if (in >= 'A' && in <= 'Z')
@@ -27,6 +37,12 @@ unsigned char turn_hex(unsigned char in) {
     res = 63;
   return res;
 }
+/*
+hex_to_base64:将十六进制串base64编码
+hex_in:输入的十六进制串
+len:输入串的长度
+base64_out:base64编码后的结果
+*/
 void hex_to_base64(unsigned char *hex_in, int len, unsigned char *base64_out) {
   int j = 0;
   int idx = 0;
@@ -57,6 +73,12 @@ void hex_to_base64(unsigned char *hex_in, int len, unsigned char *base64_out) {
     }
   }
 }
+/*
+hex_to_base64:将输入串base64解码为十六进制串
+base64_in:输入的base64编码串
+len:输入串的长度
+hex_out:解码后的十六进制串
+*/
 void base64_to_hex(unsigned char *base64_in, int len, unsigned char *hex_out) {
   int tail = 0;
   int j = 0;

@@ -1,5 +1,5 @@
 CC= gcc
-F= -O2
+F= -O2 -pg
 SRC= ./src/
 INC= ./include/
 TST= ./test/
