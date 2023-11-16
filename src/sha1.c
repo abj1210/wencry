@@ -66,7 +66,7 @@ unsigned char *getsha1f(FILE *fp) {
 
   if (fp == NULL)
     return NULL;
-  struct hash *h = malloc(sizeof(struct hash));
+  struct hash *h = (struct hash *)malloc(sizeof(struct hash));
   h->h[0] = HASH0;
   h->h[1] = HASH1;
   h->h[2] = HASH2;
@@ -86,7 +86,7 @@ unsigned char *getsha1f(FILE *fp) {
     }
     if (sum < 56) {
       unsigned long long b = (unsigned long long)i * 512 + (sum - 1) * 8;
-      for (int i = 0; i < 8; i++) {
+      for (int i = 0; i < 8; ++i) {
         s1[56 + i] = ((b >> (7 - i) * 8) & 0xffu);
       }
       flag = 2;
@@ -94,7 +94,7 @@ unsigned char *getsha1f(FILE *fp) {
     getwdata(s1, &w);
     gethash(h, &w);
   }
-  unsigned char *sha1res = malloc(20 * sizeof(unsigned char));
+  unsigned char *sha1res = (unsigned char *)malloc(20 * sizeof(unsigned char));
   for (int i = 0; i < 20; i++) {
     sha1res[i] = ((h->h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
   }
@@ -103,7 +103,7 @@ unsigned char *getsha1f(FILE *fp) {
 }
 
 unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
-  struct hash *h = malloc(sizeof(struct hash));
+  struct hash *h = (struct hash *)malloc(sizeof(struct hash));
   h->h[0] = HASH0;
   h->h[1] = HASH1;
   h->h[2] = HASH2;
@@ -136,14 +136,14 @@ unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
     } else if (!flag)
       s1[0] = 0x80u;
     if (i == cnum - 1) {
-      for (int i = 0; i < 8; i++) {
+      for (int i = 0; i < 8; ++i) {
         s1[56 + i] = ((b >> (7 - i) * 8) & 0xffu);
       }
     }
     getwdata(s1, &w);
     gethash(h, &w);
   }
-  unsigned char *sha1res = malloc(20 * sizeof(unsigned char));
+  unsigned char *sha1res = (unsigned char *)malloc(20 * sizeof(unsigned char));
   for (int i = 0; i < 20; ++i) {
     sha1res[i] = ((h->h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
   }

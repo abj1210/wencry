@@ -29,8 +29,8 @@ struct vpak get_v_mod1() {
     } else {
       printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
       r = scanf("%s", kn);
-      res.key = malloc(16 * sizeof(unsigned char));
-      base64_to_hex(kn, strlen(kn), res.key);
+      res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+      base64_to_hex((unsigned char *)kn, strlen(kn), res.key);
     }
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
@@ -49,8 +49,8 @@ struct vpak get_v_mod1() {
     }
     printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
     r = scanf("%s", kn);
-    res.key = malloc(16 * sizeof(unsigned char));
-    base64_to_hex(kn, strlen(kn), res.key);
+    res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+    base64_to_hex((unsigned char *)kn, strlen(kn), res.key);
   }
   return res;
 }
@@ -67,10 +67,10 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
     if (strcmp(argv[3], "G") == 0) {
       res.key = gen_key();
     } else {
-      res.key = malloc(16 * sizeof(unsigned char));
-      base64_to_hex(argv[3], strlen(argv[3]), res.key);
+      res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+      base64_to_hex((unsigned char *)argv[3], strlen(argv[3]), res.key);
     }
-    unsigned char outn[138];
+    char outn[138];
     if (argc == 4) {
       sprintf(outn, "%s.wenc", argv[2]);
     } else {
@@ -83,12 +83,12 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
       printf("File not found.\n");
       return res;
     }
-    res.key = malloc(16 * sizeof(unsigned char));
-    base64_to_hex(argv[3], strlen(argv[3]), res.key);
+    res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+    base64_to_hex((unsigned char *)argv[3], strlen(argv[3]), res.key);
     if (argc == 4) {
-      unsigned char outn[138];
+      char outn[138];
       sprintf(outn, "%s.denc", argv[2]);
-      res.out = fopen(outn, "wb+");
+      res.out = fopen((const char *)outn, "wb+");
     } else {
       res.out = fopen(argv[4], "wb+");
     }

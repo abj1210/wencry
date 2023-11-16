@@ -16,7 +16,7 @@ void init() {
 }
 
 unsigned char *gen_key() {
-  unsigned char *key = malloc(16 * sizeof(unsigned char));
+  unsigned char *key = (unsigned char *)malloc(16 * sizeof(unsigned char));
   for (int i = 0; i < 16; i++) {
     key[i] = rand() & 0xff;
   }
