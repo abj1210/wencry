@@ -219,6 +219,7 @@ dec:将文件解密
 fp:输入文件
 out:解密后文件
 key:初始密钥序列
+return:若成功解密则返回0,否则返回非零值
 */
 int dec(FILE *fp, FILE *out, unsigned char *key) {
   unsigned short round = 0;

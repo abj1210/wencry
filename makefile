@@ -1,5 +1,5 @@
 CC= gcc
-F= -O2
+F= -O2 -pg 
 SRC= ./src/
 INC= ./include/
 TST= ./test/
@@ -7,7 +7,7 @@ OBJS= main.o cry.o sha1.o aese.o aesd.o tab.o getval.o base64.o buffer.o key.o
 
 
 wencry: $(OBJS)
-	gcc $(F) $^ -o wencry
+	$(CC) $(F) $^ -o wencry
 
 cmp: $(TST)test.c
 	$(CC) $(TST)test.c -o cmp

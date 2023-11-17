@@ -9,13 +9,10 @@
 //将x循环右移i位
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
 //在GF(255)上执行乘法
-#define Gmul(u, v) ((v) ? Alogtable[Logtable[(u)] + Logtable[(v)]] : 0)
+#define Gmul(u, v) ((v) ? Alogtable[(u) + Logtable[(v)]] : 0)
 //在GF(255)上执行加法
 #define GMline(n0, n1, n2, n3)                                                 \
   Gmul(n0, b0) ^ Gmul(n1, b1) ^ Gmul(n2, b2) ^ Gmul(n3, b3)
-
-//#define NUM_THREADS 4
-//#define MULTI_ENABLE
 
 #define HASH0 0x67452301
 #define HASH1 0xEFCDAB89

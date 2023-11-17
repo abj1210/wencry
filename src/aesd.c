@@ -14,10 +14,10 @@ void resubbytes(struct state *w) {
   for (int i = 0; i < 4; ++i) {
     unsigned int t = *((unsigned int *)w->s[i]);
     *((unsigned int *)w->s[i]) =
-        ((unsigned int)r_sub_bytes(t & 0xff)) |
-        ((unsigned int)r_sub_bytes((t >> 8) & 0xff) << 8) |
-        ((unsigned int)r_sub_bytes((t >> 16) & 0xff) << 16) |
-        ((unsigned int)r_sub_bytes((t >> 24) & 0xff) << 24);
+        ((unsigned int)r_sub_bytes((unsigned char)t)) |
+        ((unsigned int)r_sub_bytes((unsigned char)(t >> 8)) << 8) |
+        ((unsigned int)r_sub_bytes((unsigned char)(t >> 16)) << 16) |
+        ((unsigned int)r_sub_bytes((unsigned char)(t >> 24)) << 24);
   }
 }
 /*
@@ -25,23 +25,22 @@ rerowshift:aes的还原rowshift步骤
 w:待操作的aes加解密单元指针
 */
 void rerowshift(struct state *w) {
-  for (int i = 0; i < 4; ++i) {
-    unsigned int *p = (unsigned int *)w->s[i];
-    *p = lrot(*p, i << 3);
-  }
+  *(unsigned int *)w->s[1] = lrot(*(unsigned int *)w->s[1], 8);
+  *(unsigned int *)w->s[2] = lrot(*(unsigned int *)w->s[2], 16);
+  *(unsigned int *)w->s[3] = lrot(*(unsigned int *)w->s[3], 24);
 }
 /*
 recolumnmix:aes的还原columnmix步骤
 w:待操作的aes加解密单元指针
 */
 void recolumnmix(struct state *w) {
-  for (unsigned char *p = ((unsigned char *)(w->s)), *pe = p + 0x4; p != pe;
+  for (register unsigned char *p = ((unsigned char *)(w->s)), *pe = p + 0x4; p != pe;
        ++p) {
-    unsigned char b0 = *p, b1 = *(p + 0x4), b2 = *(p + 0x8), b3 = *(p + 0xc);
-    (*p) = GMline(0x0e, 0x0b, 0x0d, 0x09);
-    (*(p + 0x4)) = GMline(0x09, 0x0e, 0x0b, 0x0d);
-    (*(p + 0x8)) = GMline(0x0d, 0x09, 0x0e, 0x0b);
-    (*(p + 0xc)) = GMline(0x0b, 0x0d, 0x09, 0x0e);
+    register unsigned char b0 = *p, b1 = *(p + 0x4), b2 = *(p + 0x8), b3 = *(p + 0xc);
+    (*p) = GMline(223, 104, 238, 199);
+    (*(p + 0x4)) = GMline(199, 223, 104, 238);
+    (*(p + 0x8)) = GMline(238, 199, 223, 104);
+    (*(p + 0xc)) = GMline(104, 238, 199, 223);
   }
 }
 /*
@@ -71,8 +70,7 @@ decaes_128bit:将一个128bit的数据块进行aes解密
 s:待加解密数据块的地址
 */
 void decaes_128bit(unsigned char *s) {
-  struct state *data = (struct state *)s;
-  firstdec(data);
+  firstdec((struct state *)s);
   for (int i = 8; i >= 0; --i)
-    commondec(data, i);
+    commondec((struct state *)s, i);
 }
