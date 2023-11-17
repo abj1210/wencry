@@ -28,7 +28,7 @@ test_once:
 analysis:
 	make wencry
 	./wencry -e $(TST)a.mp4 ABEiM0RVZneImaq7zN3u/w==
-	gprof wencry gmon.out > res.out
+	gprof wencry gmon.out > $(OUT)res.txt
 
 %.o: $(SRC)%.c
 	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC)

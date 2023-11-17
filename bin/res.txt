@@ -1,0 +1,286 @@
+Flat profile:
+
+Each sample counts as 0.01 seconds.
+  %   cumulative   self              self     total           
+ time   seconds   seconds    calls   s/call   s/call  name    
+ 41.34      1.05     1.05 95249799     0.00     0.00  columnmix
+ 17.32      1.49     0.44 10583311     0.00     0.00  runaes_128bit
+ 14.57      1.86     0.37  2645829     0.00     0.00  gethash
+ 12.99      2.19     0.33 105833110     0.00     0.00  subbytes
+  8.27      2.40     0.21  2645829     0.00     0.00  getwdata
+  1.57      2.44     0.04 10583311     0.00     0.00  lastround
+  1.18      2.47     0.03 10583311     0.00     0.00  encrypt_128bit
+  1.18      2.50     0.03 10583311     0.00     0.00  wwrite_buffer
+  1.18      2.53     0.03  2645828     0.00     0.00  read_buffer64
+  0.39      2.54     0.01 10583321     0.00     0.00  wread_buffer
+  0.00      2.54     0.00       11     0.00     0.00  load_buffer
+  0.00      2.54     0.00       10     0.00     0.00  genkey
+  0.00      2.54     0.00       10     0.00     0.00  store_buffer
+  0.00      2.54     0.00        1     0.00     0.00  base64_to_hex
+  0.00      2.54     0.00        1     0.00     2.54  enc
+  0.00      2.54     0.00        1     0.00     2.54  encrypt
+  0.00      2.54     0.00        1     0.00     0.00  final_write
+  0.00      2.54     0.00        1     0.00     0.00  getFileHeader
+  0.00      2.54     0.00        1     0.00     0.00  get_v_mod2
+  0.00      2.54     0.00        1     0.00     0.61  getsha1f
+  0.00      2.54     0.00        1     0.00     0.00  getsha1s
+  0.00      2.54     0.00        1     0.00     0.61  hashfile
+  0.00      2.54     0.00        1     0.00     0.00  hex_to_base64
+  0.00      2.54     0.00        1     0.00     0.00  init
+  0.00      2.54     0.00        1     0.00     0.00  initgen
+  0.00      2.54     0.00        1     0.00     0.00  over
+
+ %         the percentage of the total running time of the
+time       program used by this function.
+
+cumulative a running sum of the number of seconds accounted
+ seconds   for by this function and those listed above it.
+
+ self      the number of seconds accounted for by this
+seconds    function alone.  This is the major sort for this
+           listing.
+
+calls      the number of times this function was invoked, if
+           this function is profiled, else blank.
+
+ self      the average number of milliseconds spent in this
+ms/call    function per call, if this function is profiled,
+	   else blank.
+
+ total     the average number of milliseconds spent in this
+ms/call    function and its descendents per call, if this
+	   function is profiled, else blank.
+
+name       the name of the function.  This is the minor sort
+           for this listing. The index shows the location of
+	   the function in the gprof listing. If the index is
+	   in parenthesis it shows where it would appear in
+	   the gprof listing if it were to be printed.
+
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+		     Call graph (explanation follows)
+
+
+granularity: each sample hit covers 4 byte(s) for 0.39% of 2.54 seconds
+
+index % time    self  children    called     name
+                0.00    2.54       1/1           encrypt [2]
+[1]    100.0    0.00    2.54       1         enc [1]
+                0.03    1.90 10583311/10583311     encrypt_128bit [4]
+                0.00    0.61       1/1           hashfile [8]
+                0.00    0.00       1/1           getFileHeader [16]
+                0.00    0.00       1/1           initgen [26]
+                0.00    0.00       1/11          load_buffer [18]
+-----------------------------------------------
+                0.00    2.54       1/1           main [3]
+[2]    100.0    0.00    2.54       1         encrypt [2]
+                0.00    2.54       1/1           enc [1]
+-----------------------------------------------
+                                                 <spontaneous>
+[3]    100.0    0.00    2.54                 main [3]
+                0.00    2.54       1/1           encrypt [2]
+                0.00    0.00       1/1           init [25]
+                0.00    0.00       1/1           get_v_mod2 [23]
+                0.00    0.00       1/1           over [27]
+-----------------------------------------------
+                0.03    1.90 10583311/10583311     enc [1]
+[4]     76.0    0.03    1.90 10583311         encrypt_128bit [4]
+                0.44    1.35 10583311/10583311     runaes_128bit [5]
+                0.04    0.03 10583311/10583311     lastround [12]
+                0.03    0.00 10583311/10583311     wwrite_buffer [13]
+                0.01    0.00 10583321/10583321     wread_buffer [15]
+                0.00    0.00      10/11          load_buffer [18]
+                0.00    0.00      10/10          store_buffer [20]
+                0.00    0.00       1/1           final_write [22]
+-----------------------------------------------
+                0.44    1.35 10583311/10583311     encrypt_128bit [4]
+[5]     70.4    0.44    1.35 10583311         runaes_128bit [5]
+                1.05    0.00 95249799/95249799     columnmix [6]
+                0.30    0.00 95249799/105833110     subbytes [10]
+-----------------------------------------------
+                1.05    0.00 95249799/95249799     runaes_128bit [5]
+[6]     41.3    1.05    0.00 95249799         columnmix [6]
+-----------------------------------------------
+                0.00    0.61       1/1           hashfile [8]
+[7]     24.0    0.00    0.61       1         getsha1f [7]
+                0.37    0.00 2645828/2645829     gethash [9]
+                0.21    0.00 2645828/2645829     getwdata [11]
+                0.03    0.00 2645828/2645828     read_buffer64 [14]
+-----------------------------------------------
+                0.00    0.61       1/1           enc [1]
+[8]     24.0    0.00    0.61       1         hashfile [8]
+                0.00    0.61       1/1           getsha1f [7]
+-----------------------------------------------
+                0.00    0.00       1/2645829     getsha1s [17]
+                0.37    0.00 2645828/2645829     getsha1f [7]
+[9]     14.6    0.37    0.00 2645829         gethash [9]
+-----------------------------------------------
+                0.03    0.00 10583311/105833110     lastround [12]
+                0.30    0.00 95249799/105833110     runaes_128bit [5]
+[10]    13.0    0.33    0.00 105833110         subbytes [10]
+-----------------------------------------------
+                0.00    0.00       1/2645829     getsha1s [17]
+                0.21    0.00 2645828/2645829     getsha1f [7]
+[11]     8.3    0.21    0.00 2645829         getwdata [11]
+-----------------------------------------------
+                0.04    0.03 10583311/10583311     encrypt_128bit [4]
+[12]     2.9    0.04    0.03 10583311         lastround [12]
+                0.03    0.00 10583311/105833110     subbytes [10]
+-----------------------------------------------
+                0.03    0.00 10583311/10583311     encrypt_128bit [4]
+[13]     1.2    0.03    0.00 10583311         wwrite_buffer [13]
+-----------------------------------------------
+                0.03    0.00 2645828/2645828     getsha1f [7]
+[14]     1.2    0.03    0.00 2645828         read_buffer64 [14]
+-----------------------------------------------
+                0.01    0.00 10583321/10583321     encrypt_128bit [4]
+[15]     0.4    0.01    0.00 10583321         wread_buffer [15]
+-----------------------------------------------
+                0.00    0.00       1/1           enc [1]
+[16]     0.0    0.00    0.00       1         getFileHeader [16]
+                0.00    0.00       1/1           getsha1s [17]
+-----------------------------------------------
+                0.00    0.00       1/1           getFileHeader [16]
+[17]     0.0    0.00    0.00       1         getsha1s [17]
+                0.00    0.00       1/2645829     gethash [9]
+                0.00    0.00       1/2645829     getwdata [11]
+-----------------------------------------------
+                0.00    0.00       1/11          enc [1]
+                0.00    0.00      10/11          encrypt_128bit [4]
+[18]     0.0    0.00    0.00      11         load_buffer [18]
+-----------------------------------------------
+                0.00    0.00      10/10          initgen [26]
+[19]     0.0    0.00    0.00      10         genkey [19]
+-----------------------------------------------
+                0.00    0.00      10/10          encrypt_128bit [4]
+[20]     0.0    0.00    0.00      10         store_buffer [20]
+-----------------------------------------------
+                0.00    0.00       1/1           get_v_mod2 [23]
+[21]     0.0    0.00    0.00       1         base64_to_hex [21]
+-----------------------------------------------
+                0.00    0.00       1/1           encrypt_128bit [4]
+[22]     0.0    0.00    0.00       1         final_write [22]
+-----------------------------------------------
+                0.00    0.00       1/1           main [3]
+[23]     0.0    0.00    0.00       1         get_v_mod2 [23]
+                0.00    0.00       1/1           hex_to_base64 [24]
+                0.00    0.00       1/1           base64_to_hex [21]
+-----------------------------------------------
+                0.00    0.00       1/1           get_v_mod2 [23]
+[24]     0.0    0.00    0.00       1         hex_to_base64 [24]
+-----------------------------------------------
+                0.00    0.00       1/1           main [3]
+[25]     0.0    0.00    0.00       1         init [25]
+-----------------------------------------------
+                0.00    0.00       1/1           enc [1]
+[26]     0.0    0.00    0.00       1         initgen [26]
+                0.00    0.00      10/10          genkey [19]
+-----------------------------------------------
+                0.00    0.00       1/1           main [3]
+[27]     0.0    0.00    0.00       1         over [27]
+-----------------------------------------------
+
+ This table describes the call tree of the program, and was sorted by
+ the total amount of time spent in each function and its children.
+
+ Each entry in this table consists of several lines.  The line with the
+ index number at the left hand margin lists the current function.
+ The lines above it list the functions that called this function,
+ and the lines below it list the functions this one called.
+ This line lists:
+     index	A unique number given to each element of the table.
+		Index numbers are sorted numerically.
+		The index number is printed next to every function name so
+		it is easier to look up where the function is in the table.
+
+     % time	This is the percentage of the `total' time that was spent
+		in this function and its children.  Note that due to
+		different viewpoints, functions excluded by options, etc,
+		these numbers will NOT add up to 100%.
+
+     self	This is the total amount of time spent in this function.
+
+     children	This is the total amount of time propagated into this
+		function by its children.
+
+     called	This is the number of times the function was called.
+		If the function called itself recursively, the number
+		only includes non-recursive calls, and is followed by
+		a `+' and the number of recursive calls.
+
+     name	The name of the current function.  The index number is
+		printed after it.  If the function is a member of a
+		cycle, the cycle number is printed between the
+		function's name and the index number.
+
+
+ For the function's parents, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the function into this parent.
+
+     children	This is the amount of time that was propagated from
+		the function's children into this parent.
+
+     called	This is the number of times this parent called the
+		function `/' the total number of times the function
+		was called.  Recursive calls to the function are not
+		included in the number after the `/'.
+
+     name	This is the name of the parent.  The parent's index
+		number is printed after it.  If the parent is a
+		member of a cycle, the cycle number is printed between
+		the name and the index number.
+
+ If the parents of the function cannot be determined, the word
+ `<spontaneous>' is printed in the `name' field, and all the other
+ fields are blank.
+
+ For the function's children, the fields have the following meanings:
+
+     self	This is the amount of time that was propagated directly
+		from the child into the function.
+
+     children	This is the amount of time that was propagated from the
+		child's children to the function.
+
+     called	This is the number of times the function called
+		this child `/' the total number of times the child
+		was called.  Recursive calls by the child are not
+		listed in the number after the `/'.
+
+     name	This is the name of the child.  The child's index
+		number is printed after it.  If the child is a
+		member of a cycle, the cycle number is printed
+		between the name and the index number.
+
+ If there are any cycles (circles) in the call graph, there is an
+ entry for the cycle-as-a-whole.  This entry shows who called the
+ cycle (as parents) and the members of the cycle (as children.)
+ The `+' recursive calls entry shows the number of function calls that
+ were internal to the cycle, and the calls entry for each member shows,
+ for that member, how many times it was called from other members of
+ the cycle.
+
+Copyright (C) 2012-2022 Free Software Foundation, Inc.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved.
+
+Index by function name
+
+  [21] base64_to_hex           [9] gethash                [18] load_buffer
+   [6] columnmix               [7] getsha1f               [27] over
+   [1] enc                    [17] getsha1s               [14] read_buffer64
+   [2] encrypt                [11] getwdata                [5] runaes_128bit
+   [4] encrypt_128bit          [8] hashfile               [20] store_buffer
+  [22] final_write            [24] hex_to_base64          [10] subbytes
+  [19] genkey                 [25] init                   [15] wread_buffer
+  [16] getFileHeader          [26] initgen                [13] wwrite_buffer
+  [23] get_v_mod2             [12] lastround
