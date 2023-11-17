@@ -1,35 +1,8 @@
 #include "../include/util.h"
 
-#include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-/*
-read_buffer:从缓冲区读取16B数据
-fp:缓冲区加载的文件指针
-block:读取数据的地址
-ibuf:输入缓冲区的指针
-return:读取的字节数
-*/
-unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer *ibuf) {
-  unsigned int res = 0;
-  if (ibuf->now == BUF_SZ || ibuf->load == 0) {
-    unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
-    ibuf->tail = sum & 0xf;
-    ibuf->total = sum >> 4;
-    ibuf->now = 0;
-    ibuf->load = 1;
-  }
 
-  if (ibuf->now == ibuf->total) {
-    memcpy(block, ibuf->b[ibuf->now], ibuf->tail);
-    res = ibuf->tail;
-    ibuf->tail = 0;
-  } else {
-    memcpy(block, ibuf->b[ibuf->now], 16);
-    res = 16;
-    ibuf->now++;
-  }
-  return res;
-}
 /*
 bufferover:缓冲区和文件是否读取完毕
 ibuf:输入缓冲区的指针
@@ -39,20 +12,7 @@ unsigned int bufferover(struct buffer *ibuf) {
   return (ibuf->now == ibuf->total) && (ibuf->total != BUF_SZ) &&
          (ibuf->tail == 0);
 }
-/*
-write_buffer:向缓冲区写入16B数据
-fp:缓冲区存储的文件指针
-block:写入数据的地址
-obuf:输出缓冲区的指针
-*/
-void write_buffer(FILE *fp, unsigned char *block, struct buffer *obuf) {
-  memcpy(obuf->b[obuf->total], block, 16);
-  obuf->total++;
-  if (obuf->total == BUF_SZ) {
-    fwrite(obuf->b, 1, BUF_SZ << 4, fp);
-    obuf->total = 0;
-  }
-}
+
 /*
 final_write:将缓冲区内容保存到文件并关闭缓冲区
 fp:缓冲区存储的文件指针

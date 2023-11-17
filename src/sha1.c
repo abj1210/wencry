@@ -14,9 +14,10 @@ return:w的地址
 */
 struct wdata *getwdata(unsigned char *s, struct wdata *w) {
   for (int i = 0; i < 80; ++i) {
+    int b = i << 2;
     if (i < 16)
-      w->w[i] = ((unsigned)s[(i << 2) | 3]) | ((unsigned)s[(i << 2) | 2] << 8) |
-                ((unsigned)s[(i << 2) | 1] << 16) | ((unsigned)s[i << 2] << 24);
+      w->w[i] = ((unsigned)s[b | 3]) | ((unsigned)s[b | 2] << 8) |
+                ((unsigned)s[b | 1] << 16) | ((unsigned)s[b] << 24);
     else
       w->w[i] = lrot(
           ((w->w[i - 3]) ^ (w->w[i - 8]) ^ (w->w[i - 14]) ^ (w->w[i - 16])), 1);
@@ -29,49 +30,49 @@ h:上一步的哈希值
 w:生成的w数组
 */
 void gethash(struct hash *h, struct wdata *w) {
-  struct hash temph;
+  unsigned int temph0 = h->h[0], temph1 = h->h[1], temph2 = h->h[2],
+               temph3 = h->h[3], temph4 = h->h[4];
   unsigned int f, k, temp;
-  memcpy(&temph, h, sizeof(temph));
 
   for (unsigned int i = 0; i < 80; ++i) {
     switch (i / 20) {
     case (0): {
-      f = (temph.h[1] & temph.h[2]) | ((~temph.h[1]) & temph.h[3]);
+      f = (temph1 & temph2) | ((~temph1) & temph3);
       k = 0x5A827999;
       break;
     }
     case (1): {
-      f = temph.h[1] ^ temph.h[2] ^ temph.h[3];
+      f = temph1 ^ temph2 ^ temph3;
       k = 0x6ED9EBA1;
       break;
     }
     case (2): {
-      f = (temph.h[1] & temph.h[2]) | (temph.h[1] & temph.h[3]) |
-          (temph.h[2] & temph.h[3]);
+      f = (temph1 & temph2) | (temph1 & temph3) | (temph2 & temph3);
       k = 0x8F1BBCDC;
       break;
     }
     case (3): {
-      f = temph.h[1] ^ temph.h[2] ^ temph.h[3];
+      f = temph1 ^ temph2 ^ temph3;
       k = 0xCA62C1D6;
       break;
     }
     }
-    temp = lrot(temph.h[0], 5) + f + k + temph.h[4] + w->w[i];
-    temph.h[4] = temph.h[3];
-    temph.h[3] = temph.h[2];
-    temph.h[2] = lrot(temph.h[1], 30);
-    temph.h[1] = temph.h[0];
-    temph.h[0] = temp;
+    temp = lrot(temph0, 5) + f + k + temph4 + w->w[i];
+    temph4 = temph3;
+    temph3 = temph2;
+    temph2 = lrot(temph1, 30);
+    temph1 = temph0;
+    temph0 = temp;
   }
 
-  h->h[0] += temph.h[0];
-  h->h[1] += temph.h[1];
-  h->h[2] += temph.h[2];
-  h->h[3] += temph.h[3];
-  h->h[4] += temph.h[4];
+  h->h[0] += temph0;
+  h->h[1] += temph1;
+  h->h[2] += temph2;
+  h->h[3] += temph3;
+  h->h[4] += temph4;
 }
 /*
+接口函数
 getsha1f:获取文件的sha1哈希值
 fp:输入文件
 return:生成的sha1哈希序列
@@ -116,6 +117,7 @@ unsigned char *getsha1f(FILE *fp) {
   return sha1res;
 }
 /*
+接口函数
 getsha1f:获取字符串的sha1哈希值
 s:输入字符串
 n:字符串长度

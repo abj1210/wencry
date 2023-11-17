@@ -37,9 +37,7 @@ struct buffer64 {
   unsigned char load;
 };
 
-unsigned int read_buffer(FILE *fp, unsigned char *block, struct buffer *ibuf);
 unsigned int bufferover(struct buffer *ibuf);
-void write_buffer(FILE *fp, unsigned char *block, struct buffer *obuf);
 void final_write(FILE *fp, struct buffer *obuf);
 unsigned int read_buffer64(FILE *fp, unsigned char *block,
                            struct buffer64 *ibuf64);

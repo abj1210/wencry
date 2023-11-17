@@ -3,12 +3,11 @@ F= -O2
 SRC= ./src/
 INC= ./include/
 TST= ./test/
-OBJS= main.o cry.o sha1.o aese.o aesd.o tab.o getval.o base64.o buffer.o
+OBJS= main.o cry.o sha1.o aese.o aesd.o tab.o getval.o base64.o buffer.o key.o
 
 
 wencry: $(OBJS)
 	gcc $(F) $^ -o wencry
-	rm -rf *.o
 
 cmp: $(TST)test.c
 	$(CC) $(TST)test.c -o cmp

@@ -2,9 +2,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../include/cry.h"
 #include "../include/getval.h"
+#include "../include/key.h"
 #include "../include/util.h"
+
+extern void hex_to_base64(unsigned char *hex_in, int len,
+                          unsigned char *base64_out);
+extern void base64_to_hex(unsigned char *base64_in, int len,
+                          unsigned char *hex_out);
+
 /*
 getInputFilep:从输入中获取文件指针
 return:获取的文件指针
@@ -38,6 +44,7 @@ unsigned char *getInputKey() {
   return key;
 }
 /*
+接口函数
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
@@ -76,10 +83,16 @@ struct vpak get_v_mod1() {
     }
     res.key = getInputKey();
   }
+  unsigned char outk[128];
+  memset(outk, 0, sizeof(outk));
+  printf("Key is: \n");
+  hex_to_base64(res.key, 16, outk);
+  printf("%s\n", outk);
   return res;
 }
 /*
-get_v_mod1:根据输入的变量获得参数包
+接口函数
+get_v_mod2:根据输入的变量获得参数包
 argc:变量数目
 argv:变量值列表
 return:返回的参数包
@@ -122,5 +135,10 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
       res.out = fopen(argv[4], "wb+");
     }
   }
+  unsigned char outk[128];
+  memset(outk, 0, sizeof(outk));
+  printf("Key is: \n");
+  hex_to_base64(res.key, 16, outk);
+  printf("%s\n", outk);
   return res;
 }

@@ -2,8 +2,6 @@
 #define STU
 
 #include <stdio.h>
-
-#include "def.h"
 /*
 state:用于aes操作的基本单元
 s:16B数据

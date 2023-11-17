@@ -1,32 +1,22 @@
-#include <pthread.h>
+
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 #include "../include/aes.h"
 #include "../include/cry.h"
+#include "../include/key.h"
 #include "../include/sha1.h"
 #include "../include/util.h"
 
 struct buffer ibuf, obuf;
 /*
+接口函数
 init:初始化设置
 */
 void init() {
   srand(time(NULL));
   obuf.total = 0;
-}
-/*
-gen_key:随机产生一初始密钥
-return:产生的初始密钥
-*/
-unsigned char *gen_key() {
-  unsigned char *key = (unsigned char *)malloc(16 * sizeof(unsigned char));
-  for (int i = 0; i < 16; i++) {
-    key[i] = rand() & 0xff;
-  }
-  return key;
 }
 /*
 cmphash:比较哈希值
@@ -185,6 +175,7 @@ int decrypt_128bit(int idx, int tail, FILE *fp, FILE *out) {
   return idx;
 }
 /*
+接口函数
 enc:将文件加密
 fp:输入文件
 out:加密后文件
@@ -223,7 +214,8 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   return;
 }
 /*
-enc:将文件解密
+接口函数
+dec:将文件解密
 fp:输入文件
 out:解密后文件
 key:初始密钥序列

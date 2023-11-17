@@ -8,14 +8,11 @@
 #define lrot(x, i) (((x) << (i)) | ((x) >> (32 - i)))
 //将x循环右移i位
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
-
-#define Gidx(u, v) (Logtable[(u)] + Logtable[(v)])
-#define Gmul(idx, v) ((v) ? Alogtable[mod255(idx)] : 0)
-#define mod255(x) ((x & 255) + (x >> 8))
-#define GMline Gmul(idx0, b0) ^ Gmul(idx1, b1) ^ Gmul(idx2, b2) ^ Gmul(idx3, b3)
-#define GIline(n0, n1, n2, n3)                                                 \
-  idx0 = Gidx(n0, b0), idx1 = Gidx(n1, b1), idx2 = Gidx(n2, b2),               \
-  idx3 = Gidx(n3, b3)
+//在GF(255)上执行乘法
+#define Gmul(u, v) ((v) ? Alogtable[Logtable[(u)] + Logtable[(v)]] : 0)
+//在GF(255)上执行加法
+#define GMline(n0, n1, n2, n3)                                                 \
+  Gmul(n0, b0) ^ Gmul(n1, b1) ^ Gmul(n2, b2) ^ Gmul(n3, b3)
 
 //#define NUM_THREADS 4
 //#define MULTI_ENABLE
