@@ -1,7 +1,7 @@
-#include "stdlib.h"
+#include "key.h"
+#include "util.h"
 
-#include "../include/key.h"
-#include "../include/util.h"
+#include "stdlib.h"
 
 extern const unsigned char s_box[256], rs_box[256];
 extern const unsigned char RC[11];

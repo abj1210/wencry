@@ -1,10 +1,10 @@
+#include "getval.h"
+#include "key.h"
+#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "../include/getval.h"
-#include "../include/key.h"
-#include "../include/util.h"
 
 extern void hex_to_base64(unsigned char *hex_in, int len,
                           unsigned char *base64_out);

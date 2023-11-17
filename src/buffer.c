@@ -1,8 +1,8 @@
-#include "../include/util.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <string.h>
-
+struct buffer ibuf, obuf;
 /*
 bufferover:缓冲区和文件是否读取完毕
 ibuf:输入缓冲区的指针

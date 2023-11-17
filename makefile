@@ -1,13 +1,15 @@
 CC= gcc
-F= -O2 -pg 
+F= -O2
 SRC= ./src/
 INC= ./include/
 TST= ./test/
-OBJS= main.o cry.o sha1.o aese.o aesd.o tab.o getval.o base64.o buffer.o key.o
+OUT= ./bin/
+OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o tab.o getval.o base64.o buffer.o key.o
+
 
 
 wencry: $(OBJS)
-	$(CC) $(F) $^ -o wencry
+	$(CC) $(F) $(OUT)*.o -o wencry -I $(INC)
 
 cmp: $(TST)test.c
 	$(CC) $(TST)test.c -o cmp
@@ -29,10 +31,10 @@ analysis:
 	gprof wencry gmon.out > res.out
 
 %.o: $(SRC)%.c
-	$(CC) $(F) -c $< -o $@
+	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC)
 
 clean:
-	rm -rf *.o *.out wencry cmp
+	rm -rf $(OUT)*.o $(TST)*.wenc wencry cmp
 
 format:
 	clang-format -i $(SRC)*.c

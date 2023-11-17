@@ -1,9 +1,9 @@
+#include "sha1.h"
+#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "../include/sha1.h"
-#include "../include/util.h"
 
 struct buffer64 ibuf64;
 /*

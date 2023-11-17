@@ -1,7 +1,6 @@
 #ifndef CRY
 #define CRY
-
-void init();
+#include "util.h"
 void enc(FILE *fp, FILE *out, unsigned char *key);
 int dec(FILE *fp, FILE *out, unsigned char *key);
 

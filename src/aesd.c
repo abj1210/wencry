@@ -1,11 +1,11 @@
-#include "../include/aes.h"
-#include "../include/util.h"
+#include "aes.h"
+#include "util.h"
 
-extern void addroundkey(struct state *w, struct state *key);
 extern const unsigned char s_box[256], rs_box[256];
 extern const unsigned char Logtable[256], Alogtable[512];
 extern struct state keyg[11];
 extern struct buffer ibuf, obuf; //输入和输出缓冲区
+extern void addroundkey(struct state *w, struct state *key);
 /*
 resubbytes:aes的还原subbytes步骤
 w:待操作的aes加解密单元指针
@@ -33,10 +33,11 @@ void rerowshift(struct state *w) {
 recolumnmix:aes的还原columnmix步骤
 w:待操作的aes加解密单元指针
 */
-void recolumnmix(struct state *w) {
-  for (register unsigned char *p = ((unsigned char *)(w->s)), *pe = p + 0x4; p != pe;
-       ++p) {
-    register unsigned char b0 = *p, b1 = *(p + 0x4), b2 = *(p + 0x8), b3 = *(p + 0xc);
+static void recolumnmix(struct state *w) {
+  for (register unsigned char *p = ((unsigned char *)(w->s)), *pe = p + 0x4;
+       p != pe; ++p) {
+    register unsigned char b0 = *p, b1 = *(p + 0x4), b2 = *(p + 0x8),
+                           b3 = *(p + 0xc);
     (*p) = GMline(223, 104, 238, 199);
     (*(p + 0x4)) = GMline(199, 223, 104, 238);
     (*(p + 0x8)) = GMline(238, 199, 223, 104);

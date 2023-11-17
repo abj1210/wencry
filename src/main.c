@@ -1,11 +1,21 @@
+#include "cry.h"
+#include "getval.h"
+#include "util.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 
-#include "../include/cry.h"
-#include "../include/getval.h"
-#include "../include/util.h"
+extern struct buffer ibuf, obuf;
+/*
+init:初始化设置
+*/
+void init() {
+  srand(time(NULL));
+  ibuf.total = 0;
+  obuf.total = 0;
+}
 
 /*
 encrypt: 根据传入的参数包设置加密参数并运行加密程序
