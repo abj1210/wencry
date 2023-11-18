@@ -9,7 +9,6 @@ int main(int argc, char *argv[]){
     fwrite(buffer, 1, BUFFER_SIZE, fp);
     fwrite(buffer, 1, BUFFER_SIZE, fp);
     fwrite(buffer, 1, BUFFER_SIZE, fp);
-    fwrite(buffer, 1, BUFFER_SIZE, fp);
     fclose(fp);
     return 0;
 }
