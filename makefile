@@ -46,7 +46,7 @@ analysis:
 	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC)
 
 clean:
-	rm -rf $(OUT)*.o $(TST)*.wenc $(TST)aa.mp4 wencry cmp
+	rm -rf $(OUT)*.o $(TST)*.wenc $(TST)aa.mp4 wencry cmp speedfile
 
 format:
 	clang-format -i $(SRC)*.c
