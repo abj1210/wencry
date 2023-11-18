@@ -51,7 +51,7 @@ return:返回的参数包
 struct vpak get_v_mod1() {
   struct vpak res;
   int r;
-  printf("Need encrypt or decrypt?(e/d) ");
+  printf("Need encrypt, verify or decrypt?(e/v/d) ");
   r = scanf("%c", &res.mode);
   printf("File name:\n");
   char fn[] = "out", outn[138];
@@ -68,20 +68,28 @@ struct vpak get_v_mod1() {
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
   } else {
-    char decn[128];
-    printf("Need a new name for decrypted file?(y/n) ");
-    char flag;
-    r = scanf("%*[\n]%c", &flag);
-    if (flag == 'y' || flag == 'Y') {
-      printf("Enter new name:\n");
-      r = scanf("%*[\n]");
-      r = scanf("%s", decn);
-      res.out = fopen(decn, "wb+");
+    if (res.mode == 'd' || res.mode == 'D') {
+      char decn[128];
+      printf("Need a new name for decrypted file?(y/n) ");
+      char flag;
+      r = scanf("%*[\n]%c", &flag);
+      if (flag == 'y' || flag == 'Y') {
+        printf("Enter new name:\n");
+        r = scanf("%*[\n]");
+        r = scanf("%s", decn);
+        res.out = fopen(decn, "wb+");
+      } else {
+        sprintf(outn, "%s.wdec", fn);
+        res.out = fopen(outn, "wb+");
+      }
+      res.key = getInputKey();
+    } else if (res.mode == 'v') {
+      res.key = getInputKey();
+      res.out = NULL;
     } else {
-      sprintf(outn, "%s.wdec", fn);
-      res.out = fopen(outn, "wb+");
+      res.fp = NULL;
+      return res;
     }
-    res.key = getInputKey();
   }
   unsigned char outk[128];
   memset(outk, 0, sizeof(outk));
@@ -119,7 +127,7 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
       sprintf(outn, "%s.wenc", argv[4]);
     }
     res.out = fopen(outn, "wb+");
-  } else {
+  } else if (strcmp(argv[1], "-d") == 0) {
     res.fp = fopen(argv[2], "rb");
     if (res.fp == NULL) {
       printf("File not found.\n");
@@ -134,6 +142,18 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
     } else {
       res.out = fopen(argv[4], "wb+");
     }
+  } else if (strcmp(argv[1], "-v") == 0) {
+    res.fp = fopen(argv[2], "rb");
+    res.out = NULL;
+    if (res.fp == NULL) {
+      printf("File not found.\n");
+      return res;
+    }
+    res.key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+    base64_to_hex((unsigned char *)argv[3], strlen(argv[3]), res.key);
+  } else {
+    res.fp = NULL;
+    return res;
   }
   unsigned char outk[128];
   memset(outk, 0, sizeof(outk));

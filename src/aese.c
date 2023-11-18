@@ -11,23 +11,21 @@ w:待操作的aes加解密单元指针
 key:相应的轮密钥指针
 */
 void addroundkey(struct state *w, struct state *key) {
-  *(unsigned int *)w->s[0] ^= *(unsigned int *)key->s[0];
-  *(unsigned int *)w->s[1] ^= *(unsigned int *)key->s[1];
-  *(unsigned int *)w->s[2] ^= *(unsigned int *)key->s[2];
-  *(unsigned int *)w->s[3] ^= *(unsigned int *)key->s[3];
+  unsigned int *p = (unsigned int *)w->s[0], *k = (unsigned int *)key->s[0];
+  *p ^= *k, *(p + 1) ^= *(k + 1), *(p + 2) ^= *(k + 2), *(p + 3) ^= *(k + 3);
 }
 /*
 subbytes:aes的subbytes操作
 w:待操作的aes加解密单元指针
 */
 void subbytes(struct state *w) {
+  unsigned int *p = (unsigned int *)w->s[0];
   for (int i = 0; i < 4; ++i) {
-    unsigned int t = *((unsigned int *)w->s[i]);
-    *((unsigned int *)w->s[i]) =
-        ((unsigned int)sub_bytes((unsigned char)t)) |
-        ((unsigned int)sub_bytes((unsigned char)(t >> 8)) << 8) |
-        ((unsigned int)sub_bytes((unsigned char)(t >> 16)) << 16) |
-        ((unsigned int)sub_bytes((unsigned char)(t >> 24)) << 24);
+    unsigned int t = *(p + i);
+    *(p + i) = ((unsigned int)sub_bytes((unsigned char)t)) |
+               ((unsigned int)sub_bytes((unsigned char)(t >> 8)) << 8) |
+               ((unsigned int)sub_bytes((unsigned char)(t >> 16)) << 16) |
+               ((unsigned int)sub_bytes((unsigned char)(t >> 24)) << 24);
   }
 }
 /*
@@ -35,15 +33,16 @@ rowshift:aes的rowshift操作
 w:待操作的aes加解密单元指针
 */
 void rowshift(struct state *w) {
-  *(unsigned int *)w->s[1] = rrot(*(unsigned int *)w->s[1], 8);
-  *(unsigned int *)w->s[2] = rrot(*(unsigned int *)w->s[2], 16);
-  *(unsigned int *)w->s[3] = rrot(*(unsigned int *)w->s[3], 24);
+  unsigned int *p = (unsigned int *)w->s[1];
+  *p = rrot(*p, 8);
+  *(p + 1) = rrot(*(p + 1), 16);
+  *(p + 2) = rrot(*(p + 2), 24);
 }
 /*
 columnmix:aes的columnmix操作
 w:待操作的aes加解密单元指针
 */
-static void columnmix(struct state *w) {
+void columnmix(struct state *w) {
   for (register unsigned char *p = ((unsigned char *)(w->s)), *pe = p + 0x4;
        p != pe; ++p) {
     register unsigned char b0 = *p, b1 = *(p + 0x4), b2 = *(p + 0x8),

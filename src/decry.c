@@ -9,7 +9,6 @@
 #include <time.h>
 
 extern struct buffer ibuf, obuf;
-extern int printOut(int bnum);
 /*
 cmphash:比较哈希值
 h1:待比较的哈希数组
@@ -67,36 +66,66 @@ int checkFile(FILE *fp) {
   return tail;
 }
 /*
-decrypt_128bit:从输入缓冲区获取128bit数据进行解密并写入输出缓冲区
-idx:待从输入缓冲区获取的16B单元索引
+decrypt_file:从输入缓冲区获取文件数据进行解密并写入输出缓冲区
 tail:原文件大小与16的模
 fp:输入文件
 out:输出文件
-return:下一次加密时的索引,若为-1则代表加密结束
 */
-int decrypt_128bit(int idx, int tail, FILE *fp, FILE *out) {
+void decrypt_file(int tail, FILE *fp, FILE *out) {
+  fseek(fp, 41, SEEK_SET);
+  struct buffer *input = &ibuf, *output = &obuf;
+  int tsum = load_buffer(fp, input);
+  printf("Buffer loaded %dMB:*", BUF_SZ >> 16);
+  fflush(stdout);
   unsigned char block[16];
-  char sum = wread_buffer(idx, block, &ibuf);
-  if (sum == -1) {
-    int tsum = load_buffer(fp, &ibuf);
-    if (tsum == 0) {
-      final_write(out, &obuf);
-      fwrite(block, 1, tail, out);
-      return -1;
+  int idx = 0;
+  while (1) {
+    char sum = wread_buffer(idx, block, input);
+    if (sum == -1) {
+      int tsum = load_buffer(fp, input);
+      printf("*");
+      fflush(stdout);
+      if (tsum == 0) {
+        final_write(out, output);
+        fwrite(block, 1, tail, out);
+        break;
+      }
+      idx = 0;
+      store_buffer(out, output);
+      sum = wread_buffer(idx, block, input);
     }
-    idx = 0;
-    store_buffer(out, &obuf);
-    sum = wread_buffer(idx, block, &ibuf);
+    decaes_128bit(block);
+    if (bufferover(input)) {
+      final_write(out, output);
+      fwrite(block, 1, tail, out);
+      break;
+    } else
+      wwrite_buffer(idx, block, output);
+    idx++;
   }
-  decaes_128bit(block);
-  if (bufferover(&ibuf)) {
-    final_write(out, &obuf);
-    fwrite(block, 1, tail, out);
-    return -1;
+  printf("\n");
+}
+/*
+接口函数
+verify:验证密钥和文件
+fp:输入文件
+key:初始密钥序列
+return:若为非负数则检查通过,返回值为原文件大小与16的模,否则检查不通过
+*/
+int verify(FILE *fp, unsigned char *key) {
+  printf("Begin to check.\n");
+  int res = checkKey(fp, key);
+  if (res < 0) {
+    printf("File check fail.\n");
+    return res;
   } else
-    wwrite_buffer(idx, block, &obuf);
-  idx++;
-  return idx;
+    printf("Key check OK.\n");
+  res = checkFile(fp);
+  if (res < 0)
+    printf("File check fail.\n");
+  else
+    printf("File check OK.\n");
+  return res;
 }
 /*
 接口函数
@@ -107,42 +136,13 @@ key:初始密钥序列
 return:若成功解密则返回0,否则返回非零值
 */
 int dec(FILE *fp, FILE *out, unsigned char *key) {
-  unsigned short round = 0;
-  unsigned int bnum = 0;
-  int tail = 0;
-  printf("Begin to check.\n");
-  int res = checkKey(fp, key);
-  if (res < 0)
-    return -res;
-  printf("Key check OK.\n");
-  res = checkFile(fp);
-  if (res < 0)
-    return -res;
-  else
-    tail = res;
-  printf("File check OK.\n");
-
-  fseek(fp, 41, SEEK_SET);
+  int tail = verify(fp, key);
+  if (tail < 0)
+    return -tail;
   initgen(key);
   printf("Begin to decrypt.\n");
-  printf("Decrypted: 00000000 MB.");
-  fflush(stdout);
-#ifdef MULTI_ENABLE
-  int tsum = load_buffer(fp, &ibuf);
-#else
-  int tsum = load_buffer(fp, &ibuf);
-#endif
-  int idx = 0;
-  while (1) {
-    round++;
-    if (round == 0)
-      bnum = printOut(bnum);
-    idx = decrypt_128bit(idx, tail, fp, out);
-    if (idx == -1)
-      break;
-  }
-  printf("\n Decrypted.\n");
-
+  decrypt_file(tail, fp, out);
+  printf("Decrypted.\n");
   printf("Execute over!\n");
   return 0;
 }

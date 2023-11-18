@@ -17,3 +17,5 @@ jobs:
       run: make clean
     - name: make_test
       run: make test_once
+    - name: test_speed
+      run: make analysis_git

@@ -4,7 +4,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
 struct buffer64 ibuf64;
 /*
 getwdata:根据每个输入单元生成sha1中w数组的值
@@ -12,17 +11,18 @@ s:输入的单元
 w:生成的w数组
 return:w的地址
 */
-struct wdata *getwdata(unsigned char *s, struct wdata *w) {
-  for (int i = 0; i < 80; ++i) {
-    int b = i << 2;
-    if (i < 16)
-      w->w[i] = ((unsigned)s[b | 3]) | ((unsigned)s[b | 2] << 8) |
-                ((unsigned)s[b | 1] << 16) | ((unsigned)s[b] << 24);
-    else
-      w->w[i] = lrot(
-          ((w->w[i - 3]) ^ (w->w[i - 8]) ^ (w->w[i - 14]) ^ (w->w[i - 16])), 1);
+void getwdata(unsigned char *s, struct wdata *w) {
+  int i = 0;
+  for (i; i < 16; ++i) {
+    register unsigned int t1 = *((unsigned int *)s + i);
+    w->w[i] = ((t1 & 0xff) << 24) | (((t1 >> 8) & 0xff) << 16) |
+              (((t1 >> 16) & 0xff) << 8) | ((t1 >> 24) & 0xff);
   }
-  return w;
+  for (i; i < 80; ++i) {
+    register unsigned int t =
+        (w->w[i - 3]) ^ (w->w[i - 8]) ^ (w->w[i - 14]) ^ (w->w[i - 16]);
+    w->w[i] = lrot(t, 1);
+  }
 }
 /*
 gethash:获取每一步的哈希值
@@ -32,39 +32,44 @@ w:生成的w数组
 void gethash(struct hash *h, struct wdata *w) {
   unsigned int temph0 = h->h[0], temph1 = h->h[1], temph2 = h->h[2],
                temph3 = h->h[3], temph4 = h->h[4];
-  unsigned int f, k, temp;
-
-  for (unsigned int i = 0; i < 80; ++i) {
-    switch (i / 20) {
-    case (0): {
-      f = (temph1 & temph2) | ((~temph1) & temph3);
-      k = 0x5A827999;
-      break;
-    }
-    case (1): {
-      f = temph1 ^ temph2 ^ temph3;
-      k = 0x6ED9EBA1;
-      break;
-    }
-    case (2): {
-      f = (temph1 & temph2) | (temph1 & temph3) | (temph2 & temph3);
-      k = 0x8F1BBCDC;
-      break;
-    }
-    case (3): {
-      f = temph1 ^ temph2 ^ temph3;
-      k = 0xCA62C1D6;
-      break;
-    }
-    }
-    temp = lrot(temph0, 5) + f + k + temph4 + w->w[i];
+  unsigned int f, temp;
+  unsigned int i = 0;
+  for (i; i < 20; ++i) {
+    f = (temph1 & temph2) | ((~temph1) & temph3);
+    temp = lrot(temph0, 5) + f + 0x5A827999 + temph4 + w->w[i];
     temph4 = temph3;
     temph3 = temph2;
     temph2 = lrot(temph1, 30);
     temph1 = temph0;
     temph0 = temp;
   }
-
+  for (i; i < 40; ++i) {
+    f = temph1 ^ temph2 ^ temph3;
+    temp = lrot(temph0, 5) + f + 0x6ED9EBA1 + temph4 + w->w[i];
+    temph4 = temph3;
+    temph3 = temph2;
+    temph2 = lrot(temph1, 30);
+    temph1 = temph0;
+    temph0 = temp;
+  }
+  for (i; i < 60; ++i) {
+    f = (temph1 & temph2) | (temph1 & temph3) | (temph2 & temph3);
+    temp = lrot(temph0, 5) + f + 0x8F1BBCDC + temph4 + w->w[i];
+    temph4 = temph3;
+    temph3 = temph2;
+    temph2 = lrot(temph1, 30);
+    temph1 = temph0;
+    temph0 = temp;
+  }
+  for (i; i < 80; ++i) {
+    f = temph1 ^ temph2 ^ temph3;
+    temp = lrot(temph0, 5) + f + 0xCA62C1D6 + temph4 + w->w[i];
+    temph4 = temph3;
+    temph3 = temph2;
+    temph2 = lrot(temph1, 30);
+    temph1 = temph0;
+    temph0 = temp;
+  }
   h->h[0] += temph0;
   h->h[1] += temph1;
   h->h[2] += temph2;
