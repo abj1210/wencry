@@ -7,6 +7,8 @@ int main(int argc, char *argv[]){
     FILE * fp = fopen(argv[1], "wb+");
     fwrite(buffer, 1, BUFFER_SIZE, fp);
     fwrite(buffer, 1, BUFFER_SIZE, fp);
+    fwrite(buffer, 1, BUFFER_SIZE, fp);
+    fwrite(buffer, 1, BUFFER_SIZE, fp);
     fclose(fp);
     return 0;
 }
