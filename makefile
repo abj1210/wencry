@@ -1,10 +1,10 @@
-CC= gcc
+CC= g++
 F= -O3
 SRC= ./src/
 INC= ./include/
 TST= ./test/
 OUT= ./bin/
-OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o tab.o getval.o base64.o buffer.o key.o
+OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o getval.o base64.o buffer.o key.o
 
 
 
@@ -42,7 +42,7 @@ analysis:
 	./wencry -e $(TST)a.mp4 ABEiM0RVZneImaq7zN3u/w==
 	gprof wencry gmon.out > $(OUT)res.txt
 
-%.o: $(SRC)%.c
+%.o: $(SRC)%.cpp
 	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC)
 
 clean:

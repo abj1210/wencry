@@ -1,3 +1,6 @@
+#ifndef TAB
+#define TAB
+
 #include "util.h"
 
 const unsigned char RC[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
@@ -107,5 +110,4 @@ const unsigned char Alogtable[512] = {
     57,  75,  221, 124, 132, 151, 162, 253, 28,  36,  108, 180, 199, 82,  246,
     1,   1,
 };
-
-struct state keyg[11];
+#endif

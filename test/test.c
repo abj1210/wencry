@@ -2,7 +2,7 @@
 #include <string.h>
 #define BUFFER_SIZE 1024
 int cmp_file(FILE *x, FILE *y) {
-  unsigned char buffer1[BUFFER_SIZE], buffer2[BUFFER_SIZE];
+  char buffer1[BUFFER_SIZE], buffer2[BUFFER_SIZE];
   int read1, read2;
   int flag = 0;
   while (1) {

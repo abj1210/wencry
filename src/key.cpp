@@ -1,11 +1,10 @@
 #include "key.h"
 #include "util.h"
 
-#include "stdlib.h"
+#include <stdlib.h>
 
-extern const unsigned char s_box[256], rs_box[256];
-extern const unsigned char RC[11];
-extern struct state keyg[11];
+struct state keyg[11];
+
 /*
 genkey:产生每轮的轮密钥
 last_key:上一轮的轮密钥

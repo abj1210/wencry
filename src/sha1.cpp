@@ -11,17 +11,17 @@ s:输入的单元
 w:生成的w数组
 return:w的地址
 */
-void getwdata(unsigned char *s, struct wdata *w) {
+void getwdata(unsigned char *s, struct wdata &w) {
   int i = 0;
   for (i; i < 16; ++i) {
-    register unsigned int t1 = *((unsigned int *)s + i);
-    w->w[i] = ((t1 & 0xff) << 24) | (((t1 >> 8) & 0xff) << 16) |
+    unsigned int t1 = *((unsigned int *)s + i);
+    w.w[i] = ((t1 & 0xff) << 24) | (((t1 >> 8) & 0xff) << 16) |
               (((t1 >> 16) & 0xff) << 8) | ((t1 >> 24) & 0xff);
   }
   for (i; i < 80; ++i) {
-    register unsigned int t =
-        (w->w[i - 3]) ^ (w->w[i - 8]) ^ (w->w[i - 14]) ^ (w->w[i - 16]);
-    w->w[i] = lrot(t, 1);
+    unsigned int t =
+        (w.w[i - 3]) ^ (w.w[i - 8]) ^ (w.w[i - 14]) ^ (w.w[i - 16]);
+    w.w[i] = lrot(t, 1);
   }
 }
 /*
@@ -29,14 +29,14 @@ gethash:获取每一步的哈希值
 h:上一步的哈希值
 w:生成的w数组
 */
-void gethash(struct hash *h, struct wdata *w) {
-  unsigned int temph0 = h->h[0], temph1 = h->h[1], temph2 = h->h[2],
-               temph3 = h->h[3], temph4 = h->h[4];
+void gethash(struct hash &h, const struct wdata &w) {
+  unsigned int temph0 = h.h[0], temph1 = h.h[1], temph2 = h.h[2],
+               temph3 = h.h[3], temph4 = h.h[4];
   unsigned int f, temp;
   unsigned int i = 0;
   for (i; i < 20; ++i) {
     f = (temph1 & temph2) | ((~temph1) & temph3);
-    temp = lrot(temph0, 5) + f + 0x5A827999 + temph4 + w->w[i];
+    temp = lrot(temph0, 5) + f + 0x5A827999 + temph4 + w.w[i];
     temph4 = temph3;
     temph3 = temph2;
     temph2 = lrot(temph1, 30);
@@ -45,7 +45,7 @@ void gethash(struct hash *h, struct wdata *w) {
   }
   for (i; i < 40; ++i) {
     f = temph1 ^ temph2 ^ temph3;
-    temp = lrot(temph0, 5) + f + 0x6ED9EBA1 + temph4 + w->w[i];
+    temp = lrot(temph0, 5) + f + 0x6ED9EBA1 + temph4 + w.w[i];
     temph4 = temph3;
     temph3 = temph2;
     temph2 = lrot(temph1, 30);
@@ -54,7 +54,7 @@ void gethash(struct hash *h, struct wdata *w) {
   }
   for (i; i < 60; ++i) {
     f = (temph1 & temph2) | (temph1 & temph3) | (temph2 & temph3);
-    temp = lrot(temph0, 5) + f + 0x8F1BBCDC + temph4 + w->w[i];
+    temp = lrot(temph0, 5) + f + 0x8F1BBCDC + temph4 + w.w[i];
     temph4 = temph3;
     temph3 = temph2;
     temph2 = lrot(temph1, 30);
@@ -63,18 +63,18 @@ void gethash(struct hash *h, struct wdata *w) {
   }
   for (i; i < 80; ++i) {
     f = temph1 ^ temph2 ^ temph3;
-    temp = lrot(temph0, 5) + f + 0xCA62C1D6 + temph4 + w->w[i];
+    temp = lrot(temph0, 5) + f + 0xCA62C1D6 + temph4 + w.w[i];
     temph4 = temph3;
     temph3 = temph2;
     temph2 = lrot(temph1, 30);
     temph1 = temph0;
     temph0 = temp;
   }
-  h->h[0] += temph0;
-  h->h[1] += temph1;
-  h->h[2] += temph2;
-  h->h[3] += temph3;
-  h->h[4] += temph4;
+  h.h[0] += temph0;
+  h.h[1] += temph1;
+  h.h[2] += temph2;
+  h.h[3] += temph3;
+  h.h[4] += temph4;
 }
 /*
 接口函数
@@ -86,12 +86,12 @@ unsigned char *getsha1f(FILE *fp) {
 
   if (fp == NULL)
     return NULL;
-  struct hash *h = (struct hash *)malloc(sizeof(struct hash));
-  h->h[0] = HASH0;
-  h->h[1] = HASH1;
-  h->h[2] = HASH2;
-  h->h[3] = HASH3;
-  h->h[4] = HASH4;
+  struct hash h;
+  h.h[0] = HASH0;
+  h.h[1] = HASH1;
+  h.h[2] = HASH2;
+  h.h[3] = HASH3;
+  h.h[4] = HASH4;
 
   unsigned char s1[64];
   int flag = 0;
@@ -111,14 +111,13 @@ unsigned char *getsha1f(FILE *fp) {
       }
       flag = 2;
     }
-    getwdata(s1, &w);
-    gethash(h, &w);
+    getwdata(s1, w);
+    gethash(h, w);
   }
   unsigned char *sha1res = (unsigned char *)malloc(20 * sizeof(unsigned char));
   for (int i = 0; i < 20; i++) {
-    sha1res[i] = ((h->h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
+    sha1res[i] = ((h.h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
   }
-  free(h);
   return sha1res;
 }
 /*
@@ -129,12 +128,12 @@ n:字符串长度
 return:生成的sha1哈希序列
 */
 unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
-  struct hash *h = (struct hash *)malloc(sizeof(struct hash));
-  h->h[0] = HASH0;
-  h->h[1] = HASH1;
-  h->h[2] = HASH2;
-  h->h[3] = HASH3;
-  h->h[4] = HASH4;
+  struct hash h;
+  h.h[0] = HASH0;
+  h.h[1] = HASH1;
+  h.h[2] = HASH2;
+  h.h[3] = HASH3;
+  h.h[4] = HASH4;
 
   unsigned long long b = n * 8, cnum;
 
@@ -166,13 +165,12 @@ unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
         s1[56 + i] = ((b >> (7 - i) * 8) & 0xffu);
       }
     }
-    getwdata(s1, &w);
-    gethash(h, &w);
+    getwdata(s1, w);
+    gethash(h, w);
   }
   unsigned char *sha1res = (unsigned char *)malloc(20 * sizeof(unsigned char));
   for (int i = 0; i < 20; ++i) {
-    sha1res[i] = ((h->h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
+    sha1res[i] = ((h.h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
   }
-  free(h);
   return sha1res;
 }
