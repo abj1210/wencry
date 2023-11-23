@@ -1,4 +1,4 @@
-#include "getval.h"
+#include "wenctrl.h"
 #include "key.h"
 #include "util.h"
 
