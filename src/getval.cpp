@@ -1,6 +1,6 @@
-#include "wenctrl.h"
 #include "key.h"
 #include "util.h"
+#include "wenctrl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -67,30 +67,29 @@ struct vpak get_v_mod1() {
     }
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
-  } else {
-    if (res.mode == 'd' || res.mode == 'D') {
-      char decn[128];
-      printf("Need a new name for decrypted file?(y/n) ");
-      char flag;
-      r = scanf("%*[\n]%c", &flag);
-      if (flag == 'y' || flag == 'Y') {
-        printf("Enter new name:\n");
-        r = scanf("%*[\n]");
-        r = scanf("%s", decn);
-        res.out = fopen(decn, "wb+");
-      } else {
-        sprintf(outn, "%s.wdec", fn);
-        res.out = fopen(outn, "wb+");
-      }
-      res.key = getInputKey();
-    } else if (res.mode == 'v') {
-      res.key = getInputKey();
-      res.out = NULL;
+  } else if (res.mode == 'd' || res.mode == 'D') {
+    char decn[128];
+    printf("Need a new name for decrypted file?(y/n) ");
+    char flag;
+    r = scanf("%*[\n]%c", &flag);
+    if (flag == 'y' || flag == 'Y') {
+      printf("Enter new name:\n");
+      r = scanf("%*[\n]");
+      r = scanf("%s", decn);
+      res.out = fopen(decn, "wb+");
     } else {
-      res.fp = NULL;
-      return res;
+      sprintf(outn, "%s.wdec", fn);
+      res.out = fopen(outn, "wb+");
     }
+    res.key = getInputKey();
+  } else if (res.mode == 'v') {
+    res.key = getInputKey();
+    res.out = NULL;
+  } else {
+    res.fp = NULL;
+    return res;
   }
+
   unsigned char outk[128];
   memset(outk, 0, sizeof(outk));
   printf("Key is: \n");
@@ -155,6 +154,7 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
     res.fp = NULL;
     return res;
   }
+
   unsigned char outk[128];
   memset(outk, 0, sizeof(outk));
   printf("Key is: \n");

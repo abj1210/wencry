@@ -77,7 +77,7 @@ void decrypt_file(int tail, FILE *fp, FILE *out) {
   int tsum = load_buffer(fp, input);
   printf("Buffer loaded %dMB:*", BUF_SZ >> 16);
   fflush(stdout);
-  unsigned char block[16];
+  struct state block;
   int idx = 0;
   while (1) {
     char sum = wread_buffer(idx, block, input);
@@ -87,7 +87,7 @@ void decrypt_file(int tail, FILE *fp, FILE *out) {
       fflush(stdout);
       if (tsum == 0) {
         final_write(out, output);
-        fwrite(block, 1, tail, out);
+        fwrite(&block, 1, tail, out);
         break;
       }
       idx = 0;
@@ -97,7 +97,7 @@ void decrypt_file(int tail, FILE *fp, FILE *out) {
     decaes_128bit(block);
     if (bufferover(input)) {
       final_write(out, output);
-      fwrite(block, 1, tail, out);
+      fwrite(&block, 1, tail, out);
       break;
     } else
       wwrite_buffer(idx, block, output);

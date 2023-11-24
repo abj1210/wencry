@@ -69,11 +69,11 @@ block:读取数据的地址
 ibuf:输入缓冲区的指针
 return:读取的字节数,若失败返回-1
 */
-int wread_buffer(unsigned int idx, unsigned char *block, struct buffer *ibuf) {
+int wread_buffer(unsigned int idx, struct state &block, struct buffer *ibuf) {
   int res;
   if (idx == ibuf->total) {
     if (ibuf->tail != 0)
-      memcpy(block, ibuf->b[idx], ibuf->tail);
+      memcpy(&block, ibuf->b[idx], ibuf->tail);
     if (ibuf->total != BUF_SZ)
       res = ibuf->tail;
     else
@@ -81,7 +81,7 @@ int wread_buffer(unsigned int idx, unsigned char *block, struct buffer *ibuf) {
     ibuf->now = idx;
     ibuf->tail = 0;
   } else if (idx < ibuf->total) {
-    memcpy(block, ibuf->b[idx], 16);
+    memcpy(&block, ibuf->b[idx], 16);
     res = 16;
     ibuf->now = idx + 1;
   } else
@@ -103,8 +103,8 @@ idx:缓冲区单元索引
 block:写入数据的地址
 obuf:输出缓冲区的指针
 */
-void wwrite_buffer(unsigned int idx, unsigned char *block,
+void wwrite_buffer(unsigned int idx, const struct state &block,
                    struct buffer *obuf) {
-  memcpy(obuf->b[idx], block, 16);
+  memcpy(obuf->b[idx], &block, 16);
   obuf->total = idx + 1 > obuf->total ? idx + 1 : obuf->total;
 }

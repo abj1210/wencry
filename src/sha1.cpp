@@ -14,9 +14,10 @@ return:w的地址
 void getwdata(unsigned char *s, struct wdata &w) {
   int i = 0;
   for (i; i < 16; ++i) {
+
     unsigned int t1 = *((unsigned int *)s + i);
     w.w[i] = ((t1 & 0xff) << 24) | (((t1 >> 8) & 0xff) << 16) |
-              (((t1 >> 16) & 0xff) << 8) | ((t1 >> 24) & 0xff);
+             (((t1 >> 16) & 0xff) << 8) | ((t1 >> 24) & 0xff);
   }
   for (i; i < 80; ++i) {
     unsigned int t =
@@ -127,7 +128,7 @@ s:输入字符串
 n:字符串长度
 return:生成的sha1哈希序列
 */
-unsigned char *getsha1s(unsigned char *s, unsigned long long n) {
+unsigned char *getsha1s(unsigned char *s, unsigned int n) {
   struct hash h;
   h.h[0] = HASH0;
   h.h[1] = HASH1;

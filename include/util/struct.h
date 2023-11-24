@@ -7,7 +7,10 @@ state:用于aes操作的基本单元
 s:16B数据
 */
 struct state {
-  unsigned char s[4][4];
+  union {
+    unsigned int g[4];
+    unsigned char s[4][4];
+  };
 };
 /*
 vpak:参数包

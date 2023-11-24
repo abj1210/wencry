@@ -1,6 +1,6 @@
-#include "wenctrl.h"
 #include "cry.h"
 #include "util.h"
+#include "wenctrl.h"
 
 #include <time.h>
 
@@ -15,7 +15,7 @@ clock_t encrypt(struct vpak v1) {
   enc(v1.fp, v1.out, v1.key);
   cl2 = clock();
   printf("Encrypt over! \n");
-  
+
   return cl2 - cl1;
 }
 
@@ -38,7 +38,7 @@ clock_t decrypt(struct vpak v1) {
     printf("Wrong key.\n");
   else if (res == 3)
     printf("File not complete.\n");
-  return cl2-cl1;
+  return cl2 - cl1;
 }
 /*
 verify: 根据传入的参数包验证密钥和文件
@@ -67,17 +67,17 @@ exec_val:根据传入的参数包执行相应操作
 vals:传入的参数包
 return:执行时间
 */
-clock_t exec_val(struct vpak vals){
-    if (vals.fp == NULL) {
-        printf("Invalid values.\n");
-        return -1;
-    }
-    clock_t totalTime;
-    if (vals.mode == 'e' || vals.mode == 'E')
-        totalTime = encrypt(vals);
-    else if (vals.mode == 'd' || vals.mode == 'D')
-        totalTime = decrypt(vals);
-    else if (vals.mode == 'v')
-        totalTime = get_verify(vals);
-    return totalTime;
+clock_t exec_val(struct vpak vals) {
+  if (vals.fp == NULL) {
+    printf("Invalid values.\n");
+    return -1;
+  }
+  clock_t totalTime;
+  if (vals.mode == 'e' || vals.mode == 'E')
+    totalTime = encrypt(vals);
+  else if (vals.mode == 'd' || vals.mode == 'D')
+    totalTime = decrypt(vals);
+  else if (vals.mode == 'v')
+    totalTime = get_verify(vals);
+  return totalTime;
 }

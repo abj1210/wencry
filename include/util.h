@@ -1,10 +1,10 @@
 #ifndef UTL
 #define UTL
 
-#include "./util/buffer.h"
-#include "./util/def.h"
-#include "./util/struct.h"
-#include "./util/tab.h"
+#include "buffer.h"
+#include "def.h"
+#include "struct.h"
+#include "tab.h"
 #include <stdio.h>
 
 #endif

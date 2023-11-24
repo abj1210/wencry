@@ -32,7 +32,7 @@ void encrypt_file(FILE *fp, FILE *out) {
   int tsum = load_buffer(fp, input);
   printf("Buffer loaded %dMB:*", BUF_SZ >> 16);
   fflush(stdout);
-  unsigned char block[16];
+  struct state block;
   int idx = 0;
   while (1) {
     char sum = wread_buffer(idx, block, input);

@@ -9,7 +9,7 @@ OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o getval.o base64.o buffer.o key
 
 
 wencry: $(OBJS)
-	$(CC) $(F) $(OUT)*.o -o wencry -I $(INC)
+	$(CC) $(F) $(OUT)*.o -o wencry -I $(INC) -I $(INC)util/
 
 speedfile: $(TST)test_file.c
 	$(CC) $(TST)test_file.c -o speedfile
@@ -43,13 +43,13 @@ analysis:
 	gprof wencry gmon.out > $(OUT)res.txt
 
 %.o: $(SRC)%.cpp
-	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC)
+	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC) -I $(INC)util/
 
 clean:
 	rm -rf $(OUT)*.o $(TST)*.wenc $(TST)aa.mp4 wencry cmp speedfile
 
 format:
-	clang-format -i $(SRC)*.c
+	clang-format -i $(SRC)*.cpp
 	clang-format -i $(TST)*.c
 	clang-format -i $(INC)*.h
 	clang-format -i $(INC)util/*.h

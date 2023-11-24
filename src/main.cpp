@@ -1,5 +1,5 @@
-#include "wenctrl.h"
 #include "util.h"
+#include "wenctrl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,9 +33,10 @@ int main(int argc, char *argv[]) {
   }
 
   //执行任务
-  clock_t totalTime=exec_val(vals);
-  if(totalTime==-1)return -1;
-  printf("Time: %lfs\n", totalTime/((double)CLOCKS_PER_SEC));
+  clock_t totalTime = exec_val(vals);
+  if (totalTime == -1)
+    return -1;
+  printf("Time: %lfs\n", totalTime / ((double)CLOCKS_PER_SEC));
 
   //结束
   over(vals);
