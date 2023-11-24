@@ -27,9 +27,10 @@ rerowshift:aes的还原rowshift步骤
 w:待操作的aes加解密单元指针
 */
 void rerowshift(struct state &w) {
-  w.g[1] = lrot(w.g[1], 8);
-  w.g[2] = lrot(w.g[2], 16);
-  w.g[3] = lrot(w.g[3], 24);
+  unsigned int t1=w.g[1], t2=w.g[2], t3=w.g[3];
+  w.g[1] = lrot(t1, 8);
+  w.g[2] = lrot(t2, 16);
+  w.g[3] = lrot(t3, 24);
 }
 /*
 recolumnmix:aes的还原columnmix步骤

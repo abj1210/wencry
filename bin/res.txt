@@ -3,27 +3,27 @@ Flat profile:
 Each sample counts as 0.01 seconds.
   %   cumulative   self              self     total           
  time   seconds   seconds    calls   s/call   s/call  name    
- 39.20      1.67     1.67 95249799     0.00     0.00  columnmix(state&)
- 34.98      3.16     1.49 10583311     0.00     0.00  runaes_128bit(state&)
- 14.55      3.78     0.62  2645829     0.00     0.00  getwdata(unsigned char*, wdata&)
-  9.86      4.20     0.42  2645829     0.00     0.00  gethash(hash&, wdata const&)
-  0.70      4.23     0.03 10583321     0.00     0.00  wread_buffer(unsigned int, state&, buffer*)
-  0.47      4.25     0.02 10583311     0.00     0.00  wwrite_buffer(unsigned int, state const&, buffer*)
-  0.23      4.26     0.01        1     0.01     3.22  encrypt_file(_IO_FILE*, _IO_FILE*)
-  0.00      4.26     0.00  2645828     0.00     0.00  read_buffer64(_IO_FILE*, unsigned char*, buffer64*)
-  0.00      4.26     0.00       11     0.00     0.00  load_buffer(_IO_FILE*, buffer*)
-  0.00      4.26     0.00       10     0.00     0.00  store_buffer(_IO_FILE*, buffer*)
-  0.00      4.26     0.00       10     0.00     0.00  genkey(state, int)
-  0.00      4.26     0.00        1     0.00     0.00  get_v_mod2(int, char**)
-  0.00      4.26     0.00        1     0.00     0.00  final_write(_IO_FILE*, buffer*)
-  0.00      4.26     0.00        1     0.00     0.00  base64_to_hex(unsigned char*, int, unsigned char*)
-  0.00      4.26     0.00        1     0.00     0.00  hex_to_base64(unsigned char*, int, unsigned char*)
-  0.00      4.26     0.00        1     0.00     4.26  enc(_IO_FILE*, _IO_FILE*, unsigned char*)
-  0.00      4.26     0.00        1     0.00     0.00  over(vpak)
-  0.00      4.26     0.00        1     0.00     0.00  initgen(unsigned char*)
-  0.00      4.26     0.00        1     0.00     4.26  exec_val(vpak)
-  0.00      4.26     0.00        1     0.00     1.04  getsha1f(_IO_FILE*)
-  0.00      4.26     0.00        1     0.00     0.00  getsha1s(unsigned char*, unsigned int)
+ 37.17      1.68     1.68 10583311     0.00     0.00  runaes_128bit(state&)
+ 36.95      3.35     1.67 95249799     0.00     0.00  columnmix(state&)
+ 16.81      4.11     0.76  2645829     0.00     0.00  getwdata(unsigned char*, wdata&)
+  7.30      4.44     0.33  2645829     0.00     0.00  gethash(hash&, wdata const&)
+  1.11      4.49     0.05 10583311     0.00     0.00  wwrite_buffer(unsigned int, state const&, buffer*)
+  0.44      4.51     0.02        1     0.02     3.42  encrypt_file(_IO_FILE*, _IO_FILE*)
+  0.22      4.52     0.01  2645828     0.00     0.00  read_buffer64(_IO_FILE*, unsigned char*, buffer64*)
+  0.00      4.52     0.00 10583321     0.00     0.00  wread_buffer(unsigned int, state&, buffer*)
+  0.00      4.52     0.00       11     0.00     0.00  load_buffer(_IO_FILE*, buffer*)
+  0.00      4.52     0.00       10     0.00     0.00  store_buffer(_IO_FILE*, buffer*)
+  0.00      4.52     0.00       10     0.00     0.00  genkey(state, int)
+  0.00      4.52     0.00        1     0.00     0.00  get_v_mod2(int, char**)
+  0.00      4.52     0.00        1     0.00     0.00  final_write(_IO_FILE*, buffer*)
+  0.00      4.52     0.00        1     0.00     0.00  base64_to_hex(unsigned char*, int, unsigned char*)
+  0.00      4.52     0.00        1     0.00     0.00  hex_to_base64(unsigned char*, int, unsigned char*)
+  0.00      4.52     0.00        1     0.00     4.52  enc(_IO_FILE*, _IO_FILE*, unsigned char*)
+  0.00      4.52     0.00        1     0.00     0.00  over(vpak)
+  0.00      4.52     0.00        1     0.00     0.00  initgen(unsigned char*)
+  0.00      4.52     0.00        1     0.00     4.52  exec_val(vpak)
+  0.00      4.52     0.00        1     0.00     1.10  getsha1f(_IO_FILE*)
+  0.00      4.52     0.00        1     0.00     0.00  getsha1s(unsigned char*, unsigned int)
 
  %         the percentage of the total running time of the
 time       program used by this function.
@@ -61,69 +61,69 @@ notice and this notice are preserved.
 		     Call graph (explanation follows)
 
 
-granularity: each sample hit covers 4 byte(s) for 0.23% of 4.26 seconds
+granularity: each sample hit covers 4 byte(s) for 0.22% of 4.52 seconds
 
 index % time    self  children    called     name
                                                  <spontaneous>
-[1]    100.0    0.00    4.26                 main [1]
-                0.00    4.26       1/1           exec_val(vpak) [3]
+[1]    100.0    0.00    4.52                 main [1]
+                0.00    4.52       1/1           exec_val(vpak) [3]
                 0.00    0.00       1/1           get_v_mod2(int, char**) [23]
                 0.00    0.00       1/1           over(vpak) [27]
 -----------------------------------------------
-                0.00    4.26       1/1           exec_val(vpak) [3]
-[2]    100.0    0.00    4.26       1         enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
-                0.01    3.21       1/1           encrypt_file(_IO_FILE*, _IO_FILE*) [4]
-                0.00    1.04       1/1           getsha1f(_IO_FILE*) [7]
+                0.00    4.52       1/1           exec_val(vpak) [3]
+[2]    100.0    0.00    4.52       1         enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
+                0.02    3.40       1/1           encrypt_file(_IO_FILE*, _IO_FILE*) [4]
+                0.00    1.10       1/1           getsha1f(_IO_FILE*) [7]
                 0.00    0.00       1/1           getsha1s(unsigned char*, unsigned int) [12]
                 0.00    0.00       1/1           initgen(unsigned char*) [28]
 -----------------------------------------------
-                0.00    4.26       1/1           main [1]
-[3]    100.0    0.00    4.26       1         exec_val(vpak) [3]
-                0.00    4.26       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
+                0.00    4.52       1/1           main [1]
+[3]    100.0    0.00    4.52       1         exec_val(vpak) [3]
+                0.00    4.52       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
 -----------------------------------------------
-                0.01    3.21       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
-[4]     75.6    0.01    3.21       1         encrypt_file(_IO_FILE*, _IO_FILE*) [4]
-                1.49    1.67 10583311/10583311     runaes_128bit(state&) [5]
-                0.03    0.00 10583321/10583321     wread_buffer(unsigned int, state&, buffer*) [10]
-                0.02    0.00 10583311/10583311     wwrite_buffer(unsigned int, state const&, buffer*) [11]
+                0.02    3.40       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
+[4]     75.7    0.02    3.40       1         encrypt_file(_IO_FILE*, _IO_FILE*) [4]
+                1.68    1.67 10583311/10583311     runaes_128bit(state&) [5]
+                0.05    0.00 10583311/10583311     wwrite_buffer(unsigned int, state const&, buffer*) [10]
+                0.00    0.00 10583321/10583321     wread_buffer(unsigned int, state&, buffer*) [19]
                 0.00    0.00      11/11          load_buffer(_IO_FILE*, buffer*) [20]
                 0.00    0.00      10/10          store_buffer(_IO_FILE*, buffer*) [21]
                 0.00    0.00       1/1           final_write(_IO_FILE*, buffer*) [24]
 -----------------------------------------------
-                1.49    1.67 10583311/10583311     encrypt_file(_IO_FILE*, _IO_FILE*) [4]
-[5]     74.2    1.49    1.67 10583311         runaes_128bit(state&) [5]
+                1.68    1.67 10583311/10583311     encrypt_file(_IO_FILE*, _IO_FILE*) [4]
+[5]     74.1    1.68    1.67 10583311         runaes_128bit(state&) [5]
                 1.67    0.00 95249799/95249799     columnmix(state&) [6]
 -----------------------------------------------
                 1.67    0.00 95249799/95249799     runaes_128bit(state&) [5]
-[6]     39.2    1.67    0.00 95249799         columnmix(state&) [6]
+[6]     36.9    1.67    0.00 95249799         columnmix(state&) [6]
 -----------------------------------------------
-                0.00    1.04       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
-[7]     24.4    0.00    1.04       1         getsha1f(_IO_FILE*) [7]
-                0.62    0.00 2645828/2645829     getwdata(unsigned char*, wdata&) [8]
-                0.42    0.00 2645828/2645829     gethash(hash&, wdata const&) [9]
-                0.00    0.00 2645828/2645828     read_buffer64(_IO_FILE*, unsigned char*, buffer64*) [19]
------------------------------------------------
-                0.00    0.00       1/2645829     getsha1s(unsigned char*, unsigned int) [12]
-                0.62    0.00 2645828/2645829     getsha1f(_IO_FILE*) [7]
-[8]     14.6    0.62    0.00 2645829         getwdata(unsigned char*, wdata&) [8]
+                0.00    1.10       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
+[7]     24.3    0.00    1.10       1         getsha1f(_IO_FILE*) [7]
+                0.76    0.00 2645828/2645829     getwdata(unsigned char*, wdata&) [8]
+                0.33    0.00 2645828/2645829     gethash(hash&, wdata const&) [9]
+                0.01    0.00 2645828/2645828     read_buffer64(_IO_FILE*, unsigned char*, buffer64*) [11]
 -----------------------------------------------
                 0.00    0.00       1/2645829     getsha1s(unsigned char*, unsigned int) [12]
-                0.42    0.00 2645828/2645829     getsha1f(_IO_FILE*) [7]
-[9]      9.9    0.42    0.00 2645829         gethash(hash&, wdata const&) [9]
+                0.76    0.00 2645828/2645829     getsha1f(_IO_FILE*) [7]
+[8]     16.8    0.76    0.00 2645829         getwdata(unsigned char*, wdata&) [8]
 -----------------------------------------------
-                0.03    0.00 10583321/10583321     encrypt_file(_IO_FILE*, _IO_FILE*) [4]
-[10]     0.7    0.03    0.00 10583321         wread_buffer(unsigned int, state&, buffer*) [10]
+                0.00    0.00       1/2645829     getsha1s(unsigned char*, unsigned int) [12]
+                0.33    0.00 2645828/2645829     getsha1f(_IO_FILE*) [7]
+[9]      7.3    0.33    0.00 2645829         gethash(hash&, wdata const&) [9]
 -----------------------------------------------
-                0.02    0.00 10583311/10583311     encrypt_file(_IO_FILE*, _IO_FILE*) [4]
-[11]     0.5    0.02    0.00 10583311         wwrite_buffer(unsigned int, state const&, buffer*) [11]
+                0.05    0.00 10583311/10583311     encrypt_file(_IO_FILE*, _IO_FILE*) [4]
+[10]     1.1    0.05    0.00 10583311         wwrite_buffer(unsigned int, state const&, buffer*) [10]
+-----------------------------------------------
+                0.01    0.00 2645828/2645828     getsha1f(_IO_FILE*) [7]
+[11]     0.2    0.01    0.00 2645828         read_buffer64(_IO_FILE*, unsigned char*, buffer64*) [11]
 -----------------------------------------------
                 0.00    0.00       1/1           enc(_IO_FILE*, _IO_FILE*, unsigned char*) [2]
 [12]     0.0    0.00    0.00       1         getsha1s(unsigned char*, unsigned int) [12]
                 0.00    0.00       1/2645829     getwdata(unsigned char*, wdata&) [8]
                 0.00    0.00       1/2645829     gethash(hash&, wdata const&) [9]
 -----------------------------------------------
-                0.00    0.00 2645828/2645828     getsha1f(_IO_FILE*) [7]
-[19]     0.0    0.00    0.00 2645828         read_buffer64(_IO_FILE*, unsigned char*, buffer64*) [19]
+                0.00    0.00 10583321/10583321     encrypt_file(_IO_FILE*, _IO_FILE*) [4]
+[19]     0.0    0.00    0.00 10583321         wread_buffer(unsigned int, state&, buffer*) [19]
 -----------------------------------------------
                 0.00    0.00      11/11          encrypt_file(_IO_FILE*, _IO_FILE*) [4]
 [20]     0.0    0.00    0.00      11         load_buffer(_IO_FILE*, buffer*) [20]
@@ -247,9 +247,9 @@ notice and this notice are preserved.
 Index by function name
 
   [23] get_v_mod2(int, char**) [26] hex_to_base64(unsigned char*, int, unsigned char*) [9] gethash(hash&, wdata const&)
-  [24] final_write(_IO_FILE*, buffer*) [19] read_buffer64(_IO_FILE*, unsigned char*, buffer64*) [28] initgen(unsigned char*)
+  [24] final_write(_IO_FILE*, buffer*) [11] read_buffer64(_IO_FILE*, unsigned char*, buffer64*) [28] initgen(unsigned char*)
   [20] load_buffer(_IO_FILE*, buffer*) [5] runaes_128bit(state&) [3] exec_val(vpak)
-   [4] encrypt_file(_IO_FILE*, _IO_FILE*) [11] wwrite_buffer(unsigned int, state const&, buffer*) [7] getsha1f(_IO_FILE*)
+   [4] encrypt_file(_IO_FILE*, _IO_FILE*) [10] wwrite_buffer(unsigned int, state const&, buffer*) [7] getsha1f(_IO_FILE*)
   [21] store_buffer(_IO_FILE*, buffer*) [2] enc(_IO_FILE*, _IO_FILE*, unsigned char*) [12] getsha1s(unsigned char*, unsigned int)
-  [10] wread_buffer(unsigned int, state&, buffer*) [27] over(vpak) [8] getwdata(unsigned char*, wdata&)
+  [19] wread_buffer(unsigned int, state&, buffer*) [27] over(vpak) [8] getwdata(unsigned char*, wdata&)
   [25] base64_to_hex(unsigned char*, int, unsigned char*) [22] genkey(state, int) [6] columnmix(state&)

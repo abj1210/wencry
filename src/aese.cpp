@@ -9,10 +9,8 @@ w:待操作的aes加解密单元指针
 key:相应的轮密钥指针
 */
 void addroundkey(struct state &w, const struct state &key) {
-  w.g[0] ^= key.g[0];
-  w.g[1] ^= key.g[1];
-  w.g[2] ^= key.g[2];
-  w.g[3] ^= key.g[3];
+  w.datal ^= key.datal;
+  w.datah ^= key.datah;
 }
 /*
 subbytes:aes的subbytes操作
@@ -32,9 +30,10 @@ rowshift:aes的rowshift操作
 w:待操作的aes加解密单元指针
 */
 void rowshift(struct state &w) {
-  w.g[1] = rrot(w.g[1], 8);
-  w.g[2] = rrot(w.g[2], 16);
-  w.g[3] = rrot(w.g[3], 24);
+  unsigned int t1=w.g[1], t2=w.g[2], t3=w.g[3];
+  w.g[1] = rrot(t1, 8);
+  w.g[2] = rrot(t2, 16);
+  w.g[3] = rrot(t3, 24);
 }
 /*
 columnmix:aes的columnmix操作

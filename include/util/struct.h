@@ -8,6 +8,7 @@ s:16B数据
 */
 struct state {
   union {
+    unsigned long long datal, datah;
     unsigned int g[4];
     unsigned char s[4][4];
   };
