@@ -1,10 +1,10 @@
 CC= g++
-F= -Ofast 
+F= -Ofast
 SRC= ./src/
 INC= ./include/
 TST= ./test/
 OUT= ./bin/
-OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o getval.o base64.o buffer.o key.o execval.o
+OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o getval.o base64.o buffer.o key.o execval.o multicry.o
 
 
 

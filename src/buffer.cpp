@@ -2,25 +2,64 @@
 
 #include <stdio.h>
 #include <string.h>
-struct buffer ibuf, obuf;
+struct iobuffer buf;
+/*
+load_files:设定输入输出文件并初始化缓冲区
+buf:缓冲区指针
+fin:输入文件地址
+fout:输出文件地址
+*/
+bool load_files(struct iobuffer *buf, FILE *fin, FILE *fout) {
+  buf->fin = fin;
+  buf->fout = fout;
+  unsigned int sum = fread(buf->b, 1, BUF_SZ << 4, fin);
+  buf->tail = sum & 0xf;
+  buf->total = sum >> 4;
+  buf->now = 0;
+  return sum != 0;
+}
+/*
+get_entry:获取当前缓冲区单元表项
+buf:缓冲区的指针
+return:返回的表项地址
+*/
+unsigned char *get_entry(struct iobuffer *buf) {
+  if ((buf->now < buf->total) ||
+      ((buf->now == buf->total) && (buf->tail != 0))) {
+    return buf->b[buf->now++];
+  } else
+    return NULL;
+}
+/*
+update_buffer:保存缓冲区数据并更新缓冲区
+buf:缓冲区的指针
+*/
+void update_buffer(struct iobuffer *buf) {
+  fwrite(buf->b, 1, BUF_SZ << 4, buf->fout);
+  unsigned int sum = fread(buf->b, 1, BUF_SZ << 4, buf->fin);
+  buf->tail = sum & 0xf;
+  buf->total = sum >> 4;
+  buf->now = 0;
+}
 /*
 bufferover:缓冲区和文件是否读取完毕
-ibuf:输入缓冲区的指针
+buf:缓冲区指针
 return:若为0则未读取完毕,否则已读取完毕
 */
-unsigned int bufferover(struct buffer *ibuf) {
-  return (ibuf->now == ibuf->total) && (ibuf->total != BUF_SZ) &&
-         (ibuf->tail == 0);
+bool buffer_over(struct iobuffer *buf) {
+  return (buf->now >= buf->total) && (buf->total != BUF_SZ);
 }
-
 /*
 final_write:将缓冲区内容保存到文件并关闭缓冲区
-fp:缓冲区存储的文件指针
-obuf:输出缓冲区的指针
+buf:输出缓冲区的指针
+tail:最后一表项中要保存的字节数
+return:最后一表项装载的字节数
 */
-void final_write(FILE *fp, struct buffer *obuf) {
-  fwrite(obuf->b, 1, obuf->total << 4, fp);
+unsigned int final_write(struct iobuffer *buf, int tail) {
+  fwrite(buf->b, 1, ((buf->now - 1) << 4) + tail, buf->fout);
+  return buf->tail == 0 ? 16 : buf->tail;
 }
+
 /*
 read_buffer:从缓冲区读取64B数据
 fp:缓冲区加载的文件指针
@@ -49,62 +88,4 @@ unsigned int read_buffer64(FILE *fp, unsigned char *block,
     ibuf64->now++;
   }
   return res;
-}
-/*
-load_buffer:从文件加载数据到缓冲区
-fp:缓冲区加载的文件指针
-ibuf:输入缓冲区的指针
-return:加载的字节数
-*/
-unsigned int load_buffer(FILE *fp, struct buffer *ibuf) {
-  unsigned int sum = fread(ibuf->b, 1, BUF_SZ << 4, fp);
-  ibuf->tail = sum & 0xf;
-  ibuf->total = sum >> 4;
-  return sum;
-}
-/*
-wread_buffer:从缓冲区指定单元读取16B数据
-idx:缓冲区单元索引
-block:读取数据的地址
-ibuf:输入缓冲区的指针
-return:读取的字节数,若失败返回-1
-*/
-int wread_buffer(unsigned int idx, struct state &block, struct buffer *ibuf) {
-  int res;
-  if (idx == ibuf->total) {
-    if (ibuf->tail != 0)
-      memcpy(&block, ibuf->b[idx], ibuf->tail);
-    if (ibuf->total != BUF_SZ)
-      res = ibuf->tail;
-    else
-      res = -1;
-    ibuf->now = idx;
-    ibuf->tail = 0;
-  } else if (idx < ibuf->total) {
-    memcpy(&block, ibuf->b[idx], 16);
-    res = 16;
-    ibuf->now = idx + 1;
-  } else
-    res = -1;
-  return res;
-}
-/*
-store_buffer:将缓冲区数据保存到文件中
-fp:缓冲区保存的文件指针
-obuf:输出缓冲区的指针
-*/
-void store_buffer(FILE *fp, struct buffer *obuf) {
-  fwrite(obuf->b, 1, BUF_SZ << 4, fp);
-  obuf->total = 0;
-}
-/*
-wread_buffer:从缓冲区指定单元写入16B数据
-idx:缓冲区单元索引
-block:写入数据的地址
-obuf:输出缓冲区的指针
-*/
-void wwrite_buffer(unsigned int idx, const struct state &block,
-                   struct buffer *obuf) {
-  memcpy(obuf->b[idx], &block, 16);
-  obuf->total = idx + 1 > obuf->total ? idx + 1 : obuf->total;
 }

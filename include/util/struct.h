@@ -15,7 +15,11 @@ struct state {
     unsigned char s[4][4];
   };
 };
-
+/*
+byteint:便于对整型的各字节进行操作的数据结构
+i:整型值
+t0-t3:各字节值
+*/
 union byteint {
   unsigned int i;
   struct {
