@@ -72,6 +72,7 @@ void hex_to_base64(unsigned char *hex_in, int len, unsigned char *base64_out) {
         base64_out[idx++] = '=';
     }
   }
+  base64_out[idx] = '\0';
 }
 /*
 hex_to_base64:将输入串base64解码为十六进制串
