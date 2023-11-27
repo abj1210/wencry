@@ -39,7 +39,7 @@ int checkKey(FILE *fp, unsigned char *key) {
     free(chash);
     return -2;
   }
-  free(chash);
+  delete[] chash;
   return 0;
 }
 /*
@@ -62,7 +62,7 @@ int checkFile(FILE *fp) {
     return -3;
   }
 
-  free(chash);
+  delete[] chash;
   return tail;
 }
 /*

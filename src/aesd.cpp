@@ -15,11 +15,10 @@ w:待操作的aes加解密单元指针
 */
 void resubbytes(struct state &w) {
   for (int i = 0; i < 4; ++i) {
-    unsigned int t = w.g[i];
-    w.g[i] = ((unsigned int)r_sub_bytes((unsigned char)t)) |
-             ((unsigned int)r_sub_bytes((unsigned char)(t >> 8)) << 8) |
-             ((unsigned int)r_sub_bytes((unsigned char)(t >> 16)) << 16) |
-             ((unsigned int)r_sub_bytes((unsigned char)(t >> 24)) << 24);
+    union byteint t = {w.g[i]};
+    setbytes(t, r_sub_bytes(t.t0), r_sub_bytes(t.t1), r_sub_bytes(t.t2),
+             r_sub_bytes(t.t3));
+    w.g[i] = t.i;
   }
 }
 /*
@@ -27,7 +26,7 @@ rerowshift:aes的还原rowshift步骤
 w:待操作的aes加解密单元指针
 */
 void rerowshift(struct state &w) {
-  unsigned int t1=w.g[1], t2=w.g[2], t3=w.g[3];
+  unsigned int t1 = w.g[1], t2 = w.g[2], t3 = w.g[3];
   w.g[1] = lrot(t1, 8);
   w.g[2] = lrot(t2, 16);
   w.g[3] = lrot(t3, 24);
@@ -37,15 +36,16 @@ recolumnmix:aes的还原columnmix步骤
 w:待操作的aes加解密单元指针
 */
 void recolumnmix(struct state &w) {
-  unsigned int g0 = w.g[0], g1 = w.g[1], g2 = w.g[2], g3 = w.g[3];
+  unsigned long long dl = w.datal, dh = w.datah;
+  union byteint g0 = {(unsigned int)(dl)}, g1 = {(unsigned int)(dl >> 32)},
+                g2 = {(unsigned int)(dh)}, g3 = {(unsigned int)(dh >> 32)};
   for (int i = 0; i < 4; ++i) {
-    unsigned char b0 = g0, b1 = g1, b2 = g2, b3 = g3;
-    w.s[0][i] = GMline(223, 104, 238, 199);
-    w.s[1][i] = GMline(199, 223, 104, 238);
-    w.s[2][i] = GMline(238, 199, 223, 104);
-    w.s[3][i] = GMline(104, 238, 199, 223);
+    w.s[0][i] = GMlineA(223, 104, 238, 199);
+    w.s[1][i] = GMlineA(199, 223, 104, 238);
+    w.s[2][i] = GMlineA(238, 199, 223, 104);
+    w.s[3][i] = GMlineA(104, 238, 199, 223);
 
-    g0 >>= 8, g1 >>= 8, g2 >>= 8, g3 >>= 8;
+    g0.i >>= 8, g1.i >>= 8, g2.i >>= 8, g3.i >>= 8;
   }
 }
 /*

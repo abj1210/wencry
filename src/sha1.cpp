@@ -13,11 +13,11 @@ return:w的地址
 */
 void getwdata(unsigned char *s, struct wdata &w) {
   int i = 0;
+  union byteint t, t1;
   for (i; i < 16; ++i) {
-
-    unsigned int t1 = *((unsigned int *)s + i);
-    w.w[i] = ((t1 & 0xff) << 24) | (((t1 >> 8) & 0xff) << 16) |
-             (((t1 >> 16) & 0xff) << 8) | ((t1 >> 24) & 0xff);
+    t.i = *((unsigned int *)s + i);
+    setbytes(t1, t.t3, t.t2, t.t1, t.t0);
+    w.w[i] = t1.i;
   }
   for (i; i < 80; ++i) {
     unsigned int t =
@@ -87,19 +87,15 @@ unsigned char *getsha1f(FILE *fp) {
 
   if (fp == NULL)
     return NULL;
-  struct hash h;
-  h.h[0] = HASH0;
-  h.h[1] = HASH1;
-  h.h[2] = HASH2;
-  h.h[3] = HASH3;
-  h.h[4] = HASH4;
+  struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
 
   unsigned char s1[64];
   int flag = 0;
   struct wdata w;
   for (unsigned int i = 0; flag != 2; ++i) {
-    memset(s1, 0, sizeof(s1));
     unsigned sum = read_buffer64(fp, s1, &ibuf64);
+    if (sum < 64)
+      memset(s1 + sum, 0, sizeof(s1) - sum);
     if (sum != 64 && flag == 0) {
       s1[sum] = 0x80u;
       sum++;
@@ -115,9 +111,9 @@ unsigned char *getsha1f(FILE *fp) {
     getwdata(s1, w);
     gethash(h, w);
   }
-  unsigned char *sha1res = (unsigned char *)malloc(20 * sizeof(unsigned char));
+  unsigned char *sha1res = new unsigned char[20];
   for (int i = 0; i < 20; i++) {
-    sha1res[i] = ((h.h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
+    sha1res[i] = ((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3)) & 0x000000ffu;
   }
   return sha1res;
 }
@@ -129,12 +125,7 @@ n:字符串长度
 return:生成的sha1哈希序列
 */
 unsigned char *getsha1s(unsigned char *s, unsigned int n) {
-  struct hash h;
-  h.h[0] = HASH0;
-  h.h[1] = HASH1;
-  h.h[2] = HASH2;
-  h.h[3] = HASH3;
-  h.h[4] = HASH4;
+  struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
 
   unsigned long long b = n * 8, cnum;
 
@@ -169,9 +160,9 @@ unsigned char *getsha1s(unsigned char *s, unsigned int n) {
     getwdata(s1, w);
     gethash(h, w);
   }
-  unsigned char *sha1res = (unsigned char *)malloc(20 * sizeof(unsigned char));
+  unsigned char *sha1res = new unsigned char[20];
   for (int i = 0; i < 20; ++i) {
-    sha1res[i] = ((h.h[i / 4]) >> (8 * (3 - (i % 4)))) & 0x000000ffu;
+    sha1res[i] = ((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3)) & 0x000000ffu;
   }
   return sha1res;
 }

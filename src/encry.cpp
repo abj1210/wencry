@@ -18,7 +18,7 @@ void getFileHeader(FILE *out, unsigned char *key) {
   unsigned char *hash = getsha1s(key, 16);
   fwrite(hash, 1, 20, out);
   fwrite(hash, 1, 20, out);
-  free(hash);
+  delete[] hash;
   unsigned char z = 0;
   fwrite(&z, 1, 1, out);
 }
@@ -71,7 +71,7 @@ void hashfile(FILE *out) {
   unsigned char *hash = getsha1f(out);
   fseek(out, 20, SEEK_SET);
   fwrite(hash, 1, 20, out);
-  free(hash);
+  delete[] hash;
 }
 /*
 接口函数

@@ -1,5 +1,5 @@
 CC= g++
-F= -O3
+F= -Ofast 
 SRC= ./src/
 INC= ./include/
 TST= ./test/

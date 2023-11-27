@@ -8,9 +8,18 @@ s:16B数据
 */
 struct state {
   union {
-    unsigned long long datal, datah;
+    struct {
+      unsigned long long datal, datah;
+    };
     unsigned int g[4];
     unsigned char s[4][4];
+  };
+};
+
+union byteint {
+  unsigned int i;
+  struct {
+    unsigned char t0, t1, t2, t3;
   };
 };
 /*

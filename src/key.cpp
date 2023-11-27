@@ -50,7 +50,7 @@ gen_key:随机产生一初始密钥
 return:产生的初始密钥
 */
 unsigned char *gen_key() {
-  unsigned char *key = (unsigned char *)malloc(16 * sizeof(unsigned char));
+  unsigned char *key = new unsigned char[16];
   for (int i = 0; i < 16; i++) {
     key[i] = rand() & 0xff;
   }
