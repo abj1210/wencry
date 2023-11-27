@@ -64,7 +64,7 @@ int checkFile(FILE *fp) {
     delete[] chash;
     return -3;
   }
-
+  fseek(fp, 41, SEEK_SET);
   delete[] chash;
   return tail;
 }
