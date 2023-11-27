@@ -2,7 +2,10 @@
 
 #include <stdio.h>
 #include <string.h>
+
+#ifndef MULTI_ENABLE
 struct iobuffer buf;
+#endif
 /*
 load_files:设定输入输出文件并初始化缓冲区
 buf:缓冲区指针

@@ -28,12 +28,14 @@ void *multiencrypt_file(void *idp) {
   int id = *(int *)idp;
   unsigned int idxnow = 0;
   bool flag = true;
+
   pthread_mutex_lock(&mutex);
   if (load_files(&bufs[id], fin, fout))
     idxnow = inputidx++;
   else
     flag = false;
   pthread_mutex_unlock(&mutex);
+
   if (flag) {
     printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
     fflush(stdout);
@@ -41,26 +43,28 @@ void *multiencrypt_file(void *idp) {
   while (flag) {
     struct state *block = (struct state *)get_entry(&bufs[id]);
     if (block == NULL) {
+
       pthread_mutex_lock(&mutex);
       while (outputidx != idxnow && inputidx != -1)
         pthread_cond_wait(&cond, &mutex);
+      pthread_mutex_unlock(&mutex);
 
       if (buffer_over(&bufs[id])) {
         char sum = final_write(&bufs[id], 16);
         fseek(fout, 40, SEEK_SET);
         fwrite(&sum, 1, 1, fout);
         inputidx = -1;
-      } else {
+      } else if (inputidx != -1) {
         printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
         update_buffer(&bufs[id]);
       }
 
+      pthread_mutex_lock(&mutex);
       outputidx++;
       if (inputidx == -1)
         flag = false;
       else
         idxnow = inputidx++;
-
       pthread_cond_broadcast(&cond);
       pthread_mutex_unlock(&mutex);
       fflush(stdout);
@@ -77,12 +81,14 @@ void *multidecrypt_file(void *idp) {
   int id = *(int *)idp;
   unsigned int idxnow = 0;
   bool flag = true;
+
   pthread_mutex_lock(&mutex);
   if (load_files(&bufs[id], fin, fout))
     idxnow = inputidx++;
   else
     flag = false;
   pthread_mutex_unlock(&mutex);
+
   if (flag) {
     printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
     fflush(stdout);
@@ -94,21 +100,22 @@ void *multidecrypt_file(void *idp) {
       pthread_mutex_lock(&mutex);
       while (outputidx != idxnow && inputidx != -1)
         pthread_cond_wait(&cond, &mutex);
+      pthread_mutex_unlock(&mutex);
 
       if (buffer_over(&bufs[id])) {
         final_write(&bufs[id], tail);
         inputidx = -1;
-      } else {
+      } else if (inputidx != -1) {
         printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
         update_buffer(&bufs[id]);
       }
 
+      pthread_mutex_unlock(&mutex);
       outputidx++;
       if (inputidx == -1)
         flag = false;
       else
         idxnow = inputidx++;
-
       pthread_cond_broadcast(&cond);
       pthread_mutex_unlock(&mutex);
       fflush(stdout);

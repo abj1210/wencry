@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 /*
 over:关闭文件并释放空间
@@ -19,7 +18,6 @@ void over(struct vpak v1) {
 
 int main(int argc, char *argv[]) {
   //初始化
-  srand(time(NULL));
   struct vpak vals;
 #ifdef MULTI_ENABLE
   if (THREADS_NUM >= MAX_THREADS) {
@@ -39,15 +37,9 @@ int main(int argc, char *argv[]) {
   }
 
   //执行任务
-  clock_t totalTime = exec_val(vals);
-  if (totalTime == -1)
+  if (!exec_val(vals))
     return -1;
 
-#ifndef MULTI_ENABLE
-  printf("Time: %lfs\n", totalTime / ((double)CLOCKS_PER_SEC));
-#else
-  printf("Time: %lfs\n", totalTime / ((double)(CLOCKS_PER_SEC * THREADS_NUM)));
-#endif
   //结束
   over(vals);
   return 0;

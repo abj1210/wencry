@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 extern void hex_to_base64(unsigned char *hex_in, int len,
                           unsigned char *base64_out);
@@ -49,6 +50,7 @@ get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
 struct vpak get_v_mod1() {
+  srand(time(NULL));
   struct vpak res;
   int r;
   printf("Need encrypt, verify or decrypt?(e/v/d) ");
@@ -105,6 +107,7 @@ argv:变量值列表
 return:返回的参数包
 */
 struct vpak get_v_mod2(int argc, char *argv[]) {
+  srand(time(NULL));
   struct vpak res;
   res.mode = argv[1][1];
   if (strcmp(argv[1], "-e") == 0) {

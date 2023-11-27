@@ -8,6 +8,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+extern struct iobuffer buf;
+
 /*
 getFileHeader:构造加密文件头
 out:输出的加密文件
@@ -67,7 +69,7 @@ fp:输入文件
 out:加密后文件
 key:初始密钥序列
 */
-void enc(FILE *fp, FILE *out, struct iobuffer &buf, unsigned char *key) {
+void enc(FILE *fp, FILE *out, unsigned char *key) {
   getFileHeader(out, key);
   initgen(key);
   printf("Begin to encrypt.\n");

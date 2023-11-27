@@ -2,7 +2,6 @@
 #include "util.h"
 
 extern struct state keyg[11];
-extern struct buffer ibuf, obuf; //输入和输出缓冲区
 /*
 addroundkey:aes的密钥轮加操作
 w:待操作的aes加解密单元指针

@@ -7,6 +7,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+extern struct iobuffer buf;
+
 /*
 cmphash:比较哈希值
 h1:待比较的哈希数组
@@ -123,7 +126,7 @@ out:解密后文件
 key:初始密钥序列
 return:若成功解密则返回0,否则返回非零值
 */
-int dec(FILE *fp, FILE *out, struct iobuffer &buf, unsigned char *key) {
+int dec(FILE *fp, FILE *out, unsigned char *key) {
   int tail = verify(fp, key);
   if (tail < 0)
     return -tail;
