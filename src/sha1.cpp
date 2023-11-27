@@ -84,9 +84,6 @@ fp:输入文件
 return:生成的sha1哈希序列
 */
 unsigned char *getsha1f(FILE *fp) {
-
-  if (fp == NULL)
-    return NULL;
   struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
 
   unsigned char s1[64];
@@ -97,15 +94,13 @@ unsigned char *getsha1f(FILE *fp) {
     if (sum < 64)
       memset(s1 + sum, 0, sizeof(s1) - sum);
     if (sum != 64 && flag == 0) {
-      s1[sum] = 0x80u;
-      sum++;
+      s1[sum++] = 0x80u;
       flag = 1;
     }
     if (sum < 56) {
       unsigned long long b = (unsigned long long)i * 512 + (sum - 1) * 8;
-      for (int i = 0; i < 8; ++i) {
-        s1[56 + i] = ((b >> (7 - i) * 8) & 0xffu);
-      }
+      for (int i = 0; i < 8; ++i)
+        s1[56 + i] = (unsigned char)((b >> ((7 - i) << 3)));
       flag = 2;
     }
     getwdata(s1, w);
@@ -113,7 +108,7 @@ unsigned char *getsha1f(FILE *fp) {
   }
   unsigned char *sha1res = new unsigned char[20];
   for (int i = 0; i < 20; i++) {
-    sha1res[i] = ((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3)) & 0x000000ffu;
+    sha1res[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
   }
   return sha1res;
 }
@@ -153,16 +148,15 @@ unsigned char *getsha1s(unsigned char *s, unsigned int n) {
     } else if (!flag)
       s1[0] = 0x80u;
     if (i == cnum - 1) {
-      for (int i = 0; i < 8; ++i) {
-        s1[56 + i] = ((b >> (7 - i) * 8) & 0xffu);
-      }
+      for (int i = 0; i < 8; ++i)
+        s1[56 + i] = (unsigned char)((b >> ((7 - i) << 3)));
     }
     getwdata(s1, w);
     gethash(h, w);
   }
   unsigned char *sha1res = new unsigned char[20];
   for (int i = 0; i < 20; ++i) {
-    sha1res[i] = ((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3)) & 0x000000ffu;
+    sha1res[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
   }
   return sha1res;
 }
