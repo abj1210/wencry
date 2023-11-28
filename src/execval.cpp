@@ -84,7 +84,9 @@ bool exec_val(struct vpak vals) {
 #ifndef MULTI_ENABLE
   printf("Time: %lfs\n", totalTime / ((double)CLOCKS_PER_SEC));
 #else
-  printf("Time: %lfs\n", totalTime / ((double)(CLOCKS_PER_SEC * THREADS_NUM)));
+  printf("Time: %lfs / %lfs\n",
+         totalTime / ((double)(CLOCKS_PER_SEC * THREADS_NUM)),
+         totalTime / ((double)CLOCKS_PER_SEC));
 #endif
   return true;
 }

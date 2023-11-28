@@ -1,5 +1,5 @@
 CC= g++
-F= -O3 
+F= -O3
 SRC= ./src/
 INC= ./include/
 TST= ./test/
@@ -9,7 +9,7 @@ OBJS= main.o encry.o decry.o sha1.o aese.o aesd.o getval.o base64.o buffer.o key
 
 
 wencry: $(OBJS)
-	$(CC) $(F) $(OUT)*.o -o wencry -I $(INC) -I $(INC)util/
+	$(CC) $(F) $(OUT)*.o -o wencry -I $(INC) 
 
 speedfile: $(TST)test_file.c
 	$(CC) $(TST)test_file.c -o speedfile
@@ -43,7 +43,7 @@ analysis:
 	gprof wencry gmon.out > $(OUT)res.txt
 
 %.o: $(SRC)%.cpp
-	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC) -I $(INC)util/
+	$(CC) $(F) -c $< -o $(OUT)$@ -I $(INC) 
 
 clean:
 	rm -rf $(OUT)*.o $(TST)*.wenc $(TST)aa.mp4 wencry cmp speedfile

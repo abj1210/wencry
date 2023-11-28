@@ -17,10 +17,9 @@ h2:待比较的哈希数组
 return:哈希是否相同
 */
 bool cmphash(unsigned char *h1, unsigned char *h2) {
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 20; i++)
     if (h1[i] != h2[i])
       return false;
-  }
   return true;
 }
 /*
@@ -50,7 +49,7 @@ int checkKey(FILE *fp, unsigned char *key) {
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
-  unsigned char *chash = getsha1s(key, 16);
+  unsigned char *chash = getSha1String(key, 16);
   if (!cmphash(chash, hash)) {
     delete[] chash;
     return -2;
@@ -74,7 +73,7 @@ int checkFile(FILE *fp) {
   if (rx != 1)
     return -1;
 
-  unsigned char *chash = getsha1f(fp);
+  unsigned char *chash = getSha1File(fp);
   if (!cmphash(chash, hash)) {
     delete[] chash;
     return -3;

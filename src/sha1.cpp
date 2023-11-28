@@ -79,11 +79,11 @@ void gethash(struct hash &h, const struct wdata &w) {
 }
 /*
 接口函数
-getsha1f:获取文件的sha1哈希值
+getSha1File:获取文件的sha1哈希值
 fp:输入文件
 return:生成的sha1哈希序列
 */
-unsigned char *getsha1f(FILE *fp) {
+unsigned char *getSha1File(FILE *fp) {
   struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
 
   unsigned char s1[64];
@@ -114,12 +114,12 @@ unsigned char *getsha1f(FILE *fp) {
 }
 /*
 接口函数
-getsha1f:获取字符串的sha1哈希值
+getSha1String:获取字符串的sha1哈希值
 s:输入字符串
 n:字符串长度
 return:生成的sha1哈希序列
 */
-unsigned char *getsha1s(unsigned char *s, unsigned int n) {
+unsigned char *getSha1String(unsigned char *s, unsigned int n) {
   struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
 
   unsigned long long b = n * 8, cnum;

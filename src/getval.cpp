@@ -132,9 +132,8 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
     if (argc == 4) {
       sprintf(outn, "%s.denc", argv[2]);
       res.out = fopen((const char *)outn, "wb+");
-    } else {
+    } else
       res.out = fopen(argv[4], "wb+");
-    }
   } else if (strcmp(argv[1], "-v") == 0) {
     res.fp = fopen(argv[2], "rb");
     res.out = NULL;

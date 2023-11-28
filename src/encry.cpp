@@ -19,7 +19,7 @@ void getFileHeader(FILE *out, unsigned char *key) {
   unsigned char mn[8], padding[21];
   *(unsigned long long *)mn = Magic_Num;
   fwrite(mn, 1, 7, out);
-  unsigned char *hash = getsha1s(key, 16);
+  unsigned char *hash = getSha1String(key, 16);
   fwrite(hash, 1, 20, out);
   fwrite(padding, 1, 21, out);
   delete[] hash;
@@ -58,7 +58,7 @@ out:加密后的文件
 */
 void hashfile(FILE *out) {
   fseek(out, 48, SEEK_SET);
-  unsigned char *hash = getsha1f(out);
+  unsigned char *hash = getSha1File(out);
   fseek(out, 27, SEEK_SET);
   fwrite(hash, 1, 20, out);
   delete[] hash;
