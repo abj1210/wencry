@@ -38,6 +38,8 @@ clock_t decrypt(struct vpak v1) {
     printf("Wrong key.\n");
   else if (res == 3)
     printf("File not complete.\n");
+  else if (res == 4)
+    printf("Wrong magic number.\n");
   return cl2 - cl1;
 }
 /*

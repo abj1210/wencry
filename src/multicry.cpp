@@ -19,54 +19,51 @@ FILE *fin, *fout;
 pthread_cond_t cond;
 pthread_mutex_t mutex;
 //保证同步的输入输出序号
-unsigned int inputidx = 0, outputidx = 0;
+int inputidx = 0, outputidx = 0;
 
 int tail = 0;
-
+/*
+idx_update:更新并获取序号
+return:返回的序号
+*/
+int idx_update() {
+  outputidx++;
+  if (inputidx == -1)
+    return -1;
+  else
+    return inputidx++;
+}
 /*
 multiencrypt_file:进行加密的线程函数
 idp:线程id的地址
 */
 void *multiencrypt_file(void *idp) {
   int id = *(int *)idp;
-  unsigned int idxnow = 0;
-  bool flag = true;
-
   pthread_mutex_lock(&mutex);
-  if (load_files(&bufs[id], fin, fout))
-    idxnow = inputidx++;
-  else
-    flag = false;
+  int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
   pthread_mutex_unlock(&mutex);
-
-  if (flag)
+  if (idxnow != -1)
     printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
 
-  while (flag) {
+  while (idxnow != -1) {
     struct state *block = (struct state *)get_entry(&bufs[id]);
     if (block == NULL) {
-
       pthread_mutex_lock(&mutex);
       while (outputidx != idxnow && inputidx != -1)
         pthread_cond_wait(&cond, &mutex);
 
       if (buffer_over(&bufs[id])) {
         char sum = final_write(&bufs[id], 16);
-        fseek(fout, 40, SEEK_SET);
+        fseek(fout, 47, SEEK_SET);
         fwrite(&sum, 1, 1, fout);
         inputidx = -1;
       } else if (inputidx != -1)
         update_buffer(&bufs[id]);
-
-      outputidx++;
-      if (inputidx == -1)
-        flag = false;
-      else
-        idxnow = inputidx++;
+      idxnow = idx_update();
       pthread_cond_broadcast(&cond);
 
       pthread_mutex_unlock(&mutex);
-      if (flag)
+      if (idxnow != -1)
         printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
     } else
       runaes_128bit(*block);
@@ -79,20 +76,13 @@ idp:线程id的地址
 */
 void *multidecrypt_file(void *idp) {
   int id = *(int *)idp;
-  unsigned int idxnow = 0;
-  bool flag = true;
-
   pthread_mutex_lock(&mutex);
-  if (load_files(&bufs[id], fin, fout))
-    idxnow = inputidx++;
-  else
-    flag = false;
+  int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
   pthread_mutex_unlock(&mutex);
-
-  if (flag)
+  if (idxnow != -1)
     printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
 
-  while (flag) {
+  while (idxnow != -1) {
     struct state *block = (struct state *)get_entry(&bufs[id]);
     if (block == NULL) {
       pthread_mutex_lock(&mutex);
@@ -104,16 +94,11 @@ void *multidecrypt_file(void *idp) {
         inputidx = -1;
       } else if (inputidx != -1)
         update_buffer(&bufs[id]);
-
-      outputidx++;
-      if (inputidx == -1)
-        flag = false;
-      else
-        idxnow = inputidx++;
+      idxnow = idx_update();
       pthread_cond_broadcast(&cond);
 
       pthread_mutex_unlock(&mutex);
-      if (flag)
+      if (idxnow != -1)
         printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
     } else
       decaes_128bit(*block);
@@ -173,5 +158,4 @@ void multidec_master(FILE *fp, FILE *out, int tailin, int threads_num) {
     pthread_create(&threads[i], NULL, multidecrypt_file, &tids[i]);
   multi_master_wait(threads_num);
 }
-
 #endif

@@ -16,12 +16,13 @@ out:输出的加密文件
 key:初始密钥
 */
 void getFileHeader(FILE *out, unsigned char *key) {
+  unsigned char mn[8], padding[21];
+  *(unsigned long long *)mn = Magic_Num;
+  fwrite(mn, 1, 7, out);
   unsigned char *hash = getsha1s(key, 16);
   fwrite(hash, 1, 20, out);
-  fwrite(hash, 1, 20, out);
+  fwrite(padding, 1, 21, out);
   delete[] hash;
-  unsigned char z = 0;
-  fwrite(&z, 1, 1, out);
 }
 /*
 encrypt_file:从输入缓冲区获取文件数据进行加密并写入输出缓冲区
@@ -38,7 +39,7 @@ void encrypt_file(FILE *fp, FILE *out, struct iobuffer &buf) {
     if (block == NULL) {
       if (buffer_over(&buf)) {
         char sum = final_write(&buf, 16);
-        fseek(out, 40, SEEK_SET);
+        fseek(out, 47, SEEK_SET);
         fwrite(&sum, 1, 1, out);
         break;
       } else {
@@ -56,9 +57,9 @@ hashfile:对加密后的文件进行哈希并写入输出文件
 out:加密后的文件
 */
 void hashfile(FILE *out) {
-  fseek(out, 41, SEEK_SET);
+  fseek(out, 48, SEEK_SET);
   unsigned char *hash = getsha1f(out);
-  fseek(out, 20, SEEK_SET);
+  fseek(out, 27, SEEK_SET);
   fwrite(hash, 1, 20, out);
   delete[] hash;
 }

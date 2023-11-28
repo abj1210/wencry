@@ -51,9 +51,8 @@ void hex_to_base64(unsigned char *hex_in, int len, unsigned char *base64_out) {
     h_in = h_in | ((unsigned int)hex_in[i]) << (8 * (2 - j));
     j = (j + 1) % 3;
     if (j == 0) {
-      for (int j = 0; j < 4; j++) {
+      for (int j = 0; j < 4; j++)
         base64_out[idx++] = turn_base64((h_in >> (6 * (3 - j))) & 0x3f);
-      }
       h_in = 0;
     }
   }
@@ -92,9 +91,8 @@ void base64_to_hex(unsigned char *base64_in, int len, unsigned char *hex_out) {
       h_in = h_in | (((unsigned int)turn_hex(base64_in[i])) << (6 * (3 - j)));
       j = (j + 1) % 4;
       if (j == 0) {
-        for (int j = 0; j < 3; j++) {
+        for (int j = 0; j < 3; j++)
           hex_out[idx++] = (h_in >> (8 * (2 - j))) & 0xff;
-        }
         h_in = 0;
       }
     }

@@ -61,11 +61,10 @@ struct vpak get_v_mod1() {
   if (res.mode == 'e' || res.mode == 'E') {
     printf("Need generate a new key?(y/n) ");
     r = scanf("%*[\n]%c", &flag);
-    if (flag == 'y' || flag == 'Y') {
+    if (flag == 'y' || flag == 'Y')
       res.key = gen_key();
-    } else {
+    else
       res.key = getInputKey();
-    }
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
   } else if (res.mode == 'd' || res.mode == 'D') {
@@ -114,16 +113,14 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
       printf("File not found.\n");
       return res;
     }
-    if (strcmp(argv[3], "G") == 0) {
+    if (strcmp(argv[3], "G") == 0)
       res.key = gen_key();
-    } else {
+    else
       base64_to_hex((unsigned char *)argv[3], strlen(argv[3]), res.key);
-    }
-    if (argc == 4) {
+    if (argc == 4)
       sprintf(outn, "%s.wenc", argv[2]);
-    } else {
+    else
       sprintf(outn, "%s.wenc", argv[4]);
-    }
     res.out = fopen(outn, "wb+");
   } else if (strcmp(argv[1], "-d") == 0) {
     res.fp = fopen(argv[2], "rb");

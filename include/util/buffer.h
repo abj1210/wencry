@@ -1,7 +1,6 @@
 #ifndef BUF
 #define BUF
 
-#include "struct.h"
 #include <stdio.h>
 //用于aes的16B单元缓冲区单元数量
 #define BUF_SZ 0x100000

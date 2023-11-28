@@ -14,16 +14,31 @@ extern struct iobuffer buf;
 cmphash:比较哈希值
 h1:待比较的哈希数组
 h2:待比较的哈希数组
-return:若相同返回0,否则返回1
+return:哈希是否相同
 */
-int cmphash(unsigned char *h1, unsigned char *h2) {
+bool cmphash(unsigned char *h1, unsigned char *h2) {
   for (int i = 0; i < 20; i++) {
     if (h1[i] != h2[i])
-      return 1;
+      return false;
   }
-  return 0;
+  return true;
 }
-
+/*
+checkMn:检查魔数
+fp:输入文件
+return:若为0则检查通过,否则检查不通过
+*/
+int checkMn(FILE *fp) {
+  unsigned char mn[8];
+  mn[7] = 0;
+  int sum = fread(mn, 1, 7, fp);
+  if (sum != 7)
+    return -1;
+  if (*(unsigned long long *)mn == Magic_Num)
+    return 0;
+  else
+    return -4;
+}
 /*
 checkKey:检查密钥是否一致
 fp:输入文件
@@ -36,7 +51,7 @@ int checkKey(FILE *fp, unsigned char *key) {
   if (sum != 20)
     return -1;
   unsigned char *chash = getsha1s(key, 16);
-  if (cmphash(chash, hash) != 0) {
+  if (!cmphash(chash, hash)) {
     delete[] chash;
     return -2;
   }
@@ -60,11 +75,11 @@ int checkFile(FILE *fp) {
     return -1;
 
   unsigned char *chash = getsha1f(fp);
-  if (cmphash(chash, hash) != 0) {
+  if (!cmphash(chash, hash)) {
     delete[] chash;
     return -3;
   }
-  fseek(fp, 41, SEEK_SET);
+  fseek(fp, 48, SEEK_SET);
   delete[] chash;
   return tail;
 }
@@ -75,7 +90,6 @@ fp:输入文件
 out:输出文件
 */
 void decrypt_file(int tail, FILE *fp, FILE *out, struct iobuffer &buf) {
-  fseek(fp, 41, SEEK_SET);
   load_files(&buf, fp, out);
   printf("Buffer loaded %dMB:*", BUF_SZ >> 16);
   fflush(stdout);
@@ -105,9 +119,15 @@ return:若为非负数则检查通过,返回值为原文件大小与16的模,否
 */
 int verify(FILE *fp, unsigned char *key) {
   printf("Begin to check.\n");
-  int res = checkKey(fp, key);
+  int res = checkMn(fp);
   if (res < 0) {
-    printf("File check fail.\n");
+    printf("Magic number check fail.\n");
+    return res;
+  } else
+    printf("Magic number check OK.\n");
+  res = checkKey(fp, key);
+  if (res < 0) {
+    printf("Key check fail.\n");
     return res;
   } else
     printf("Key check OK.\n");

@@ -27,10 +27,9 @@ buf:缓冲区的指针
 return:返回的表项地址
 */
 unsigned char *get_entry(struct iobuffer *buf) {
-  if ((buf->now < buf->total) ||
-      ((buf->now == buf->total) && (buf->tail != 0))) {
+  if ((buf->now < buf->total) || ((buf->now == buf->total) && (buf->tail != 0)))
     return buf->b[buf->now++];
-  } else
+  else
     return NULL;
 }
 /*

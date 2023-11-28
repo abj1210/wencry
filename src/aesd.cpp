@@ -2,11 +2,6 @@
 #include "util.h"
 
 extern struct state keyg[11];
-/*
-addroundkey:aes的密钥轮加操作
-w:待操作的aes加解密单元指针
-key:相应的轮密钥指针
-*/
 extern void addroundkey(struct state &w, const struct state &key);
 /*
 resubbytes:aes的还原subbytes步骤
