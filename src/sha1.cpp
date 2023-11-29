@@ -84,7 +84,7 @@ fp:输入文件
 return:生成的sha1哈希序列
 */
 unsigned char *getSha1File(FILE *fp) {
-  struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
+  struct hash h;
 
   unsigned char s1[64];
   int flag = 0;
@@ -120,7 +120,7 @@ n:字符串长度
 return:生成的sha1哈希序列
 */
 unsigned char *getSha1String(unsigned char *s, unsigned int n) {
-  struct hash h = {HASH0, HASH1, HASH2, HASH3, HASH4};
+  struct hash h;
 
   unsigned long long b = n * 8, cnum;
 

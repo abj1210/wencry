@@ -35,31 +35,42 @@ multiencrypt_file:进行加密的线程函数
 id:线程id
 */
 void multiencrypt_file(int id) {
+  //获取初始缓冲区块
   mutexA.lock();
   int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
   mutexA.unlock();
   if (idxnow != -1)
     printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
-
+  //循环处理
   while (idxnow != -1) {
+    //获取待处理表项
     struct state *block = (struct state *)get_entry(&bufs[id]);
+    //检查表项是否为NULL
     if (block == NULL) {
+      //如果是,则表明当前缓冲区块处理完毕
+      //上锁以进行线程同步
       std::unique_lock<std::mutex> locker(mutexA);
+      //等待需求索引号与当前持有的索引号相同或处理已经结束
       while (outputidx != idxnow && inputidx != -1)
         cond.wait(locker);
+      //等待结束,表明此时当前处理的缓冲区块可以插入输出文件中
+      //判断处理是否结束
       if (buffer_over(&bufs[id])) {
+        //若结束,进行最终写入并将输入序号置为-1以表示输入结束
         char sum = final_write(&bufs[id], 16);
         fseek(fout, 47, SEEK_SET);
         fwrite(&sum, 1, 1, fout);
         inputidx = -1;
-      } else if (inputidx != -1)
+      } else if (inputidx != -1)//否则进行更新,将当前缓冲区块写入输出文件并从输入文件获取新的缓冲区块
         update_buffer(&bufs[id]);
+      //分配新块的索引号并将输出的需求索引号加1,通知其他线程检查条件后解锁
       idxnow = idx_update();
       cond.notify_all();
       locker.unlock();
+      //打印进度
       if (idxnow != -1)
         printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
-    } else
+    } else//否则处理表项
       runaes_128bit(*block);
   }
 }
@@ -113,10 +124,13 @@ fout:输出文件地址
 threads_num:并发线程数
 */
 void multienc_master(FILE *fp, FILE *out, int threads_num) {
+  //初始化
   multi_master_init(fp, out, 16);
+  //线程创建
   std::thread threads[THREADS_NUM];
   for (int i = 0; i < threads_num; i++)
     threads[i] = std::thread(multiencrypt_file, i);
+  //等待线程执行完毕
   for (int i = 0; i < threads_num; i++)
     threads[i].join();
 }

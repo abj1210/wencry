@@ -28,11 +28,5 @@
 #define MAX_THREADS 16
 
 #endif
-//哈希初值
-#define HASH0 0x67452301
-#define HASH1 0xEFCDAB89
-#define HASH2 0x98BADCFE
-#define HASH3 0x10325476
-#define HASH4 0xC3D2E1F0
 
 #endif
