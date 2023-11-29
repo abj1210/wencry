@@ -90,9 +90,8 @@ unsigned char *getSha1File(FILE *fp) {
   int flag = 0;
   struct wdata w;
   for (unsigned int i = 0; flag != 2; ++i) {
+    memset(s1, 0, sizeof(s1));
     unsigned sum = read_buffer64(fp, s1, &ibuf64);
-    if (sum < 64)
-      memset(s1 + sum, 0, sizeof(s1) - sum);
     if (sum != 64 && flag == 0) {
       s1[sum++] = 0x80u;
       flag = 1;

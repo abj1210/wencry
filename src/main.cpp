@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   struct vpak vals;
 #ifdef MULTI_ENABLE
   if (THREADS_NUM >= MAX_THREADS) {
-   std::cout<<"Invalid threads number!\n";
+   std::cout<<"Invalid threads number!\r\n";
     return -4;
   }
 #endif
@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
   else if (argc == 5 || argc == 4)
     vals = get_v_mod2(argc, argv);
   else {
-    std::cout<<"Invalid values.\n";
+    std::cout<<"Invalid values.\r\n";
     return 1;
   }
 

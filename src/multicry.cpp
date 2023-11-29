@@ -39,9 +39,9 @@ void multiencrypt_file(int id) {
   //获取初始缓冲区块
   mutexA.lock();
   int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
-  mutexA.unlock();
   if (idxnow != -1)
-    std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\n";
+    std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\r\n";
+  mutexA.unlock();
   //循环处理
   while (idxnow != -1) {
     //获取待处理表项
@@ -64,13 +64,12 @@ void multiencrypt_file(int id) {
         inputidx = -1;
       } else if (inputidx != -1)//否则进行更新,将当前缓冲区块写入输出文件并从输入文件获取新的缓冲区块
         update_buffer(&bufs[id]);
+      if (idxnow != -1)
+        std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\r\n";
       //分配新块的索引号并将输出的需求索引号加1,通知其他线程检查条件后解锁
       idxnow = idx_update();
       cond.notify_all();
       locker.unlock();
-      //打印进度
-      if (idxnow != -1)
-        std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\n";
     } else//否则处理表项
       runaes_128bit(*block);
   }
@@ -82,9 +81,9 @@ id:线程id
 void multidecrypt_file(int id) {
   mutexA.lock();
   int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
-  mutexA.unlock();
   if (idxnow != -1)
-    std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\n";
+    std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\r\n";
+  mutexA.unlock();
 
   while (idxnow != -1) {
     struct state *block = (struct state *)get_entry(&bufs[id]);
@@ -97,11 +96,11 @@ void multidecrypt_file(int id) {
         inputidx = -1;
       } else if (inputidx != -1)
         update_buffer(&bufs[id]);
+      if (idxnow != -1)
+        std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\r\n";
       idxnow = idx_update();
       cond.notify_all();
       locker.unlock();
-      if (idxnow != -1)
-        printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
     } else
       decaes_128bit(*block);
   }
