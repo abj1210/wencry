@@ -1,5 +1,5 @@
 #include "cry.h"
-#include "Autil.h"
+#include "util.h"
 #include "wenctrl.h"
 
 #include <time.h>

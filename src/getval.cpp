@@ -1,5 +1,5 @@
 #include "key.h"
-#include "Autil.h"
+#include "util.h"
 #include "wenctrl.h"
 
 #include <stdio.h>

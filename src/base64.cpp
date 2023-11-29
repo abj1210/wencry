@@ -1,5 +1,5 @@
 #include "wenctrl.h"
-#include "Autil.h"
+#include "util.h"
 /*
 turn_base64:将一个十六进制位转化为base64编码
 in:输入的十六进制位

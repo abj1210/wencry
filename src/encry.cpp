@@ -3,7 +3,7 @@
 #include "key.h"
 #include "multicry.h"
 #include "sha1.h"
-#include "Autil.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <stdlib.h>
