@@ -3,10 +3,10 @@
 
 #include <stdio.h>
 //用于aes的16B单元缓冲区单元数量
-#define BUF_SZ 0x100000
+const unsigned BUF_SZ=0x100000;
 
 //用于hash的64B单元缓冲区单元数量
-#define HBUF_SZ 0x40000
+const unsigned HBUF_SZ=0x40000;
 
 /*
 iobuffer:用于aes的16B单元输入输出缓冲区

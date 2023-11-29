@@ -1,6 +1,6 @@
 #include "multicry.h"
 #include "aes.h"
-#include "util.h"
+#include "Autil.h"
 
 #ifdef MULTI_ENABLE
 #include <condition_variable>

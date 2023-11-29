@@ -1,5 +1,5 @@
 #include "aes.h"
-#include "util.h"
+#include "Autil.h"
 
 extern struct state keyg[11];
 extern void addroundkey(struct state &w, const struct state &key);
