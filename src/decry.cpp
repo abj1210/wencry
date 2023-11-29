@@ -117,24 +117,13 @@ key:初始密钥序列
 return:若为非负数则检查通过,返回值为原文件大小与16的模,否则检查不通过
 */
 int verify(FILE *fp, unsigned char *key) {
-  printf("Begin to check.\n");
   int res = checkMn(fp);
-  if (res < 0) {
-    printf("Magic number check fail.\n");
+  if (res < 0) 
     return res;
-  } else
-    printf("Magic number check OK.\n");
   res = checkKey(fp, key);
-  if (res < 0) {
-    printf("Key check fail.\n");
+  if (res < 0) 
     return res;
-  } else
-    printf("Key check OK.\n");
   res = checkFile(fp);
-  if (res < 0)
-    printf("File check fail.\n");
-  else
-    printf("File check OK.\n");
   return res;
 }
 /*
@@ -150,13 +139,10 @@ int dec(FILE *fp, FILE *out, unsigned char *key) {
   if (tail < 0)
     return -tail;
   initgen(key);
-  printf("Begin to decrypt.\n");
 #ifndef MULTI_ENABLE
   decrypt_file(tail, fp, out, buf);
 #else
   multidec_master(fp, out, tail, THREADS_NUM);
 #endif
-  printf("Decrypted.\n");
-  printf("Execute over!\n");
   return 0;
 }

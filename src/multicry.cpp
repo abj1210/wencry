@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <stdio.h>
+#include <iostream>
 #include <thread>
 
 //缓冲区序列
@@ -40,7 +41,7 @@ void multiencrypt_file(int id) {
   int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
   mutexA.unlock();
   if (idxnow != -1)
-    printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
+    std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\n";
   //循环处理
   while (idxnow != -1) {
     //获取待处理表项
@@ -69,7 +70,7 @@ void multiencrypt_file(int id) {
       locker.unlock();
       //打印进度
       if (idxnow != -1)
-        printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
+        std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\n";
     } else//否则处理表项
       runaes_128bit(*block);
   }
@@ -83,7 +84,7 @@ void multidecrypt_file(int id) {
   int idxnow = load_files(&bufs[id], fin, fout) ? inputidx++ : -1;
   mutexA.unlock();
   if (idxnow != -1)
-    printf("Buffer of thread id %d loaded %dMB data.\n", id, BUF_SZ >> 16);
+    std::cout<<"Buffer of thread id "<<id<<" loaded "<<(BUF_SZ >> 16)<<"MB data.\n";
 
   while (idxnow != -1) {
     struct state *block = (struct state *)get_entry(&bufs[id]);

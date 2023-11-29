@@ -74,17 +74,13 @@ void enc(FILE *fp, FILE *out, unsigned char *key) {
   //初始化
   getFileHeader(out, key);
   initgen(key);
-  printf("Begin to encrypt.\n");
   //加密
 #ifndef MULTI_ENABLE
   encrypt_file(fp, out, buf);
 #else
   multienc_master(fp, out, THREADS_NUM);
 #endif
-  printf("Encrypted.\n");
   //获取哈希
-  printf("Begin to hash.\n");
   hashfile(out);
-  printf("Execute over!\n");
   return;
 }
