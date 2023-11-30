@@ -1,13 +1,10 @@
 #include "aes.h"
 #include "util.h"
-
-extern struct state keyg[11];
-extern void addroundkey(struct state &w, const struct state &key);
+decryaes::decryaes(keyhandle *key) : aeshandle(key) {}
 /*
-resubbytes:aes的还原subbytes步骤
-w:待操作的aes加解密单元指针
+subbytes:aes的还原subbytes步骤
 */
-void resubbytes(struct state &w) {
+void decryaes::subbytes() {
   for (int i = 0; i < 4; ++i) {
     union byteint t = {w.g[i]};
     setbytes(t, r_sub_bytes(t.t0), r_sub_bytes(t.t1), r_sub_bytes(t.t2),
@@ -16,20 +13,18 @@ void resubbytes(struct state &w) {
   }
 }
 /*
-rerowshift:aes的还原rowshift步骤
-w:待操作的aes加解密单元指针
+rowshift:aes的还原rowshift步骤
 */
-void rerowshift(struct state &w) {
+void decryaes::rowshift() {
   unsigned int t1 = w.g[1], t2 = w.g[2], t3 = w.g[3];
   w.g[1] = lrot(t1, 8);
   w.g[2] = lrot(t2, 16);
   w.g[3] = lrot(t3, 24);
 }
 /*
-recolumnmix:aes的还原columnmix步骤
-w:待操作的aes加解密单元指针
+columnmix:aes的还原columnmix步骤
 */
-void recolumnmix(struct state &w) {
+void decryaes::columnmix() {
   unsigned long long dl = w.datal, dh = w.datah;
   union byteint g0 = {(unsigned int)(dl)}, g1 = {(unsigned int)(dl >> 32)},
                 g2 = {(unsigned int)(dh)}, g3 = {(unsigned int)(dh >> 32)};
@@ -43,33 +38,32 @@ void recolumnmix(struct state &w) {
   }
 }
 /*
-commondec:aes的一轮解密步骤
-data:待操作的aes加解密单元指针
+commonround:aes的一轮解密步骤
 round:该操作的轮数
 */
-void commondec(struct state &data, int round) {
-  recolumnmix(data);
-  rerowshift(data);
-  resubbytes(data);
-  addroundkey(data, keyg[round]);
+void decryaes::commonround(int round) {
+  columnmix();
+  rowshift();
+  subbytes();
+  addroundkey(key->get_key(round));
 }
 /*
-firstdec:aes的第一轮解密步骤
-data:待操作的aes加解密单元指针
+specround:aes的第一轮解密步骤
 */
-void firstdec(struct state &data) {
-  addroundkey(data, keyg[10]);
-  rerowshift(data);
-  resubbytes(data);
-  addroundkey(data, keyg[9]);
+void decryaes::specround() {
+  addroundkey(key->get_key(10));
+  rowshift();
+  subbytes();
+  addroundkey(key->get_key(9));
 }
 /*
 接口函数
-decaes_128bit:将一个128bit的数据块进行aes解密
-s:待加解密数据块的地址
+decryaes_128bit:将一个128bit的数据块进行aes解密
+w:待加解密数据块的地址
 */
-void decaes_128bit(struct state &s) {
-  firstdec(s);
+void decryaes::decryaes_128bit(struct state &w) {
+  this->w = w;
+  specround();
   for (int i = 8; i >= 0; --i)
-    commondec(s, i);
+    commonround(i);
 }

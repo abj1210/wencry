@@ -3,91 +3,87 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifndef MULTI_ENABLE
-struct iobuffer buf;
-#endif
 /*
 load_files:设定输入输出文件并初始化缓冲区
-buf:缓冲区指针
 fin:输入文件地址
 fout:输出文件地址
+return:是否成功装载数据
 */
-bool load_files(struct iobuffer *buf, FILE *fin, FILE *fout) {
-  buf->fin = fin;
-  buf->fout = fout;
-  unsigned int sum = fread(buf->b, 1, BUF_SZ << 4, fin);
-  buf->tail = sum & 0xf;
-  buf->total = sum >> 4;
-  buf->now = 0;
+bool iobuffer::load_files(FILE *fin, FILE *fout) {
+  this->fin = fin;
+  this->fout = fout;
+  unsigned int sum = fread(b, 1, BUF_SZ << 4, fin);
+  tail = sum & 0xf;
+  total = sum >> 4;
+  now = 0;
+  if (sum == 0)
+    this->fin = NULL;
   return sum != 0;
 }
 /*
 get_entry:获取当前缓冲区单元表项
-buf:缓冲区的指针
 return:返回的表项地址
 */
-unsigned char *get_entry(struct iobuffer *buf) {
-  if ((buf->now < buf->total) || ((buf->now == buf->total) && (buf->tail != 0)))
-    return buf->b[buf->now++];
+unsigned char *iobuffer::get_entry() {
+  if ((now < total) || ((now == total) && (tail != 0)))
+    return b[now++];
   else
     return NULL;
 }
 /*
 update_buffer:保存缓冲区数据并更新缓冲区
-buf:缓冲区的指针
+return:重新读入的字节数
 */
-void update_buffer(struct iobuffer *buf) {
-  fwrite(buf->b, 1, BUF_SZ << 4, buf->fout);
-  unsigned int sum = fread(buf->b, 1, BUF_SZ << 4, buf->fin);
-  buf->tail = sum & 0xf;
-  buf->total = sum >> 4;
-  buf->now = 0;
+unsigned int iobuffer::update_buffer() {
+  fwrite(b, 1, BUF_SZ << 4, fout);
+  unsigned int sum = fread(b, 1, BUF_SZ << 4, fin);
+  tail = sum & 0xf;
+  total = sum >> 4;
+  now = 0;
+  return sum;
 }
 /*
 bufferover:缓冲区和文件是否读取完毕
-buf:缓冲区指针
 return:若为0则未读取完毕,否则已读取完毕
 */
-bool buffer_over(struct iobuffer *buf) {
-  return (buf->now >= buf->total) && (buf->total != BUF_SZ);
-}
+bool iobuffer::buffer_over() { return (now >= total) && (total != BUF_SZ); }
+/*
+fin_empty:判断缓冲区写入文件指针是否为空
+return:若为空返回真否则返回假
+*/
+bool iobuffer::fin_empty() { return fin == NULL; }
 /*
 final_write:将缓冲区内容保存到文件并关闭缓冲区
-buf:输出缓冲区的指针
-tail:最后一表项中要保存的字节数
+tailin:最后一表项中要保存的字节数
 return:最后一表项装载的字节数
 */
-unsigned int final_write(struct iobuffer *buf, int tail) {
-  fwrite(buf->b, 1, ((buf->now - 1) << 4) + tail, buf->fout);
-  return buf->tail == 0 ? 16 : buf->tail;
+unsigned int iobuffer::final_write(int tailin) {
+  fwrite(b, 1, ((now - 1) << 4) + tailin, fout);
+  return tail == 0 ? 16 : tail;
 }
-
+buffer64::buffer64() : now(0), load(0) {}
 /*
 read_buffer:从缓冲区读取64B数据
 fp:缓冲区加载的文件指针
 block:读取数据的地址
-ibuf64:输入缓冲区的指针
 return:读取的字节数
 */
-unsigned int read_buffer64(FILE *fp, unsigned char *block,
-                           struct buffer64 *ibuf64) {
+unsigned int buffer64::read_buffer64(FILE *fp, unsigned char *block) {
   unsigned int res = 0;
-  if (ibuf64->now == HBUF_SZ || ibuf64->load == 0) {
-    unsigned int sum = fread(ibuf64->b, 1, HBUF_SZ << 6, fp);
-    ibuf64->tail = sum & 0x3f;
-    ibuf64->total = sum >> 6;
-    ibuf64->now = 0;
-    ibuf64->load = 1;
+  if (now == HBUF_SZ || load == 0) {
+    unsigned int sum = fread(b, 1, HBUF_SZ << 6, fp);
+    tail = sum & 0x3f;
+    total = sum >> 6;
+    now = 0;
+    load = 1;
   }
-
-  if (ibuf64->now == ibuf64->total) {
-    memcpy(block, ibuf64->b[ibuf64->now], ibuf64->tail);
-    res = ibuf64->tail;
-    ibuf64->tail = 0;
+  if (now == total) {
+    memcpy(block, b[now], tail);
+    res = tail;
+    tail = 0;
   } else {
-    memcpy(block, ibuf64->b[ibuf64->now], 64);
+    memcpy(block, b[now++], 64);
     res = 64;
-    ibuf64->now++;
   }
   return res;
 }

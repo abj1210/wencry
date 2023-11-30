@@ -2,54 +2,75 @@
 #include "util.h"
 
 #include <stdlib.h>
+#include <string.h>
 
-struct state keyg[11];
+extern void hex_to_base64(unsigned char *hex_in, int len,
+                          unsigned char *base64_out);
+extern void base64_to_hex(unsigned char *base64_in, int len,
+                          unsigned char *hex_out);
+/*
+构造函数:产生随机密钥
+*/
+keyhandle::keyhandle() {
+  for (int i = 0; i < 16; ++i)
+    init_key[i] = rand() & 0xff;
+  genall();
+}
+/*
+构造函数:产生指定密钥
+b64:指定密钥的base64编码形式
+*/
+keyhandle::keyhandle(unsigned char *b64) {
+  base64_to_hex(b64, strlen((const char *)b64), init_key);
+  genall();
+}
 
 /*
 genkey:产生每轮的轮密钥
-last_key:上一轮的轮密钥
 round:本轮的轮数
-return:本轮的轮密钥
 */
-struct state genkey(struct state last_key, int round) {
-  struct state now_key;
-  for (int j = 0; j < 4; ++j) {
-    for (int i = 0; i < 4; ++i) {
-      if (j == 0) {
-        if (i == 0)
-          now_key.s[i][j] =
-              (sub_bytes(last_key.s[1][3])) ^ RC[round] ^ last_key.s[i][j];
-        else
-          now_key.s[i][j] =
-              (sub_bytes(last_key.s[(i + 1) & 0x3][3])) ^ last_key.s[i][j];
-      } else
-        now_key.s[i][j] = now_key.s[i][j - 1] ^ last_key.s[i][j];
-    }
-  }
-  return now_key;
-}
-/*
-接口函数
-initgen:产生全部轮密钥
-init_key:初始密钥字符串
-*/
-void initgen(unsigned char *init_key) {
-  for (int j = 0; j < 4; ++j) {
+void keyhandle::genkey(int round) {
+  for (int j = 0; j < 4; ++j)
     for (int i = 0; i < 4; ++i)
-      keyg[0].s[i][j] = init_key[(j << 2) | (i & 0x3)];
-  }
+      if (j == 0)
+        if (i == 0)
+          key[round].s[i][j] = (sub_bytes(key[round - 1].s[1][3])) ^ RC[round] ^
+                               key[round - 1].s[i][j];
+        else
+          key[round].s[i][j] = (sub_bytes(key[round - 1].s[(i + 1) & 0x3][3])) ^
+                               key[round - 1].s[i][j];
+      else
+        key[round].s[i][j] = key[round].s[i][j - 1] ^ key[round - 1].s[i][j];
+}
+/*
+genall:产生全部密钥
+*/
+void keyhandle::genall() {
+  for (int j = 0; j < 4; ++j)
+    for (int i = 0; i < 4; ++i)
+      key[0].s[i][j] = init_key[(j << 2) | (i & 0x3)];
   for (int i = 1; i < 11; ++i)
-    keyg[i] = genkey(keyg[i - 1], i);
+    genkey(i);
+}
+/*
+get_key:获取相应轮次的密钥
+round:指定的轮次
+return:返回的密钥
+*/
+struct state &keyhandle::get_key(int round) {
+  return key[round];
 }
 /*
 接口函数
-gen_key:随机产生一初始密钥
-return:产生的初始密钥
+get_initkey:返回初始密钥的base64形式
+b64:输出字符串地址
 */
-unsigned char *gen_key() {
-  unsigned char *key = new unsigned char[16];
-  for (int i = 0; i < 16; ++i) {
-    key[i] = rand() & 0xff;
-  }
-  return key;
+void keyhandle::get_initkey(unsigned char *b64) {
+  hex_to_base64(init_key, 16, b64);
 }
+/*
+接口函数
+get_initkey:返回初始密钥
+return:初始密钥
+*/
+unsigned char *keyhandle::get_initkey() { return init_key; }

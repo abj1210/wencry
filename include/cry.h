@@ -1,10 +1,11 @@
 #ifndef CRY
 #define CRY
 
+#include "key.h"
 #include <stdio.h>
 
-void enc(FILE *fp, FILE *out, unsigned char *key);
-int verify(FILE *fp, unsigned char *key);
-int dec(FILE *fp, FILE *out, unsigned char *key);
+void enc(FILE *fp, FILE *out, keyhandle *key);
+int verify(FILE *fp, keyhandle *key);
+int dec(FILE *fp, FILE *out, keyhandle *key);
 
 #endif

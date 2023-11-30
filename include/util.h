@@ -24,14 +24,11 @@
 #define Magic_Num 0xA5C3A500C3A5C3
 
 //是否开启多线程模式
+//!!!请勿去掉该宏!!!
 #define MULTI_ENABLE
-
-#ifdef MULTI_ENABLE
 //线程数
 #define THREADS_NUM 4
 //最大线程数
 #define MAX_THREADS 16
-
-#endif
 
 #endif

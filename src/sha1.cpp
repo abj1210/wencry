@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-struct buffer64 ibuf64;
+buffer64 *ibuf64;
 /*
 getwdata:根据每个输入单元生成sha1中w数组的值
 s:输入的单元
@@ -84,14 +84,14 @@ fp:输入文件
 return:生成的sha1哈希序列
 */
 unsigned char *getSha1File(FILE *fp) {
+  ibuf64 = new buffer64;
   struct hash h;
-
   unsigned char s1[64];
   int flag = 0;
   struct wdata w;
   for (unsigned int i = 0; flag != 2; ++i) {
     memset(s1, 0, sizeof(s1));
-    unsigned sum = read_buffer64(fp, s1, &ibuf64);
+    unsigned sum = ibuf64->read_buffer64(fp, s1);
     if (sum != 64 && flag == 0) {
       s1[sum++] = 0x80u;
       flag = 1;
@@ -106,9 +106,9 @@ unsigned char *getSha1File(FILE *fp) {
     gethash(h, w);
   }
   unsigned char *sha1res = new unsigned char[20];
-  for (int i = 0; i < 20; i++) {
+  for (int i = 0; i < 20; i++) 
     sha1res[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
-  }
+  delete ibuf64;
   return sha1res;
 }
 /*
@@ -120,16 +120,12 @@ return:生成的sha1哈希序列
 */
 unsigned char *getSha1String(unsigned char *s, unsigned int n) {
   struct hash h;
-
   unsigned long long b = n * 8, cnum;
-
   int flag = 0;
-
   if ((b + 8) % 512 >= 448)
     cnum = b / 512 + 2;
   else
     cnum = b / 512 + 1;
-
   unsigned char s1[64];
   struct wdata w;
   for (unsigned int i = 0; i < cnum; ++i) {
@@ -154,8 +150,7 @@ unsigned char *getSha1String(unsigned char *s, unsigned int n) {
     gethash(h, w);
   }
   unsigned char *sha1res = new unsigned char[20];
-  for (int i = 0; i < 20; ++i) {
+  for (int i = 0; i < 20; ++i) 
     sha1res[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
-  }
   return sha1res;
 }

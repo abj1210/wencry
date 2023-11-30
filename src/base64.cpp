@@ -1,4 +1,4 @@
-#include "wenctrl.h"
+#include "key.h"
 #include "util.h"
 /*
 turn_base64:将一个十六进制位转化为base64编码
@@ -57,21 +57,18 @@ void hex_to_base64(unsigned char *hex_in, int len, unsigned char *base64_out) {
       h_in = 0;
     }
   }
-  if (j == 1) {
-    for (int j = 0; j < 4; j++) {
+  if (j == 1) 
+    for (int j = 0; j < 4; j++) 
       if (j < 2)
         base64_out[idx++] = turn_base64((h_in >> (6 * (3 - j))) & 0x3f);
       else
         base64_out[idx++] = '=';
-    }
-  } else if (j == 2) {
-    for (int j = 0; j < 4; j++) {
+  else if (j == 2) 
+    for (int j = 0; j < 4; j++) 
       if (j < 3)
         base64_out[idx++] = turn_base64((h_in >> (6 * (3 - j))) & 0x3f);
       else
         base64_out[idx++] = '=';
-    }
-  }
   base64_out[idx] = '\0';
 }
 /*
@@ -85,7 +82,7 @@ void base64_to_hex(unsigned char *base64_in, int len, unsigned char *hex_out) {
   int j = 0;
   int idx = 0;
   unsigned h_in = 0;
-  for (int i = 0; i < len; i++) {
+  for (int i = 0; i < len; i++)
     if (base64_in[i] == '=')
       tail++;
     else {
@@ -97,10 +94,9 @@ void base64_to_hex(unsigned char *base64_in, int len, unsigned char *hex_out) {
         h_in = 0;
       }
     }
-  }
-  if (tail == 1) {
+  if (tail == 1) 
     hex_out[idx++] = (h_in >> 16) & 0xff;
-  } else if (tail == 2) {
+  else if (tail == 2) {
     hex_out[idx++] = (h_in >> 16) & 0xff;
     hex_out[idx++] = (h_in >> 8) & 0xff;
   }

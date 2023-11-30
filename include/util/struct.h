@@ -2,6 +2,7 @@
 #define STU
 
 #include <stdio.h>
+class keyhandle;
 /*
 state:用于aes操作的基本单元
 s:16B数据
@@ -35,7 +36,7 @@ mode:模式(加密/解密)
 */
 struct vpak {
   FILE *fp, *out;
-  unsigned char *key;
+  keyhandle *key;
   char mode;
 };
 /*
@@ -50,7 +51,7 @@ hash:sha1的hash基本单元
 h:20B数据
 */
 struct hash {
-  unsigned h[5]={0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0};
+  unsigned h[5] = {0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0};
 };
 
 #endif
