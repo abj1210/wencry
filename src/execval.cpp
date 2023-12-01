@@ -77,7 +77,7 @@ bool exec_val(struct vpak vals) {
     std::cout << "Invalid values.\r\n";
     return false;
   }
-  clock_t totalTime;
+  clock_t totalTime = 0;
   if (vals.mode == 'e' || vals.mode == 'E')
     totalTime = encrypt(vals);
   else if (vals.mode == 'd' || vals.mode == 'D')

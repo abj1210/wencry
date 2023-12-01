@@ -4,8 +4,6 @@
 #include "util.h"
 
 #include <stdio.h>
-#include <stdlib.h>
-
 /*
 cmphash:比较哈希值
 h1:待比较的哈希数组
@@ -41,17 +39,15 @@ key:输入的密钥序列
 return:若为0则检查通过,否则检查不通过
 */
 int checkKey(FILE *fp, unsigned char *key) {
-  unsigned char hash[20];
+  unsigned char hash[20], chash[20];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
-  unsigned char *chash = getSha1String(key, 16);
-  if (!cmphash(chash, hash)) {
-    delete[] chash;
+  getSha1String(key, 16, chash);
+  if (!cmphash(chash, hash))
     return -2;
-  }
-  delete[] chash;
-  return 0;
+  else
+    return 0;
 }
 /*
 checkFile:检查文件是否被篡改
@@ -59,7 +55,7 @@ fp:输入文件
 return:若为非负数则检查通过,返回值为原文件大小与16的模,否则检查不通过
 */
 int checkFile(FILE *fp) {
-  unsigned char hash[20];
+  unsigned char hash[20], chash[29];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
@@ -67,13 +63,10 @@ int checkFile(FILE *fp) {
   int rx = fread(&tail, 1, 1, fp);
   if (rx != 1)
     return -1;
-  unsigned char *chash = getSha1File(fp);
-  if (!cmphash(chash, hash)) {
-    delete[] chash;
+  getSha1File(fp, chash);
+  if (!cmphash(chash, hash))
     return -3;
-  }
   fseek(fp, 48, SEEK_SET);
-  delete[] chash;
   return tail;
 }
 /*

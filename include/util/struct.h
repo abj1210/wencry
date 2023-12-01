@@ -17,17 +17,6 @@ struct state {
   };
 };
 /*
-byteint:便于对整型的各字节进行操作的数据结构
-i:整型值
-t0-t3:各字节值
-*/
-union byteint {
-  unsigned int i;
-  struct {
-    unsigned char t0, t1, t2, t3;
-  };
-};
-/*
 vpak:参数包
 fp:输入文件
 out:输出文件

@@ -6,7 +6,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-
+/*
+getArgsFilep:从参数中获取文件指针
+return:获取的文件指针
+*/
+FILE *getArgsFilep(char *arg) {
+  FILE *fp = fopen(arg, "rb");
+  if (fp == NULL)
+    printf("File not found.\n");
+  return fp;
+}
 /*
 getInputFilep:从输入中获取文件指针
 return:获取的文件指针
@@ -76,10 +85,8 @@ struct vpak get_v_mod1() {
   } else if (res.mode == 'v') {
     res.key = getInputKey();
     res.out = NULL;
-  } else {
+  } else
     res.fp = NULL;
-    return res;
-  }
   res.key->get_initkey(outk);
   printf("Key is:\n %s\n", outk);
   return res;
@@ -98,26 +105,15 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
   struct vpak res;
   res.mode = argv[1][1];
   if (strcmp(argv[1], "-e") == 0) {
-    res.fp = fopen(argv[2], "rb");
-    if (res.fp == NULL) {
-      printf("File not found.\n");
-      return res;
-    }
+    res.fp = getArgsFilep(argv[2]);
     if (strcmp(argv[3], "G") == 0)
       res.key = new keyhandle();
     else
       res.key = new keyhandle((unsigned char *)argv[3]);
-    if (argc == 4)
-      sprintf(outn, "%s.wenc", argv[2]);
-    else
-      sprintf(outn, "%s.wenc", argv[4]);
+    sprintf(outn, "%s.wenc", argc == 4 ? argv[2] : argv[4]);
     res.out = fopen(outn, "wb+");
   } else if (strcmp(argv[1], "-d") == 0) {
-    res.fp = fopen(argv[2], "rb");
-    if (res.fp == NULL) {
-      printf("File not found.\n");
-      return res;
-    }
+    res.fp = getArgsFilep(argv[2]);
     res.key = new keyhandle((unsigned char *)argv[3]);
     if (argc == 4) {
       sprintf(outn, "%s.denc", argv[2]);
@@ -125,17 +121,11 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
     } else
       res.out = fopen(argv[4], "wb+");
   } else if (strcmp(argv[1], "-v") == 0) {
-    res.fp = fopen(argv[2], "rb");
     res.out = NULL;
-    if (res.fp == NULL) {
-      printf("File not found.\n");
-      return res;
-    }
+    res.fp = getArgsFilep(argv[2]);
     res.key = new keyhandle((unsigned char *)argv[3]);
-  } else {
+  } else
     res.fp = NULL;
-    return res;
-  }
   res.key->get_initkey(outk);
   printf("Key is:\n %s\n", outk);
   return res;

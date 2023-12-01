@@ -20,10 +20,11 @@ subbytes:aes的subbytes操作
 */
 void encryaes::subbytes() {
   for (int i = 0; i < 4; ++i) {
-    union byteint t = {w.g[i]};
-    setbytes(t, sub_bytes(t.t0), sub_bytes(t.t1), sub_bytes(t.t2),
-             sub_bytes(t.t3));
-    w.g[i] = t.i;
+    unsigned int t = w.g[i];
+    setbytes(w.g[i], sub_bytes((unsigned char)t),
+             sub_bytes((unsigned char)(t >> 8)),
+             sub_bytes((unsigned char)(t >> 16)),
+             sub_bytes((unsigned char)(t >> 24)));
   }
 }
 /*
@@ -39,15 +40,13 @@ void encryaes::rowshift() {
 columnmix:aes的columnmix操作
 */
 void encryaes::columnmix() {
-  unsigned long long dl = w.datal, dh = w.datah;
-  union byteint g0 = {(unsigned int)(dl)}, g1 = {(unsigned int)(dl >> 32)},
-                g2 = {(unsigned int)(dh)}, g3 = {(unsigned int)(dh >> 32)};
+  unsigned int g0 = w.g[0], g1 = w.g[1], g2 = w.g[2], g3 = w.g[3];
   for (int i = 0; i < 4; ++i) {
     w.s[0][i] = GMlineA(25, 1, 0, 0);
     w.s[1][i] = GMlineA(0, 25, 1, 0);
     w.s[2][i] = GMlineA(0, 0, 25, 1);
     w.s[3][i] = GMlineA(1, 0, 0, 25);
-    g0.i >>= 8, g1.i >>= 8, g2.i >>= 8, g3.i >>= 8;
+    g0 >>= 8, g1 >>= 8, g2 >>= 8, g3 >>= 8;
   }
 }
 /*

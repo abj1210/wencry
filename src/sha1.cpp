@@ -13,15 +13,14 @@ return:w的地址
 */
 void getwdata(unsigned char *s, struct wdata &w) {
   int i = 0;
-  union byteint t, t1;
+  unsigned int t;
   for (i; i < 16; ++i) {
-    t.i = *((unsigned int *)s + i);
-    setbytes(t1, t.t3, t.t2, t.t1, t.t0);
-    w.w[i] = t1.i;
+    t = *((unsigned int *)s + i);
+    setbytes(w.w[i], ((t >> 24) & 0xff), ((t >> 16) & 0xff), ((t >> 8) & 0xff),
+             (t & 0xff));
   }
   for (i; i < 80; ++i) {
-    unsigned int t =
-        (w.w[i - 3]) ^ (w.w[i - 8]) ^ (w.w[i - 14]) ^ (w.w[i - 16]);
+    t = (w.w[i - 3]) ^ (w.w[i - 8]) ^ (w.w[i - 14]) ^ (w.w[i - 16]);
     w.w[i] = lrot(t, 1);
   }
 }
@@ -35,36 +34,20 @@ void gethash(struct hash &h, const struct wdata &w) {
                temph3 = h.h[3], temph4 = h.h[4];
   unsigned int f, temp;
   unsigned int i = 0;
-  for (i; i < 20; ++i) {
-    f = (temph1 & temph2) | ((~temph1) & temph3);
-    temp = lrot(temph0, 5) + f + 0x5A827999 + temph4 + w.w[i];
-    temph4 = temph3;
-    temph3 = temph2;
-    temph2 = lrot(temph1, 30);
-    temph1 = temph0;
-    temph0 = temp;
-  }
-  for (i; i < 40; ++i) {
-    f = temph1 ^ temph2 ^ temph3;
-    temp = lrot(temph0, 5) + f + 0x6ED9EBA1 + temph4 + w.w[i];
-    temph4 = temph3;
-    temph3 = temph2;
-    temph2 = lrot(temph1, 30);
-    temph1 = temph0;
-    temph0 = temp;
-  }
-  for (i; i < 60; ++i) {
-    f = (temph1 & temph2) | (temph1 & temph3) | (temph2 & temph3);
-    temp = lrot(temph0, 5) + f + 0x8F1BBCDC + temph4 + w.w[i];
-    temph4 = temph3;
-    temph3 = temph2;
-    temph2 = lrot(temph1, 30);
-    temph1 = temph0;
-    temph0 = temp;
-  }
-  for (i; i < 80; ++i) {
-    f = temph1 ^ temph2 ^ temph3;
-    temp = lrot(temph0, 5) + f + 0xCA62C1D6 + temph4 + w.w[i];
+  for (unsigned int i = 0; i < 80; ++i) {
+    if (i < 20) {
+      f = (temph1 & temph2) | ((~temph1) & temph3);
+      temp = lrot(temph0, 5) + f + 0x5A827999 + temph4 + w.w[i];
+    } else if (i < 40) {
+      f = temph1 ^ temph2 ^ temph3;
+      temp = lrot(temph0, 5) + f + 0x6ED9EBA1 + temph4 + w.w[i];
+    } else if (i < 60) {
+      f = (temph1 & temph2) | (temph1 & temph3) | (temph2 & temph3);
+      temp = lrot(temph0, 5) + f + 0x8F1BBCDC + temph4 + w.w[i];
+    } else {
+      f = temph1 ^ temph2 ^ temph3;
+      temp = lrot(temph0, 5) + f + 0xCA62C1D6 + temph4 + w.w[i];
+    }
     temph4 = temph3;
     temph3 = temph2;
     temph2 = lrot(temph1, 30);
@@ -83,15 +66,15 @@ getSha1File:获取文件的sha1哈希值
 fp:输入文件
 return:生成的sha1哈希序列
 */
-unsigned char *getSha1File(FILE *fp) {
-  ibuf64 = new buffer64;
+void getSha1File(FILE *fp, unsigned char *hashout) {
+  ibuf64 = new buffer64(fp);
   struct hash h;
   unsigned char s1[64];
   int flag = 0;
   struct wdata w;
   for (unsigned int i = 0; flag != 2; ++i) {
     memset(s1, 0, sizeof(s1));
-    unsigned sum = ibuf64->read_buffer64(fp, s1);
+    unsigned sum = ibuf64->read_buffer64(s1);
     if (sum != 64 && flag == 0) {
       s1[sum++] = 0x80u;
       flag = 1;
@@ -105,11 +88,9 @@ unsigned char *getSha1File(FILE *fp) {
     getwdata(s1, w);
     gethash(h, w);
   }
-  unsigned char *sha1res = new unsigned char[20];
-  for (int i = 0; i < 20; i++) 
-    sha1res[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
+  for (int i = 0; i < 20; i++)
+    hashout[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
   delete ibuf64;
-  return sha1res;
 }
 /*
 接口函数
@@ -118,7 +99,7 @@ s:输入字符串
 n:字符串长度
 return:生成的sha1哈希序列
 */
-unsigned char *getSha1String(unsigned char *s, unsigned int n) {
+void getSha1String(unsigned char *s, unsigned int n, unsigned char *hashout) {
   struct hash h;
   unsigned long long b = n * 8, cnum;
   int flag = 0;
@@ -130,27 +111,21 @@ unsigned char *getSha1String(unsigned char *s, unsigned int n) {
   struct wdata w;
   for (unsigned int i = 0; i < cnum; ++i) {
     memset(s1, 0, sizeof(s1));
-
     if ((i << 6) < n) {
       if (n - (i << 6) < 64) {
         memcpy(s1, s + (i << 6), n - (i << 6));
         s1[n - (i << 6)] = 0x80u;
         flag = 1;
-
-      } else {
+      } else
         memcpy(s1, s + (i << 6), 64);
-      }
     } else if (!flag)
       s1[0] = 0x80u;
-    if (i == cnum - 1) {
+    if (i == cnum - 1)
       for (int i = 0; i < 8; ++i)
         s1[56 + i] = (unsigned char)((b >> ((7 - i) << 3)));
-    }
     getwdata(s1, w);
     gethash(h, w);
   }
-  unsigned char *sha1res = new unsigned char[20];
-  for (int i = 0; i < 20; ++i) 
-    sha1res[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
-  return sha1res;
+  for (int i = 0; i < 20; ++i)
+    hashout[i] = (unsigned char)((h.h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
 }

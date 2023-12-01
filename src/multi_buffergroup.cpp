@@ -9,18 +9,24 @@ fin:输入文件指针
 fout:输出文件指针
 */
 buffergroup::buffergroup(unsigned int size, FILE *fin, FILE *fout)
-    : size(size), turn(0) {
+    : size(size) {
   buflst = new iobuffer[size];
+  fileaccess = new std::mutex[size];
   for (int i = 0; i < size; i++) {
     if (buflst[i].load_files(fin, fout))
       std::cout << "Buffer of thread id " << i << " loaded "
                 << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
+    if (i != 0)
+      fileaccess[i].lock();
   }
 }
 /*
 析构函数:释放缓冲区组
 */
-buffergroup::~buffergroup() { delete[] buflst; }
+buffergroup::~buffergroup() {
+  delete[] buflst;
+  delete[] fileaccess;
+}
 /*
 require_buffer_entry:获取相应的缓冲区表项
 id:缓冲区索引
@@ -37,16 +43,12 @@ return:是否成功更新
 bool buffergroup::update_lst(unsigned int id) {
   if (buflst[id].fin_empty())
     return false;
-  std::unique_lock<std::mutex> locker(filelock);
-  while (turn != id)
-    cond.wait(locker);
+  fileaccess[id].lock();
   bool flag = (buflst[id].update_buffer() != 0);
-  turn = (turn + 1) % size;
-  cond.notify_all();
-  if(flag)
-      std::cout << "Buffer of thread id " << id << " loaded "
-            << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
-  locker.unlock();
+  if (flag)
+    std::cout << "Buffer of thread id " << id << " loaded "
+              << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
+  fileaccess[(id + 1) % size].unlock();
   return flag;
 }
 /*
@@ -59,13 +61,9 @@ int buffergroup::judge_over(unsigned int id, unsigned int tail) {
   if (buflst[id].fin_empty())
     return 0;
   if (buflst[id].buffer_over()) {
-    std::unique_lock<std::mutex> locker(filelock);
-    while (turn != id)
-      cond.wait(locker);
+    fileaccess[id].lock();
     int sum = buflst[id].final_write(tail);
-    turn = (turn + 1) % size;
-    cond.notify_all();
-    locker.unlock();
+    fileaccess[(id + 1) % size].unlock();
     return sum;
   } else
     return 0;

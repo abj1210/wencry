@@ -42,16 +42,16 @@ tail:未被填满的单元中数据的长度
 load:是否被装载
 */
 class buffer64 {
-  static const unsigned HBUF_SZ = 0x40000;
+  static const unsigned HBUF_SZ = 0x80000;
   unsigned char b[HBUF_SZ][0x40];
   unsigned int total;
   unsigned int now;
   unsigned char tail;
-  unsigned char load;
+  FILE *fp;
 
 public:
-  buffer64();
-  unsigned int read_buffer64(FILE *fp, unsigned char *block);
+  buffer64(FILE *fp);
+  unsigned int read_buffer64(unsigned char *block);
 };
 
 #endif

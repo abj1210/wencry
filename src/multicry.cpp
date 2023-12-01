@@ -61,6 +61,19 @@ void multi_master_init(FILE *fp, FILE *out, keyhandle *key, int tailin,
   bg = new buffergroup(threads_num, fp, out);
 }
 /*
+multi_master_run:多线程运行
+threads_num:并发线程数
+multifunc:并发执行的函数指针
+*/
+void multi_master_run(const int threads_num, void (*multifunc)(int)) {
+  std::thread *threads = new std::thread[threads_num];
+  for (int i = 0; i < threads_num; i++)
+    threads[i] = std::thread(multifunc, i);
+  for (int i = 0; i < threads_num; i++)
+    threads[i].join();
+  delete[] threads;
+}
+/*
 接口函数
 multienc_master:进行并发加密的函数
 fp:输入文件地址
@@ -68,13 +81,10 @@ fout:输出文件地址
 key:密钥
 threads_num:并发线程数
 */
-void multienc_master(FILE *fp, FILE *out, keyhandle *key, int threads_num) {
+void multienc_master(FILE *fp, FILE *out, keyhandle *key,
+                     const int threads_num) {
   multi_master_init(fp, out, key, 16, threads_num);
-  std::thread threads[THREADS_NUM];
-  for (int i = 0; i < threads_num; i++)
-    threads[i] = std::thread(multiencrypt_file, i);
-  for (int i = 0; i < threads_num; i++)
-    threads[i].join();
+  multi_master_run(threads_num, multiencrypt_file);
   delete bg;
 }
 /*
@@ -87,13 +97,9 @@ tailin:最后一单元项写入的字节数
 threads_num:并发线程数
 */
 void multidec_master(FILE *fp, FILE *out, keyhandle *key, int tailin,
-                     int threads_num) {
+                     const int threads_num) {
   multi_master_init(fp, out, key, tailin, threads_num);
-  std::thread threads[THREADS_NUM];
-  for (int i = 0; i < threads_num; i++)
-    threads[i] = std::thread(multidecrypt_file, i);
-  for (int i = 0; i < threads_num; i++)
-    threads[i].join();
+  multi_master_run(threads_num, multidecrypt_file);
   delete bg;
 }
 #endif

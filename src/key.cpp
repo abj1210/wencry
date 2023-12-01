@@ -4,9 +4,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern void hex_to_base64(unsigned char *hex_in, int len,
+extern void hex_to_base64(const unsigned char *hex_in, int len,
                           unsigned char *base64_out);
-extern void base64_to_hex(unsigned char *base64_in, int len,
+extern void base64_to_hex(const unsigned char *base64_in, int len,
                           unsigned char *hex_out);
 /*
 构造函数:产生随机密钥

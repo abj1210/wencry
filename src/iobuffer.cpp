@@ -35,8 +35,9 @@ update_buffer:保存缓冲区数据并更新缓冲区
 return:重新读入的字节数
 */
 unsigned int iobuffer::update_buffer() {
-  fwrite(b, 1, BUF_SZ << 4, fout);
-  unsigned int sum = fread(b, 1, BUF_SZ << 4, fin);
+  unsigned int sum = BUF_SZ << 4;
+  fwrite(b, 1, sum, fout);
+  sum = fread(b, 1, sum, fin);
   tail = sum & 0xf;
   total = sum >> 4;
   now = 0;
@@ -61,29 +62,34 @@ unsigned int iobuffer::final_write(int tailin) {
   fwrite(b, 1, ((now - 1) << 4) + tailin, fout);
   return tail == 0 ? 16 : tail;
 }
-buffer64::buffer64() : now(0), load(0) {}
+/*
+构造函数:加载数据
+fp:输入文件指针
+*/
+buffer64::buffer64(FILE *fp) : fp(fp), now(0) {
+  unsigned int sum = fread(b, 1, HBUF_SZ << 6, fp);
+  tail = sum & 0x3f;
+  total = sum >> 6;
+}
 /*
 read_buffer:从缓冲区读取64B数据
-fp:缓冲区加载的文件指针
 block:读取数据的地址
 return:读取的字节数
 */
-unsigned int buffer64::read_buffer64(FILE *fp, unsigned char *block) {
-  unsigned int res = 0;
-  if (now == HBUF_SZ || load == 0) {
+unsigned int buffer64::read_buffer64(unsigned char *block) {
+  if (now == HBUF_SZ) {
     unsigned int sum = fread(b, 1, HBUF_SZ << 6, fp);
     tail = sum & 0x3f;
     total = sum >> 6;
     now = 0;
-    load = 1;
   }
   if (now == total) {
     memcpy(block, b[now], tail);
-    res = tail;
+    unsigned int res = tail;
     tail = 0;
+    return res;
   } else {
     memcpy(block, b[now++], 64);
-    res = 64;
+    return 64;
   }
-  return res;
 }

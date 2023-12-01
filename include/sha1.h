@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-unsigned char *getSha1File(FILE *fp);
-unsigned char *getSha1String(unsigned char *s, unsigned int n);
+void getSha1File(FILE *fp, unsigned char *hashout);
+void getSha1String(unsigned char *s, unsigned int n, unsigned char *hashout);
 
 #endif
