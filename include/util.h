@@ -1,6 +1,7 @@
 #ifndef UTL
 #define UTL
 
+#include "./util/base64.h"
 #include "./util/buffer.h"
 #include "./util/struct.h"
 #include "./util/tab.h"

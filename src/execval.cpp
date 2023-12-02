@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <time.h>
-
 /*
 encrypt: 根据传入的参数包设置加密参数并运行加密程序
 v1: 传入的参数包
@@ -12,13 +11,12 @@ reutrn: 操作时间
 clock_t encrypt(vpak_t v1) {
   clock_t cl1, cl2;
   cl1 = clock();
-  enc(v1.fp, v1.out, v1.key);
+  enc(v1.fp, v1.out, v1.r_buf, v1.key);
   cl2 = clock();
   std::cout << "Encrypt over! \r\n";
 
   return cl2 - cl1;
 }
-
 /*
 decrypt: 根据传入的参数包设置加密参数并运行解密程序
 v1: 传入的参数包

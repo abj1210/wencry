@@ -5,12 +5,14 @@
 size:缓冲区数量
 fin:输入文件指针
 fout:输出文件指针
+r_buf:随机缓冲哈希
 */
-buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout) : size(size) {
+buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout, u8_t *r_buf)
+    : size(size) {
   buflst = new iobuffer[size];
   fileaccess = new std::mutex[size];
   for (int i = 0; i < size; ++i) {
-    if (buflst[i].load_files(fin, fout))
+    if (buflst[i].load_files(fin, fout, r_buf))
       std::cout << "Buffer of thread id " << i << " loaded "
                 << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
     if (i != 0)
@@ -37,7 +39,7 @@ bool buffergroup::update_lst(u32_t id) {
   if (flag)
     std::cout << "Buffer of thread id " << id << " loaded "
               << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
-  fileaccess[( ++id) % size].unlock();
+  fileaccess[(++id) % size].unlock();
   return flag;
 }
 /*
@@ -52,7 +54,7 @@ int buffergroup::judge_over(u32_t id, u32_t tail) {
   if (buflst[id].buffer_over()) {
     fileaccess[id].lock();
     int sum = buflst[id].final_write(tail);
-    fileaccess[( ++id) % size].unlock();
+    fileaccess[(++id) % size].unlock();
     return sum;
   } else
     return 0;

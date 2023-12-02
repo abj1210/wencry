@@ -1,15 +1,17 @@
 #include "util.h"
+#include <stdlib.h>
 #include <string.h>
-
 /*
 load_files:设定输入输出文件并初始化缓冲区
 fin:输入文件地址
 fout:输出文件地址
+r_buf:随机缓冲哈希
 return:是否成功装载数据
 */
-bool iobuffer::load_files(FILE *fin, FILE *fout) {
+bool iobuffer::load_files(FILE *fin, FILE *fout, u8_t *r_buf) {
   this->fin = fin;
   this->fout = fout;
+  memcpy(this->r, r_buf, 16);
   u32_t sum = fread(b, 1, BUF_SZ << 4, fin);
   tail = sum & 0xf;
   total = sum >> 4;
@@ -23,9 +25,11 @@ get_entry:获取当前缓冲区单元表项
 return:返回的表项地址
 */
 u8_t *iobuffer::get_entry() {
-  if ((now < total) || ((now == total) && (tail != 0)))
+  if ((now < total) || ((now == total) && (tail != 0))) {
+    *(u64_t *)b[now] ^= ld[0];
+    *((u64_t *)b[now] + 1) ^= ld[1];
     return b[now++];
-  else
+  } else
     return NULL;
 }
 /*

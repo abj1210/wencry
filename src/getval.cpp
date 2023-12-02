@@ -46,6 +46,15 @@ keyhandle *getInputKey() {
   return new keyhandle(kn);
 }
 /*
+getRandomBuffer:获取随机的缓冲数组
+r_buf:缓冲数组地址
+*/
+void getRandomBuffer(u8_t *r_buf) {
+  u8_t len = rand();
+  for (int i = 0; i < len; ++i)
+    r_buf[i] = rand();
+}
+/*
 接口函数
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
@@ -67,6 +76,8 @@ vpak_t get_v_mod1() {
       res.key = getInputKey();
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
+    printf("Please input some random characters.\n");
+    r = scanf("%s", res.r_buf);
   } else if (res.mode == 'd' || res.mode == 'D') {
     printf("Need a new name for decrypted file?(y/n) ");
     r = scanf("%*[\n]%c", &flag);
@@ -109,6 +120,7 @@ vpak_t get_v_mod2(int argc, char *argv[]) {
       res.key = new keyhandle((u8_t *)argv[3]);
     sprintf(outn, "%s.wenc", argc == 4 ? argv[2] : argv[4]);
     res.out = fopen(outn, "wb+");
+    getRandomBuffer(res.r_buf);
   } else if (strcmp(argv[1], "-d") == 0) {
     res.fp = getArgsFilep(argv[2]);
     res.key = new keyhandle((u8_t *)argv[3]);

@@ -14,7 +14,7 @@ public:
   构造函数:加载密钥
   key:待加载的密钥
   */
-  aeshandle(keyhandle *key): key(key) {};
+  aeshandle(keyhandle *key) : key(key){};
 };
 
 class encryaes : public aeshandle {
@@ -25,7 +25,7 @@ class encryaes : public aeshandle {
   void specround();
 
 public:
-  encryaes(keyhandle *key) : aeshandle(key) {};
+  encryaes(keyhandle *key) : aeshandle(key){};
   void encryaes_128bit(state_t &w);
 };
 class decryaes : public aeshandle {
@@ -36,7 +36,7 @@ class decryaes : public aeshandle {
   void specround();
 
 public:
-  decryaes(keyhandle *key) : aeshandle(key) {};
+  decryaes(keyhandle *key) : aeshandle(key){};
   void decryaes_128bit(state_t &w);
 };
 

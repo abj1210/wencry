@@ -1,5 +1,5 @@
 #include "aes.h"
-#include "util.h" 
+#include "util.h"
 /*
 addroundkey:aes的密钥轮加操作
 key:相应的轮密钥指针

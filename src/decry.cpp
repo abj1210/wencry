@@ -88,9 +88,14 @@ key:密钥
 return:若成功解密则返回0,否则返回非零值
 */
 int dec(FILE *fp, FILE *out, keyhandle *key) {
-  int tail = verify(fp, key);
+  u8_t tail = verify(fp, key);
   if (tail < 0)
     return -tail;
-  multidec_master(fp, out, key, tail, THREADS_NUM);
+  u8_t r_buf[20];
+  if (fread(r_buf, 1, 20, fp) != 20)
+    return 1;
+  buffergroup *buf = new buffergroup(THREADS_NUM, fp, out, r_buf);
+  multidec_master(key, buf, tail);
+  delete buf;
   return 0;
 }

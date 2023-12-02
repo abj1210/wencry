@@ -14,10 +14,9 @@ keyhandle::keyhandle() {
 b64:指定密钥的base64编码形式
 */
 keyhandle::keyhandle(const u8_t *b64) {
-  base64_to_hex(b64, strlen((const char *)b64), init_key);
+  base64_to_hex(b64, 24, init_key);
   genall();
 }
-
 /*
 genkey:产生每轮的轮密钥
 round:本轮的轮数
