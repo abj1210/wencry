@@ -1,5 +1,4 @@
 #include "key.h"
-#include "util.h"
 #include "wenctrl.h"
 
 #include <stdio.h>
@@ -37,25 +36,24 @@ getInputFilep:从输入中获取密钥
 return:获取的密钥序列
 */
 keyhandle *getInputKey() {
-  char kn[128] = "";
+  u8_t kn[128] = "";
   printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
   int r = scanf("%*[\n]");
   while (scanf("%s", kn) == 0) {
     r = scanf("%*[\n]");
     printf("Sorry, please enter 128 bits (16 bytes) key in base64 mod:\n");
   }
-  return new keyhandle((unsigned char *)kn);
+  return new keyhandle(kn);
 }
 /*
 接口函数
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
-struct vpak get_v_mod1() {
-  unsigned char outk[128];
-  char flag, fn[] = "out", outn[138], decn[128];
+vpak_t get_v_mod1() {
+  char flag, fn[] = "out", outn[138], decn[128], outk[128];
   srand(time(NULL));
-  struct vpak res;
+  vpak_t res;
   printf("Need encrypt, verify or decrypt?(e/v/d) ");
   int r = scanf("%c", &res.mode);
   printf("File name:\n");
@@ -87,7 +85,7 @@ struct vpak get_v_mod1() {
     res.out = NULL;
   } else
     res.fp = NULL;
-  res.key->get_initkey(outk);
+  res.key->get_initkey((u8_t *)outk);
   printf("Key is:\n %s\n", outk);
   return res;
 }
@@ -98,23 +96,22 @@ argc:变量数目
 argv:变量值列表
 return:返回的参数包
 */
-struct vpak get_v_mod2(int argc, char *argv[]) {
-  char outn[138];
-  unsigned char outk[128];
+vpak_t get_v_mod2(int argc, char *argv[]) {
+  char outn[138], outk[128];
   srand(time(NULL));
-  struct vpak res;
+  vpak_t res;
   res.mode = argv[1][1];
   if (strcmp(argv[1], "-e") == 0) {
     res.fp = getArgsFilep(argv[2]);
     if (strcmp(argv[3], "G") == 0)
       res.key = new keyhandle();
     else
-      res.key = new keyhandle((unsigned char *)argv[3]);
+      res.key = new keyhandle((u8_t *)argv[3]);
     sprintf(outn, "%s.wenc", argc == 4 ? argv[2] : argv[4]);
     res.out = fopen(outn, "wb+");
   } else if (strcmp(argv[1], "-d") == 0) {
     res.fp = getArgsFilep(argv[2]);
-    res.key = new keyhandle((unsigned char *)argv[3]);
+    res.key = new keyhandle((u8_t *)argv[3]);
     if (argc == 4) {
       sprintf(outn, "%s.denc", argv[2]);
       res.out = fopen((const char *)outn, "wb+");
@@ -123,10 +120,10 @@ struct vpak get_v_mod2(int argc, char *argv[]) {
   } else if (strcmp(argv[1], "-v") == 0) {
     res.out = NULL;
     res.fp = getArgsFilep(argv[2]);
-    res.key = new keyhandle((unsigned char *)argv[3]);
+    res.key = new keyhandle((u8_t *)argv[3]);
   } else
     res.fp = NULL;
-  res.key->get_initkey(outk);
+  res.key->get_initkey((u8_t *)outk);
   printf("Key is:\n %s\n", outk);
   return res;
 }

@@ -5,6 +5,11 @@
 #include "./util/struct.h"
 #include "./util/tab.h"
 
+typedef unsigned char u8_t;
+typedef unsigned short u16_t;
+typedef unsigned int u32_t;
+typedef unsigned long long u64_t;
+
 //转换subbyte
 #define sub_bytes(x) s_box[x]
 //还原subbyte
@@ -19,14 +24,13 @@
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
 //对byteint每字节赋值
 #define setbytes(t, b0, b1, b2, b3)                                            \
-  t = ((unsigned int)b0) | ((unsigned int)b1 << 8) |                           \
-      ((unsigned int)b2 << 16) | ((unsigned int)b3 << 24)
+  t = ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
 //在GF(255)上执行乘法
 #define Gmul(u, v) ((v) ? Alogtable[(u) + Logtable[(v)]] : 0)
 //在GF(255)上执行加法
 #define GMlineA(n0, n1, n2, n3)                                                \
-  (Gmul(n0, (unsigned char)(g0)) ^ Gmul(n1, (unsigned char)(g1)) ^             \
-   Gmul(n2, (unsigned char)(g2)) ^ Gmul(n3, (unsigned char)(g3)))
+  (Gmul(n0, (u8_t)(g0)) ^ Gmul(n1, (u8_t)(g1)) ^ Gmul(n2, (u8_t)(g2)) ^        \
+   Gmul(n3, (u8_t)(g3)))
 //魔数
 #define Magic_Num 0xA5C3A500C3A5C3
 

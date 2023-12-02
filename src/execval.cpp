@@ -1,5 +1,4 @@
 #include "cry.h"
-#include "util.h"
 #include "wenctrl.h"
 
 #include <iostream>
@@ -10,7 +9,7 @@ encrypt: 根据传入的参数包设置加密参数并运行加密程序
 v1: 传入的参数包
 reutrn: 操作时间
 */
-clock_t encrypt(struct vpak v1) {
+clock_t encrypt(vpak_t v1) {
   clock_t cl1, cl2;
   cl1 = clock();
   enc(v1.fp, v1.out, v1.key);
@@ -25,7 +24,7 @@ decrypt: 根据传入的参数包设置加密参数并运行解密程序
 v1: 传入的参数包
 reutrn: 操作时间
 */
-clock_t decrypt(struct vpak v1) {
+clock_t decrypt(vpak_t v1) {
   clock_t cl1, cl2;
   cl1 = clock();
   int res = dec(v1.fp, v1.out, v1.key);
@@ -48,7 +47,7 @@ verify: 根据传入的参数包验证密钥和文件
 v1: 传入的参数包
 reutrn: 操作时间
 */
-clock_t get_verify(struct vpak v1) {
+clock_t get_verify(vpak_t v1) {
   clock_t cl1, cl2;
   cl1 = clock();
   int res = verify(v1.fp, v1.key);
@@ -72,7 +71,7 @@ exec_val:根据传入的参数包执行相应操作
 vals:传入的参数包
 return:返回是否成功执行
 */
-bool exec_val(struct vpak vals) {
+bool exec_val(vpak_t vals) {
   if (vals.fp == NULL) {
     std::cout << "Invalid values.\r\n";
     return false;

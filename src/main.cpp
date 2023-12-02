@@ -4,12 +4,11 @@
 
 #include <iostream>
 #include <stdlib.h>
-
 /*
 over:关闭文件并释放空间
 v1:传入的参数包
 */
-void over(struct vpak v1) {
+void over(vpak_t v1) {
   delete v1.key;
   if (v1.fp != NULL)
     fclose(v1.fp);
@@ -19,7 +18,7 @@ void over(struct vpak v1) {
 
 int main(int argc, char *argv[]) {
   //初始化
-  struct vpak vals;
+  vpak_t vals;
   if (THREADS_NUM >= MAX_THREADS) {
     std::cout << "Invalid threads number!\r\n";
     return -4;

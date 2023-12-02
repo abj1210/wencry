@@ -1,6 +1,7 @@
 #ifndef CRY
 #define CRY
 
+#include "util.h"
 #include "key.h"
 #include <stdio.h>
 

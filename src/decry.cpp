@@ -1,17 +1,14 @@
-#include "key.h"
+#include "cry.h"
 #include "multicry.h"
 #include "sha1.h"
-#include "util.h"
-
-#include <stdio.h>
 /*
 cmphash:比较哈希值
 h1:待比较的哈希数组
 h2:待比较的哈希数组
 return:哈希是否相同
 */
-bool cmphash(unsigned char *h1, unsigned char *h2) {
-  for (int i = 0; i < 20; i++)
+bool cmphash(u8_t *h1, u8_t *h2) {
+  for (int i = 0; i < 20; ++i)
     if (h1[i] != h2[i])
       return false;
   return true;
@@ -22,15 +19,11 @@ fp:输入文件
 return:若为0则检查通过,否则检查不通过
 */
 int checkMn(FILE *fp) {
-  unsigned char mn[8];
-  mn[7] = 0;
-  int sum = fread(mn, 1, 7, fp);
+  u64_t mn = 0;
+  int sum = fread(&mn, 1, 7, fp);
   if (sum != 7)
     return -1;
-  if (*(unsigned long long *)mn == Magic_Num)
-    return 0;
-  else
-    return -4;
+  return mn == Magic_Num ? 0 : -4;
 }
 /*
 checkKey:检查密钥是否一致
@@ -38,8 +31,8 @@ fp:输入文件
 key:输入的密钥序列
 return:若为0则检查通过,否则检查不通过
 */
-int checkKey(FILE *fp, unsigned char *key) {
-  unsigned char hash[20], chash[20];
+int checkKey(FILE *fp, u8_t *key) {
+  u8_t hash[20], chash[20];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
@@ -55,11 +48,11 @@ fp:输入文件
 return:若为非负数则检查通过,返回值为原文件大小与16的模,否则检查不通过
 */
 int checkFile(FILE *fp) {
-  unsigned char hash[20], chash[29];
+  u8_t hash[20], chash[29];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
-  unsigned char tail;
+  u8_t tail;
   int rx = fread(&tail, 1, 1, fp);
   if (rx != 1)
     return -1;

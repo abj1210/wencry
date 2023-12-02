@@ -1,19 +1,16 @@
-#include "key.h"
+#include "cry.h"
 #include "multicry.h"
 #include "sha1.h"
-#include "util.h"
-
-#include <stdio.h>
 /*
 getFileHeader:构造加密文件头
 out:输出的加密文件
 key:初始密钥
 */
-void getFileHeader(FILE *out, unsigned char *key) {
-  unsigned char mn[8], padding[21], hash[20];
+void getFileHeader(FILE *out, u8_t *key) {
+  u8_t padding[21], hash[20];
   padding[20] = 0;
-  *(unsigned long long *)mn = Magic_Num;
-  fwrite(mn, 1, 7, out);
+  u64_t mn = Magic_Num;
+  fwrite(&mn, 1, 7, out);
   getSha1String(key, 16, hash);
   fwrite(hash, 1, 20, out);
   fwrite(padding, 1, 21, out);
@@ -24,7 +21,7 @@ out:加密后的文件
 */
 void hashfile(FILE *out) {
   fseek(out, 48, SEEK_SET);
-  unsigned char hash[20];
+  u8_t hash[20];
   getSha1File(out, hash);
   fseek(out, 27, SEEK_SET);
   fwrite(hash, 1, 20, out);

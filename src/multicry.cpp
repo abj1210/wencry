@@ -1,11 +1,9 @@
 #include "aes.h"
 #include "multi_buffergroup.h"
-#include "util.h"
+#include "multicry.h"
 
 #ifdef MULTI_ENABLE
-#include <stdio.h>
 #include <thread>
-
 int tail = 0;
 FILE *fout;
 buffergroup *bg;
@@ -17,7 +15,7 @@ id:线程id
 void multiencrypt_file(int id) {
   encryaes aes(keyh);
   while (true) {
-    struct state *block = (struct state *)bg->require_buffer_entry(id);
+    state_t *block = (state_t *)bg->require_buffer_entry(id);
     if (block == NULL) {
       char sum = bg->judge_over(id, 16);
       if (sum != 0) {
@@ -37,7 +35,7 @@ id:线程id
 void multidecrypt_file(int id) {
   decryaes aes(keyh);
   while (true) {
-    struct state *block = (struct state *)bg->require_buffer_entry(id);
+    state_t *block = (state_t *)bg->require_buffer_entry(id);
     if (block == NULL) {
       if ((bg->judge_over(id, tail) != 0) || (!bg->update_lst(id)))
         break;
@@ -54,7 +52,7 @@ tailin:最后一单元项写入的字节数
 threads_num:并发线程数
 */
 void multi_master_init(FILE *fp, FILE *out, keyhandle *key, int tailin,
-                       int threads_num) {
+                      const int threads_num) {
   fout = out;
   tail = tailin;
   keyh = key;
@@ -67,11 +65,12 @@ multifunc:并发执行的函数指针
 */
 void multi_master_run(const int threads_num, void (*multifunc)(int)) {
   std::thread *threads = new std::thread[threads_num];
-  for (int i = 0; i < threads_num; i++)
+  for (int i = 0; i < threads_num; ++i)
     threads[i] = std::thread(multifunc, i);
-  for (int i = 0; i < threads_num; i++)
+  for (int i = 0; i < threads_num; ++i)
     threads[i].join();
   delete[] threads;
+  delete bg;
 }
 /*
 接口函数
@@ -85,7 +84,6 @@ void multienc_master(FILE *fp, FILE *out, keyhandle *key,
                      const int threads_num) {
   multi_master_init(fp, out, key, 16, threads_num);
   multi_master_run(threads_num, multiencrypt_file);
-  delete bg;
 }
 /*
 接口函数
@@ -100,6 +98,5 @@ void multidec_master(FILE *fp, FILE *out, keyhandle *key, int tailin,
                      const int threads_num) {
   multi_master_init(fp, out, key, tailin, threads_num);
   multi_master_run(threads_num, multidecrypt_file);
-  delete bg;
 }
 #endif

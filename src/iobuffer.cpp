@@ -1,6 +1,4 @@
 #include "util.h"
-
-#include <stdio.h>
 #include <string.h>
 
 /*
@@ -12,7 +10,7 @@ return:是否成功装载数据
 bool iobuffer::load_files(FILE *fin, FILE *fout) {
   this->fin = fin;
   this->fout = fout;
-  unsigned int sum = fread(b, 1, BUF_SZ << 4, fin);
+  u32_t sum = fread(b, 1, BUF_SZ << 4, fin);
   tail = sum & 0xf;
   total = sum >> 4;
   now = 0;
@@ -24,7 +22,7 @@ bool iobuffer::load_files(FILE *fin, FILE *fout) {
 get_entry:获取当前缓冲区单元表项
 return:返回的表项地址
 */
-unsigned char *iobuffer::get_entry() {
+u8_t *iobuffer::get_entry() {
   if ((now < total) || ((now == total) && (tail != 0)))
     return b[now++];
   else
@@ -34,8 +32,8 @@ unsigned char *iobuffer::get_entry() {
 update_buffer:保存缓冲区数据并更新缓冲区
 return:重新读入的字节数
 */
-unsigned int iobuffer::update_buffer() {
-  unsigned int sum = BUF_SZ << 4;
+u32_t iobuffer::update_buffer() {
+  u32_t sum = BUF_SZ << 4;
   fwrite(b, 1, sum, fout);
   sum = fread(b, 1, sum, fin);
   tail = sum & 0xf;
@@ -44,21 +42,11 @@ unsigned int iobuffer::update_buffer() {
   return sum;
 }
 /*
-bufferover:缓冲区和文件是否读取完毕
-return:若为0则未读取完毕,否则已读取完毕
-*/
-bool iobuffer::buffer_over() { return (now >= total) && (total != BUF_SZ); }
-/*
-fin_empty:判断缓冲区写入文件指针是否为空
-return:若为空返回真否则返回假
-*/
-bool iobuffer::fin_empty() { return fin == NULL; }
-/*
 final_write:将缓冲区内容保存到文件并关闭缓冲区
 tailin:最后一表项中要保存的字节数
 return:最后一表项装载的字节数
 */
-unsigned int iobuffer::final_write(int tailin) {
+u32_t iobuffer::final_write(int tailin) {
   fwrite(b, 1, ((now - 1) << 4) + tailin, fout);
   return tail == 0 ? 16 : tail;
 }
@@ -67,7 +55,7 @@ unsigned int iobuffer::final_write(int tailin) {
 fp:输入文件指针
 */
 buffer64::buffer64(FILE *fp) : fp(fp), now(0) {
-  unsigned int sum = fread(b, 1, HBUF_SZ << 6, fp);
+  u32_t sum = fread(b, 1, HBUF_SZ << 6, fp);
   tail = sum & 0x3f;
   total = sum >> 6;
 }
@@ -76,16 +64,16 @@ read_buffer:从缓冲区读取64B数据
 block:读取数据的地址
 return:读取的字节数
 */
-unsigned int buffer64::read_buffer64(unsigned char *block) {
+u32_t buffer64::read_buffer64(u8_t *block) {
   if (now == HBUF_SZ) {
-    unsigned int sum = fread(b, 1, HBUF_SZ << 6, fp);
+    u32_t sum = fread(b, 1, HBUF_SZ << 6, fp);
     tail = sum & 0x3f;
     total = sum >> 6;
     now = 0;
   }
   if (now == total) {
     memcpy(block, b[now], tail);
-    unsigned int res = tail;
+    u32_t res = tail;
     tail = 0;
     return res;
   } else {

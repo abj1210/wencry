@@ -1,7 +1,10 @@
 #ifndef BUF
 #define BUF
 
+#include "util.h"
 #include <stdio.h>
+typedef unsigned char u8_t;
+typedef unsigned int u32_t;
 /*
 BUF_SZ:用于aes的16B单元缓冲区单元数量
 iobuffer:用于aes的16B单元输入输出缓冲区
@@ -14,24 +17,29 @@ fout:写入文件的地址
 */
 class iobuffer {
 public:
-  static const unsigned BUF_SZ = 0x100000;
+  static const u32_t BUF_SZ = 0x100000;
 
 private:
-  unsigned char b[BUF_SZ][0x10];
-  unsigned int total;
-  unsigned int now;
-  unsigned char tail;
+  u8_t b[BUF_SZ][0x10];
+  u32_t total, now;
+  u8_t tail;
   FILE *fin, *fout;
-
 public:
   bool load_files(FILE *fin, FILE *fout);
-  unsigned char *get_entry();
-  unsigned int update_buffer();
-  bool buffer_over();
-  bool fin_empty();
-  unsigned int final_write(int tailin);
+  u8_t *get_entry();
+  u32_t update_buffer();
+  /*
+  bufferover:缓冲区和文件是否读取完毕
+  return:若为0则未读取完毕,否则已读取完毕
+  */
+  bool buffer_over(){ return (now >= total) && (total != BUF_SZ); };
+  /*
+  fin_empty:判断缓冲区写入文件指针是否为空
+  return:若为空返回真否则返回假
+  */
+  bool fin_empty(){ return fin == NULL; };
+  u32_t final_write(int tailin);
 };
-
 /*
 HBUF_SZ:用于hash的64B单元缓冲区单元数量
 buffer64:用于hash的64B单元缓冲区
@@ -42,16 +50,14 @@ tail:未被填满的单元中数据的长度
 load:是否被装载
 */
 class buffer64 {
-  static const unsigned HBUF_SZ = 0x80000;
-  unsigned char b[HBUF_SZ][0x40];
-  unsigned int total;
-  unsigned int now;
-  unsigned char tail;
+  static const u32_t HBUF_SZ = 0x80000;
+  u8_t b[HBUF_SZ][0x40];
+  u32_t total, now;
+  u8_t tail;
   FILE *fp;
-
 public:
   buffer64(FILE *fp);
-  unsigned int read_buffer64(unsigned char *block);
+  u32_t read_buffer64(u8_t *block);
 };
 
 #endif

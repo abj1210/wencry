@@ -2,10 +2,11 @@
 #define TAB
 
 #include "util.h"
+typedef unsigned char u8_t;
 
-const unsigned char RC[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
-                              0x20, 0x40, 0x80, 0x1B, 0x36};
-const unsigned char s_box[256] = {
+const u8_t RC[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
+                     0x20, 0x40, 0x80, 0x1B, 0x36};
+const u8_t s_box[256] = {
     0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5, 0x30, 0x01, 0x67, 0x2B,
     0xFE, 0xD7, 0xAB, 0x76, 0xCA, 0x82, 0xC9, 0x7D, 0xFA, 0x59, 0x47, 0xF0,
     0xAD, 0xD4, 0xA2, 0xAF, 0x9C, 0xA4, 0x72, 0xC0, 0xB7, 0xFD, 0x93, 0x26,
@@ -28,7 +29,7 @@ const unsigned char s_box[256] = {
     0x69, 0xD9, 0x8E, 0x94, 0x9B, 0x1E, 0x87, 0xE9, 0xCE, 0x55, 0x28, 0xDF,
     0x8C, 0xA1, 0x89, 0x0D, 0xBF, 0xE6, 0x42, 0x68, 0x41, 0x99, 0x2D, 0x0F,
     0xB0, 0x54, 0xBB, 0x16};
-const unsigned char rs_box[256] = {
+const u8_t rs_box[256] = {
     0x52, 0x09, 0x6A, 0xD5, 0x30, 0x36, 0xA5, 0x38, 0xBF, 0x40, 0xA3, 0x9E,
     0x81, 0xF3, 0xD7, 0xFB, 0x7C, 0xE3, 0x39, 0x82, 0x9B, 0x2F, 0xFF, 0x87,
     0x34, 0x8E, 0x43, 0x44, 0xC4, 0xDE, 0xE9, 0xCB, 0x54, 0x7B, 0x94, 0x32,
@@ -52,7 +53,7 @@ const unsigned char rs_box[256] = {
     0x17, 0x2B, 0x04, 0x7E, 0xBA, 0x77, 0xD6, 0x26, 0xE1, 0x69, 0x14, 0x63,
     0x55, 0x21, 0x0C, 0x7D};
 
-const unsigned char Logtable[256] = {
+const u8_t Logtable[256] = {
     0,   0,   25,  1,   50,  2,   26,  198, 75,  199, 27,  104, 51,  238, 223,
     3,   100, 4,   224, 14,  52,  141, 129, 239, 76,  113, 8,   200, 248, 105,
     28,  193, 125, 194, 29,  181, 249, 185, 39,  106, 77,  228, 166, 114, 154,
@@ -73,7 +74,7 @@ const unsigned char Logtable[256] = {
     7,
 };
 
-const unsigned char Alogtable[512] = {
+const u8_t Alogtable[512] = {
     1,   3,   5,   15,  17,  51,  85,  255, 26,  46,  114, 150, 161, 248, 19,
     53,  95,  225, 56,  72,  216, 115, 149, 164, 247, 2,   6,   10,  30,  34,
     102, 170, 229, 52,  92,  228, 55,  89,  235, 38,  106, 190, 217, 112, 144,
@@ -111,13 +112,13 @@ const unsigned char Alogtable[512] = {
     1,   1,
 };
 
-const unsigned char b64_tab[64] = {
-    'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
-    'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-    'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',
-    'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-    '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
-const unsigned char hex_tab[128] = {
+const u8_t b64_tab[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
+                          'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+                          'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
+                          'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r',
+                          's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2',
+                          '3', '4', '5', '6', '7', '8', '9', '+', '/'};
+const u8_t hex_tab[128] = {
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
     255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62,  255,

@@ -5,12 +5,16 @@
 #include "util.h"
 class aeshandle {
 protected:
-  struct state w;
+  state_t w;
   keyhandle *key;
-  void addroundkey(const struct state &key);
+  void addroundkey(const state_t &key);
 
 public:
-  aeshandle(keyhandle *key);
+  /*
+  构造函数:加载密钥
+  key:待加载的密钥
+  */
+  aeshandle(keyhandle *key): key(key) {};
 };
 
 class encryaes : public aeshandle {
@@ -21,8 +25,8 @@ class encryaes : public aeshandle {
   void specround();
 
 public:
-  encryaes(keyhandle *key);
-  void encryaes_128bit(struct state &w);
+  encryaes(keyhandle *key) : aeshandle(key) {};
+  void encryaes_128bit(state_t &w);
 };
 class decryaes : public aeshandle {
   void subbytes();
@@ -32,8 +36,8 @@ class decryaes : public aeshandle {
   void specround();
 
 public:
-  decryaes(keyhandle *key);
-  void decryaes_128bit(struct state &w);
+  decryaes(keyhandle *key) : aeshandle(key) {};
+  void decryaes_128bit(state_t &w);
 };
 
 #endif

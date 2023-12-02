@@ -2,9 +2,7 @@
 #define MBG
 
 #include "util.h"
-
 #ifdef MULTI_ENABLE
-#include <condition_variable>
 #include <mutex>
 #include <thread>
 /*
@@ -14,16 +12,20 @@ size:缓冲区个数
 fileaccess:控制相应序号缓冲区文件读写的互斥锁序列
 */
 class buffergroup {
-  struct iobuffer *buflst;
-  unsigned int size;
+  iobuffer *buflst;
+  const u32_t size;
   std::mutex *fileaccess;
-
 public:
-  buffergroup(unsigned int size, FILE *fin, FILE *fout);
+  buffergroup(u32_t size, FILE *fin, FILE *fout);
   ~buffergroup();
-  unsigned char *require_buffer_entry(unsigned int id);
-  bool update_lst(unsigned int id);
-  int judge_over(unsigned int id, unsigned int tail);
+  /*
+  require_buffer_entry:获取相应的缓冲区表项
+  id:缓冲区索引
+  return:相应缓冲区的待处理表项,若已处理完毕则输出NULL
+  */
+  u8_t *require_buffer_entry(u32_t id){return buflst[id].get_entry(); };
+  bool update_lst(u32_t id);
+  int judge_over(u32_t id, u32_t tail);
 };
 #endif
 

@@ -1,13 +1,6 @@
 #include "key.h"
-#include "util.h"
-
 #include <stdlib.h>
 #include <string.h>
-
-extern void hex_to_base64(const unsigned char *hex_in, int len,
-                          unsigned char *base64_out);
-extern void base64_to_hex(const unsigned char *base64_in, int len,
-                          unsigned char *hex_out);
 /*
 构造函数:产生随机密钥
 */
@@ -20,7 +13,7 @@ keyhandle::keyhandle() {
 构造函数:产生指定密钥
 b64:指定密钥的base64编码形式
 */
-keyhandle::keyhandle(unsigned char *b64) {
+keyhandle::keyhandle(const u8_t *b64) {
   base64_to_hex(b64, strlen((const char *)b64), init_key);
   genall();
 }
@@ -52,25 +45,3 @@ void keyhandle::genall() {
   for (int i = 1; i < 11; ++i)
     genkey(i);
 }
-/*
-get_key:获取相应轮次的密钥
-round:指定的轮次
-return:返回的密钥
-*/
-struct state &keyhandle::get_key(int round) {
-  return key[round];
-}
-/*
-接口函数
-get_initkey:返回初始密钥的base64形式
-b64:输出字符串地址
-*/
-void keyhandle::get_initkey(unsigned char *b64) {
-  hex_to_base64(init_key, 16, b64);
-}
-/*
-接口函数
-get_initkey:返回初始密钥
-return:初始密钥
-*/
-unsigned char *keyhandle::get_initkey() { return init_key; }

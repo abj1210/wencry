@@ -1,6 +1,7 @@
 #ifndef MUL
 #define MUL
 
+#include "util.h"
 #include <stdio.h>
 
 void multienc_master(FILE *fp, FILE *out, keyhandle *key,
