@@ -9,12 +9,10 @@ v1: 传入的参数包
 reutrn: 操作时间
 */
 clock_t encrypt(vpak_t v1) {
-  clock_t cl1, cl2;
-  cl1 = clock();
+  clock_t cl1 = clock();
   enc(v1.fp, v1.out, v1.r_buf, v1.key);
-  cl2 = clock();
+  clock_t cl2 = clock();
   std::cout << "Encrypt over! \r\n";
-
   return cl2 - cl1;
 }
 /*
@@ -23,11 +21,9 @@ v1: 传入的参数包
 reutrn: 操作时间
 */
 clock_t decrypt(vpak_t v1) {
-  clock_t cl1, cl2;
-  cl1 = clock();
+  clock_t cl1 = clock();
   int res = dec(v1.fp, v1.out, v1.key);
-  cl2 = clock();
-
+  clock_t cl2 = clock();
   if (res == 0)
     std::cout << "Decrypt over!\r\n";
   else if (res == 1)
@@ -46,11 +42,9 @@ v1: 传入的参数包
 reutrn: 操作时间
 */
 clock_t get_verify(vpak_t v1) {
-  clock_t cl1, cl2;
-  cl1 = clock();
+  clock_t cl1 = clock();
   int res = verify(v1.fp, v1.key);
-  cl2 = clock();
-
+  clock_t cl2 = clock();
   if (res == 0)
     std::cout << "File verified!\r\n";
   else if (res == -1)

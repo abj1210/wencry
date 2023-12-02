@@ -4,21 +4,21 @@ Each sample counts as 0.01 seconds.
   %   cumulative   self              self     total           
  time   seconds   seconds    calls  ms/call  ms/call  name    
  51.79      3.18     3.18 18798740     0.00     0.00  encryaes::specround()
- 14.50      4.07     0.89        2   445.00   505.00  _fini
- 10.59      4.72     0.65                             enc(_IO_FILE*, _IO_FILE*, unsigned char*, keyhandle*)
-  9.45      5.30     0.58  2032860     0.00     0.00  encryaes::encryaes_128bit(state_t&)
-  8.31      5.81     0.51                             hashfile(_IO_FILE*, unsigned char)
-  2.12      5.94     0.13 23276613     0.00     0.00  buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*)
-  1.63      6.04     0.10  2645829     0.00     0.00  getSha1String(unsigned char*, unsigned int, unsigned char*)
+ 14.01      4.04     0.86        2   430.00   505.00  _fini
+ 10.59      4.69     0.65                             enc(_IO_FILE*, _IO_FILE*, unsigned char*, keyhandle*)
+  9.45      5.27     0.58  2032860     0.00     0.00  encryaes::encryaes_128bit(state_t&)
+  8.31      5.78     0.51                             hashfile(_IO_FILE*, unsigned char)
+  2.12      5.91     0.13 23276613     0.00     0.00  buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*)
+  2.12      6.04     0.13  2645829     0.00     0.00  getSha1String(unsigned char*, unsigned int, unsigned char*)
   0.81      6.09     0.05  2319995     0.00     0.00  getFileHeader(_IO_FILE*, unsigned char*, unsigned char*)
-  0.33      6.11     0.02  2645828     0.00     0.00  buffer64::read_buffer64(unsigned char*)
-  0.33      6.13     0.02  2237553     0.00     0.00  buffergroup::update_lst(unsigned int)
-  0.16      6.14     0.01        4     2.50     2.50  buffergroup::judge_over(unsigned int, unsigned int)
+  0.49      6.12     0.03  2237553     0.00     0.00  buffergroup::update_lst(unsigned int)
+  0.33      6.14     0.02  2645828     0.00     0.00  buffer64::read_buffer64(unsigned char*)
   0.00      6.14     0.00  2382429     0.00     0.00  iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*)
   0.00      6.14     0.00       12     0.00     0.00  iobuffer::update_buffer()
   0.00      6.14     0.00       10     0.00     0.00  keyhandle::genkey(int)
   0.00      6.14     0.00        5     0.00     0.00  get_v_mod2(int, char**)
   0.00      6.14     0.00        5     0.00     0.00  iobuffer::get_entry()
+  0.00      6.14     0.00        4     0.00     0.00  buffergroup::judge_over(unsigned int, unsigned int)
   0.00      6.14     0.00        2     0.00     0.00  encryaes::columnmix()
   0.00      6.14     0.00        1     0.00     0.00  base64_to_hex(unsigned char const*, int, unsigned char*)
   0.00      6.14     0.00        1     0.00     0.00  multi_master_run(int, unsigned char, void (*)(int, unsigned char*))
@@ -77,26 +77,25 @@ index % time    self  children    called     name
 -----------------------------------------------
                                                  <spontaneous>
 [3]     16.4    0.00    1.01                 decrypt(vpak_t) [3]
-                0.89    0.12       2/2           _fini [4]
-                0.00    0.00       1/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
-                0.00    0.00       1/1           multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [17]
+                0.86    0.15       2/2           _fini [4]
+                0.00    0.00       1/1           multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [16]
 -----------------------------------------------
-                0.89    0.12       2/2           decrypt(vpak_t) [3]
-[4]     16.4    0.89    0.12       2         _fini [4]
-                0.10    0.00 2645829/2645829     getSha1String(unsigned char*, unsigned int, unsigned char*) [9]
+                0.86    0.15       2/2           decrypt(vpak_t) [3]
+[4]     16.4    0.86    0.15       2         _fini [4]
+                0.13    0.00 2645829/2645829     getSha1String(unsigned char*, unsigned int, unsigned char*) [9]
                 0.02    0.00 2645828/2645828     buffer64::read_buffer64(unsigned char*) [12]
-                0.00    0.00       1/1           buffer64::buffer64(_IO_FILE*) [31]
+                0.00    0.00       1/1           buffer64::buffer64(_IO_FILE*) [32]
 -----------------------------------------------
                                    3             multidecrypt_file(int, unsigned char*) [5]
 [5]     11.2    0.00    0.69       0+3       multidecrypt_file(int, unsigned char*) [5]
                 0.58    0.01 2032860/2032860     encryaes::encryaes_128bit(state_t&) [7]
                 0.05    0.01 2319995/2319995     getFileHeader(_IO_FILE*, unsigned char*, unsigned char*) [10]
-                0.02    0.00 2237552/2237553     buffergroup::update_lst(unsigned int) [11]
-                0.01    0.00       4/4           buffergroup::judge_over(unsigned int, unsigned int) [13]
-                0.00    0.00 2382429/2382429     iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*) [23]
-                0.00    0.00       8/12          iobuffer::update_buffer() [24]
-                0.00    0.00       2/2           encryaes::columnmix() [27]
-                0.00    0.00       1/1           iobuffer::final_write(int) [33]
+                0.03    0.00 2237552/2237553     buffergroup::update_lst(unsigned int) [11]
+                0.00    0.00 2382429/2382429     iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*) [24]
+                0.00    0.00       8/12          iobuffer::update_buffer() [25]
+                0.00    0.00       4/4           buffergroup::judge_over(unsigned int, unsigned int) [28]
+                0.00    0.00       2/2           encryaes::columnmix() [29]
+                0.00    0.00       1/1           iobuffer::final_write(int) [34]
                                    3             multidecrypt_file(int, unsigned char*) [5]
 -----------------------------------------------
                                                  <spontaneous>
@@ -107,95 +106,100 @@ index % time    self  children    called     name
 [7]      9.6    0.58    0.01 2032860         encryaes::encryaes_128bit(state_t&) [7]
                 0.01    0.00 2221769/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
 -----------------------------------------------
-                0.00    0.00       1/23276613     deregister_tm_clones [15]
-                0.00    0.00       1/23276613     decrypt(vpak_t) [3]
-                0.00    0.00       1/23276613     get_v_mod2(int, char**) [16]
-                0.00    0.00       1/23276613     multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [17]
+                0.00    0.00       1/23276613     deregister_tm_clones [14]
+                0.00    0.00       1/23276613     encrypt(vpak_t) [17]
+                0.00    0.00       1/23276613     get_v_mod2(int, char**) [15]
+                0.00    0.00       1/23276613     multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [16]
                 0.01    0.00 2221769/23276613     encryaes::encryaes_128bit(state_t&) [7]
                 0.01    0.00 2267608/23276613     getFileHeader(_IO_FILE*, unsigned char*, unsigned char*) [10]
                 0.10    0.00 18787232/23276613     hashfile(_IO_FILE*, unsigned char) [6]
 [8]      2.1    0.13    0.00 23276613         buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
 -----------------------------------------------
-                0.10    0.00 2645829/2645829     _fini [4]
-[9]      1.6    0.10    0.00 2645829         getSha1String(unsigned char*, unsigned int, unsigned char*) [9]
+                0.13    0.00 2645829/2645829     _fini [4]
+[9]      2.1    0.13    0.00 2645829         getSha1String(unsigned char*, unsigned int, unsigned char*) [9]
 -----------------------------------------------
                 0.05    0.01 2319995/2319995     multidecrypt_file(int, unsigned char*) [5]
 [10]     1.0    0.05    0.01 2319995         getFileHeader(_IO_FILE*, unsigned char*, unsigned char*) [10]
                 0.01    0.00 2267608/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
 -----------------------------------------------
-                0.00    0.00       1/2237553     std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)(int, unsigned char*), int, unsigned char*> > >::~_State_impl() [14]
-                0.02    0.00 2237552/2237553     multidecrypt_file(int, unsigned char*) [5]
-[11]     0.3    0.02    0.00 2237553         buffergroup::update_lst(unsigned int) [11]
-                0.00    0.00       4/5           get_v_mod2(int, char**) [16]
+                0.00    0.00       1/2237553     std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)(int, unsigned char*), int, unsigned char*> > >::~_State_impl() [13]
+                0.03    0.00 2237552/2237553     multidecrypt_file(int, unsigned char*) [5]
+[11]     0.5    0.03    0.00 2237553         buffergroup::update_lst(unsigned int) [11]
+                0.00    0.00       4/5           get_v_mod2(int, char**) [15]
 -----------------------------------------------
                 0.02    0.00 2645828/2645828     _fini [4]
 [12]     0.3    0.02    0.00 2645828         buffer64::read_buffer64(unsigned char*) [12]
 -----------------------------------------------
-                0.01    0.00       4/4           multidecrypt_file(int, unsigned char*) [5]
-[13]     0.2    0.01    0.00       4         buffergroup::judge_over(unsigned int, unsigned int) [13]
-                0.00    0.00       4/12          iobuffer::update_buffer() [24]
------------------------------------------------
                                                  <spontaneous>
-[14]     0.0    0.00    0.00                 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)(int, unsigned char*), int, unsigned char*> > >::~_State_impl() [14]
+[13]     0.0    0.00    0.00                 std::thread::_State_impl<std::thread::_Invoker<std::tuple<void (*)(int, unsigned char*), int, unsigned char*> > >::~_State_impl() [13]
                 0.00    0.00       1/2237553     buffergroup::update_lst(unsigned int) [11]
 -----------------------------------------------
                                                  <spontaneous>
-[15]     0.0    0.00    0.00                 deregister_tm_clones [15]
+[14]     0.0    0.00    0.00                 deregister_tm_clones [14]
                 0.00    0.00       1/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
 -----------------------------------------------
-                0.00    0.00       1/5           _start [18]
+                0.00    0.00       1/5           _start [19]
                 0.00    0.00       4/5           buffergroup::update_lst(unsigned int) [11]
-[16]     0.0    0.00    0.00       5         get_v_mod2(int, char**) [16]
+[15]     0.0    0.00    0.00       5         get_v_mod2(int, char**) [15]
                 0.00    0.00       1/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
-                0.00    0.00       1/1           base64_to_hex(unsigned char const*, int, unsigned char*) [28]
-                0.00    0.00       1/1           keyhandle::keyhandle(unsigned char const*) [34]
+                0.00    0.00       1/1           base64_to_hex(unsigned char const*, int, unsigned char*) [30]
+                0.00    0.00       1/1           keyhandle::keyhandle(unsigned char const*) [35]
 -----------------------------------------------
                 0.00    0.00       1/1           decrypt(vpak_t) [3]
-[17]     0.0    0.00    0.00       1         multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [17]
+[16]     0.0    0.00    0.00       1         multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [16]
+                0.00    0.00       1/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
+-----------------------------------------------
+                0.00    0.00       1/1           getInputFilep() [18]
+[17]     0.0    0.00    0.00       1         encrypt(vpak_t) [17]
                 0.00    0.00       1/23276613     buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [8]
 -----------------------------------------------
                                                  <spontaneous>
-[18]     0.0    0.00    0.00                 _start [18]
-                0.00    0.00       1/5           get_v_mod2(int, char**) [16]
-                0.00    0.00       1/1           exec_val(vpak_t) [30]
+[18]     0.0    0.00    0.00                 getInputFilep() [18]
+                0.00    0.00       1/1           encrypt(vpak_t) [17]
+-----------------------------------------------
+                                                 <spontaneous>
+[19]     0.0    0.00    0.00                 _start [19]
+                0.00    0.00       1/5           get_v_mod2(int, char**) [15]
+                0.00    0.00       1/1           exec_val(vpak_t) [31]
 -----------------------------------------------
                 0.00    0.00 2382429/2382429     multidecrypt_file(int, unsigned char*) [5]
-[23]     0.0    0.00    0.00 2382429         iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*) [23]
+[24]     0.0    0.00    0.00 2382429         iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*) [24]
 -----------------------------------------------
-                0.00    0.00       4/12          buffergroup::judge_over(unsigned int, unsigned int) [13]
+                0.00    0.00       4/12          buffergroup::judge_over(unsigned int, unsigned int) [28]
                 0.00    0.00       8/12          multidecrypt_file(int, unsigned char*) [5]
-[24]     0.0    0.00    0.00      12         iobuffer::update_buffer() [24]
+[25]     0.0    0.00    0.00      12         iobuffer::update_buffer() [25]
 -----------------------------------------------
                 0.00    0.00      10/10          keyhandle::keyhandle() [70]
-[25]     0.0    0.00    0.00      10         keyhandle::genkey(int) [25]
+[26]     0.0    0.00    0.00      10         keyhandle::genkey(int) [26]
 -----------------------------------------------
                 0.00    0.00       5/5           multiencrypt_file(int, unsigned char*) [49]
-[26]     0.0    0.00    0.00       5         iobuffer::get_entry() [26]
+[27]     0.0    0.00    0.00       5         iobuffer::get_entry() [27]
+-----------------------------------------------
+                0.00    0.00       4/4           multidecrypt_file(int, unsigned char*) [5]
+[28]     0.0    0.00    0.00       4         buffergroup::judge_over(unsigned int, unsigned int) [28]
+                0.00    0.00       4/12          iobuffer::update_buffer() [25]
 -----------------------------------------------
                 0.00    0.00       2/2           multidecrypt_file(int, unsigned char*) [5]
-[27]     0.0    0.00    0.00       2         encryaes::columnmix() [27]
+[29]     0.0    0.00    0.00       2         encryaes::columnmix() [29]
 -----------------------------------------------
-                0.00    0.00       1/1           get_v_mod2(int, char**) [16]
-[28]     0.0    0.00    0.00       1         base64_to_hex(unsigned char const*, int, unsigned char*) [28]
+                0.00    0.00       1/1           get_v_mod2(int, char**) [15]
+[30]     0.0    0.00    0.00       1         base64_to_hex(unsigned char const*, int, unsigned char*) [30]
 -----------------------------------------------
-                0.00    0.00       1/1           getInputFilep() [43]
-[29]     0.0    0.00    0.00       1         encrypt(vpak_t) [29]
------------------------------------------------
-                0.00    0.00       1/1           _start [18]
-[30]     0.0    0.00    0.00       1         exec_val(vpak_t) [30]
+                0.00    0.00       1/1           _start [19]
+[31]     0.0    0.00    0.00       1         exec_val(vpak_t) [31]
 -----------------------------------------------
                 0.00    0.00       1/1           _fini [4]
-[31]     0.0    0.00    0.00       1         buffer64::buffer64(_IO_FILE*) [31]
+[32]     0.0    0.00    0.00       1         buffer64::buffer64(_IO_FILE*) [32]
 -----------------------------------------------
-                0.00    0.00       1/1           keyhandle::keyhandle(unsigned char const*) [34]
-[32]     0.0    0.00    0.00       1         decryaes::columnmix() [32]
+                0.00    0.00       1/1           keyhandle::keyhandle(unsigned char const*) [35]
+[33]     0.0    0.00    0.00       1         decryaes::columnmix() [33]
 -----------------------------------------------
                 0.00    0.00       1/1           multidecrypt_file(int, unsigned char*) [5]
-[33]     0.0    0.00    0.00       1         iobuffer::final_write(int) [33]
+[34]     0.0    0.00    0.00       1         iobuffer::final_write(int) [34]
 -----------------------------------------------
-                0.00    0.00       1/1           get_v_mod2(int, char**) [16]
-[34]     0.0    0.00    0.00       1         keyhandle::keyhandle(unsigned char const*) [34]
-                0.00    0.00       1/1           decryaes::columnmix() [32]
+                0.00    0.00       1/1           get_v_mod2(int, char**) [15]
+[35]     0.0    0.00    0.00       1         keyhandle::keyhandle(unsigned char const*) [35]
+                0.00    0.00       1/1           decryaes::columnmix() [33]
 -----------------------------------------------
 
  This table describes the call tree of the program, and was sorted by
@@ -288,12 +292,12 @@ notice and this notice are preserved.
 
 Index by function name
 
-  [16] get_v_mod2(int, char**) [13] buffergroup::judge_over(unsigned int, unsigned int) [23] iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*)
-  [28] base64_to_hex(unsigned char const*, int, unsigned char*) [11] buffergroup::update_lst(unsigned int) [33] iobuffer::final_write(int)
-  [10] getFileHeader(_IO_FILE*, unsigned char*, unsigned char*) [8] buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [24] iobuffer::update_buffer()
-   [9] getSha1String(unsigned char*, unsigned int, unsigned char*) [12] buffer64::read_buffer64(unsigned char*) [26] iobuffer::get_entry()
-  [17] multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [31] buffer64::buffer64(_IO_FILE*) [25] keyhandle::genkey(int)
-   [1] enc(_IO_FILE*, _IO_FILE*, unsigned char*, keyhandle*) [32] decryaes::columnmix() [34] keyhandle::keyhandle(unsigned char const*)
-  [29] encrypt(vpak_t)         [7] encryaes::encryaes_128bit(state_t&) [4] _fini
-  [30] exec_val(vpak_t)       [27] encryaes::columnmix()
+  [15] get_v_mod2(int, char**) [28] buffergroup::judge_over(unsigned int, unsigned int) [24] iobuffer::load_files(_IO_FILE*, _IO_FILE*, unsigned char*)
+  [30] base64_to_hex(unsigned char const*, int, unsigned char*) [11] buffergroup::update_lst(unsigned int) [34] iobuffer::final_write(int)
+  [10] getFileHeader(_IO_FILE*, unsigned char*, unsigned char*) [8] buffergroup::buffergroup(unsigned int, _IO_FILE*, _IO_FILE*, unsigned char*) [25] iobuffer::update_buffer()
+   [9] getSha1String(unsigned char*, unsigned int, unsigned char*) [12] buffer64::read_buffer64(unsigned char*) [27] iobuffer::get_entry()
+  [16] multi_master_run(int, unsigned char, void (*)(int, unsigned char*)) [32] buffer64::buffer64(_IO_FILE*) [26] keyhandle::genkey(int)
+   [1] enc(_IO_FILE*, _IO_FILE*, unsigned char*, keyhandle*) [33] decryaes::columnmix() [35] keyhandle::keyhandle(unsigned char const*)
+  [17] encrypt(vpak_t)         [7] encryaes::encryaes_128bit(state_t&) [4] _fini
+  [31] exec_val(vpak_t)       [29] encryaes::columnmix()
    [6] hashfile(_IO_FILE*, unsigned char) [2] encryaes::specround()

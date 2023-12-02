@@ -45,7 +45,7 @@ void enc(FILE *fp, FILE *out, u8_t *r_buf, keyhandle *key) {
   getSha1String(r_buf, strlen((const char *)r_buf), r_hash);
   getFileHeader(out, key->get_initkey(), r_hash);
   buffergroup *buf = new buffergroup(THREADS_NUM, fp, out, r_hash);
-  u8_t tail;
+  u8_t tail = 0;
   multienc_master(key, buf, tail);
   hashfile(out, tail);
   delete buf;
