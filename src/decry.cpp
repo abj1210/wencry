@@ -7,7 +7,7 @@ h1:待比较的哈希数组
 h2:待比较的哈希数组
 return:哈希是否相同
 */
-bool cmphash(u8_t *h1, u8_t *h2) {
+static bool cmphash(const u8_t *h1, const u8_t *h2) {
   for (int i = 0; i < 20; ++i)
     if (h1[i] != h2[i])
       return false;
@@ -18,7 +18,7 @@ checkMn:检查魔数
 fp:输入文件
 return:若为0则检查通过,否则检查不通过
 */
-int checkMn(FILE *fp) {
+static int checkMn(FILE *fp) {
   u64_t mn = 0;
   int sum = fread(&mn, 1, 7, fp);
   if (sum != 7)
@@ -31,7 +31,7 @@ fp:输入文件
 key:输入的密钥序列
 return:若为0则检查通过,否则检查不通过
 */
-int checkKey(FILE *fp, u8_t *key) {
+static int checkKey(FILE *fp, const u8_t *key) {
   u8_t hash[20], chash[20];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
@@ -47,7 +47,7 @@ checkFile:检查文件是否被篡改
 fp:输入文件
 return:若为非负数则检查通过,返回值为原文件大小与16的模,否则检查不通过
 */
-int checkFile(FILE *fp) {
+static int checkFile(FILE *fp) {
   u8_t hash[20], chash[29];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)

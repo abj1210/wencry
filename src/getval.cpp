@@ -9,7 +9,7 @@
 getArgsFilep:从参数中获取文件指针
 return:获取的文件指针
 */
-FILE *getArgsFilep(char *arg) {
+static FILE *getArgsFilep(const char *arg) {
   FILE *fp = fopen(arg, "rb");
   if (fp == NULL)
     printf("File not found.\n");
@@ -19,7 +19,7 @@ FILE *getArgsFilep(char *arg) {
 getInputFilep:从输入中获取文件指针
 return:获取的文件指针
 */
-FILE *getInputFilep() {
+static FILE *getInputFilep() {
   char fn[128];
   FILE *fp;
   while (1) {
@@ -35,7 +35,7 @@ FILE *getInputFilep() {
 getInputFilep:从输入中获取密钥
 return:获取的密钥序列
 */
-keyhandle *getInputKey() {
+static keyhandle *getInputKey() {
   u8_t kn[128] = "";
   printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
   int r = scanf("%*[\n]");
@@ -49,7 +49,7 @@ keyhandle *getInputKey() {
 getRandomBuffer:获取随机的缓冲数组
 r_buf:缓冲数组地址
 */
-void getRandomBuffer(u8_t *r_buf) {
+static void getRandomBuffer(u8_t *r_buf) {
   u8_t len = rand();
   for (int i = 0; i < len; ++i)
     r_buf[i] = rand();

@@ -8,7 +8,7 @@ fout:输出文件地址
 r_buf:随机缓冲哈希
 return:是否成功装载数据
 */
-bool iobuffer::load_files(FILE *fin, FILE *fout, u8_t *r_buf) {
+bool iobuffer::load_files(FILE *fin, FILE *fout, const u8_t *r_buf) {
   this->fin = fin;
   this->fout = fout;
   memcpy(this->r, r_buf, 16);

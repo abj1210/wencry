@@ -7,12 +7,11 @@ s:输入的单元
 w:生成的w数组
 return:w的地址
 */
-void getwdata(u8_t *s, wdata_t &w) {
+static void getwdata(const u8_t *s, wdata_t &w) {
   u32_t t, i = 0;
   for (i; i < 16; ++i) {
     t = *((u32_t *)s + i);
-    setbytes(w.w[i], ((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)),
-             (u8_t)(t));
+    setbytes(w.w[i], ((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)), t);
   }
   for (i; i < 80; ++i) {
     t = (w.w[i - 3]) ^ (w.w[i - 8]) ^ (w.w[i - 14]) ^ (w.w[i - 16]);
@@ -24,7 +23,7 @@ gethash:获取每一步的哈希值
 h:上一步的哈希值
 w:生成的w数组
 */
-void gethash(hash_t &h, const wdata_t &w) {
+static void gethash(hash_t &h, const wdata_t &w) {
   u32_t temph0 = h.h[0], temph1 = h.h[1], temph2 = h.h[2], temph3 = h.h[3],
         temph4 = h.h[4];
   u32_t f, temp;
@@ -93,7 +92,7 @@ s:输入字符串
 n:字符串长度
 return:生成的sha1哈希序列
 */
-void getSha1String(u8_t *s, u32_t n, u8_t *hashout) {
+void getSha1String(const u8_t *s, u32_t n, u8_t *hashout) {
   hash_t h;
   u64_t b = n * 8, cnum;
   int flag = 0;

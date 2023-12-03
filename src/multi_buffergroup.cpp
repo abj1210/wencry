@@ -21,7 +21,7 @@ update_lst:更新相应相应的缓冲区
 id:要更新的缓冲区索引
 return:是否成功更新
 */
-bool buffergroup::update_lst(u32_t id) {
+bool buffergroup::update_lst(const u32_t id) {
   if (buflst[id].fin_empty())
     return false;
   COND_WAIT
@@ -38,7 +38,7 @@ id:待判断缓冲区的索引
 tail:最后一表项要写入的字节数
 return:最后一表项写入的字节数,若该缓冲区未结束则返回0;
 */
-int buffergroup::judge_over(u32_t id, u32_t tail) {
+int buffergroup::judge_over(const u32_t id, u32_t tail) {
   if (buflst[id].fin_empty())
     return 0;
   if (buflst[id].buffer_over()) {

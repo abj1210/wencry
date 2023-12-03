@@ -27,13 +27,13 @@ public:
   get_initkey:返回初始密钥的base64形式
   b64:输出字符串地址
   */
-  void get_initkey(u8_t *b64) { hex_to_base64(init_key, 16, b64); };
+  void get_initkey(u8_t *b64) const { hex_to_base64(init_key, 16, b64); };
   /*
   接口函数
   get_initkey:返回初始密钥
   return:初始密钥
   */
-  u8_t *get_initkey() { return init_key; };
+  const u8_t *get_initkey() const { return init_key; };
 };
 
 #endif

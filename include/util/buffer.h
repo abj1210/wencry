@@ -32,7 +32,7 @@ private:
   FILE *fin, *fout;
 
 public:
-  bool load_files(FILE *fin, FILE *fout, u8_t *r_buf);
+  bool load_files(FILE *fin, FILE *fout, const u8_t *r_buf);
   u8_t *get_entry();
   u32_t update_buffer();
   /*
@@ -44,7 +44,7 @@ public:
   fin_empty:判断缓冲区写入文件指针是否为空
   return:若为空返回真否则返回假
   */
-  bool fin_empty() { return fin == NULL; };
+  bool fin_empty() const { return fin == NULL; };
   u32_t final_write(int tailin);
 };
 /*

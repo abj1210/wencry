@@ -23,16 +23,16 @@ public:
   buffergroup(u32_t size, FILE *fin, FILE *fout, u8_t *r_buf);
   /*
         析构函数:释放缓冲区组
-        */
+  */
   ~buffergroup() { delete[] buflst; };
   /*
   require_buffer_entry:获取相应的缓冲区表项
   id:缓冲区索引
   return:相应缓冲区的待处理表项,若已处理完毕则输出NULL
   */
-  u8_t *require_buffer_entry(u32_t id) { return buflst[id].get_entry(); };
-  bool update_lst(u32_t id);
-  int judge_over(u32_t id, u32_t tail);
+  u8_t *require_buffer_entry(const u32_t id) { return buflst[id].get_entry(); };
+  bool update_lst(const u32_t id);
+  int judge_over(const u32_t id, u32_t tail);
 };
 #endif
 
