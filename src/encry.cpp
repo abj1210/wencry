@@ -47,6 +47,6 @@ void enc(FILE *fp, FILE *out, u8_t *r_buf, keyhandle *key) {
   buffergroup *buf = new buffergroup(THREADS_NUM, fp, out, r_hash);
   u8_t tail = 0;
   multienc_master(key, buf, tail);
-  hashfile(out, tail);
   delete buf;
+  hashfile(out, tail);
 }
