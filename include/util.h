@@ -43,4 +43,14 @@ typedef unsigned long long u64_t;
 //最大线程数
 #define MAX_THREADS 16
 
+#define COND_WAIT                                                              \
+  std::unique_lock<std::mutex> locker(filelock);                               \
+  while (turn != id)                                                           \
+    cond.wait(locker);
+
+#define COND_RELEASE                                                           \
+  turn = (turn + 1) % size;                                                    \
+  cond.notify_all();                                                           \
+  locker.unlock();
+
 #endif

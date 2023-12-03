@@ -20,6 +20,7 @@ void multiencrypt_file(int id, u8_t *tailin) {
     } else
       aes.encryaes_128bit(*block);
   }
+  return;
 }
 /*
 multidecrypt_file:负责解密的线程函数
@@ -36,6 +37,7 @@ void multidecrypt_file(int id, u8_t *tailin) {
     } else
       aes.decryaes_128bit(*block);
   }
+  return;
 }
 /*
 multi_master_init:多线程初始化

@@ -3,6 +3,7 @@
 
 #include "util.h"
 #ifdef MULTI_ENABLE
+#include <condition_variable>
 #include <mutex>
 #include <thread>
 /*
@@ -14,11 +15,16 @@ fileaccess:控制相应序号缓冲区文件读写的互斥锁序列
 class buffergroup {
   iobuffer *buflst;
   const u32_t size;
-  std::mutex *fileaccess;
+  u32_t turn;
+  std::mutex filelock;
+  std::condition_variable cond;
 
 public:
   buffergroup(u32_t size, FILE *fin, FILE *fout, u8_t *r_buf);
-  ~buffergroup();
+  /*
+        析构函数:释放缓冲区组
+        */
+  ~buffergroup() { delete[] buflst; };
   /*
   require_buffer_entry:获取相应的缓冲区表项
   id:缓冲区索引

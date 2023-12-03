@@ -76,6 +76,8 @@ vpak_t get_v_mod1() {
       res.key = getInputKey();
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
+    res.key->get_initkey((u8_t *)outk);
+    printf("Key is:\n %s\n", outk);
     printf("Please input some random characters.\n");
     r = scanf("%s", res.r_buf);
   } else if (res.mode == 'd' || res.mode == 'D') {
@@ -96,8 +98,6 @@ vpak_t get_v_mod1() {
     res.out = NULL;
   } else
     res.fp = NULL;
-  res.key->get_initkey((u8_t *)outk);
-  printf("Key is:\n %s\n", outk);
   return res;
 }
 /*

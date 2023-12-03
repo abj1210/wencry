@@ -39,7 +39,7 @@ public:
   bufferover:缓冲区和文件是否读取完毕
   return:若为0则未读取完毕,否则已读取完毕
   */
-  bool buffer_over() { return (now >= total) && (total != BUF_SZ); };
+  bool buffer_over() const { return (now >= total) && (total < BUF_SZ); };
   /*
   fin_empty:判断缓冲区写入文件指针是否为空
   return:若为空返回真否则返回假
