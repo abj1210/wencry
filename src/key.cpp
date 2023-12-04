@@ -6,7 +6,7 @@
 */
 keyhandle::keyhandle() {
   for (int i = 0; i < 16; ++i)
-    init_key[i] = rand() & 0xff;
+    init_key[i] = rand();
   genall();
 }
 /*

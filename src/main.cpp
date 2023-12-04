@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   vpak_t vals;
   if (THREADS_NUM >= MAX_THREADS) {
     std::cout << "Invalid threads number!\r\n";
-    return -4;
+    return -5;
   }
   //获取参数
   if (argc == 1)
@@ -33,9 +33,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
   //执行任务
-  if (!exec_val(vals))
-    return -1;
+  bool flag = exec_val(vals);
   //结束
   over(vals);
-  return 0;
+  return flag ? 0 : -1;
 }

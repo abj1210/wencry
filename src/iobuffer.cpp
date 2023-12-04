@@ -8,16 +8,13 @@ fout:输出文件地址
 r_buf:随机缓冲哈希
 return:是否成功装载数据
 */
-bool iobuffer::load_files(FILE *fin, FILE *fout, const u8_t *r_buf) {
+bool iobuffer::load_files(FILE *fin, FILE *fout) {
   this->fin = fin;
   this->fout = fout;
-  memcpy(this->r, r_buf, 16);
   u32_t sum = fread(b, 1, BUF_SZ << 4, fin);
   tail = sum & 0xf;
   total = sum >> 4;
   now = 0;
-  if (sum == 0)
-    this->fin = NULL;
   return sum != 0;
 }
 /*
@@ -26,8 +23,6 @@ return:返回的表项地址
 */
 u8_t *iobuffer::get_entry() {
   if ((now < total) || ((now == total) && (tail != 0))) {
-    *(u64_t *)b[now] ^= ld[0];
-    *((u64_t *)b[now] + 1) ^= ld[1];
     return b[now++];
   } else
     return NULL;
@@ -50,7 +45,7 @@ final_write:将缓冲区内容保存到文件并关闭缓冲区
 tailin:最后一表项中要保存的字节数
 return:最后一表项装载的字节数
 */
-u32_t iobuffer::final_write(int tailin) {
+u32_t iobuffer::final_write(u8_t tailin) {
   fwrite(b, 1, ((now - 1) << 4) + tailin, fout);
   return tail == 0 ? 16 : tail;
 }

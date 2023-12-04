@@ -2,7 +2,6 @@
 #define MBG
 
 #include "util.h"
-#ifdef MULTI_ENABLE
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -20,7 +19,7 @@ class buffergroup {
   std::condition_variable cond;
 
 public:
-  buffergroup(u32_t size, FILE *fin, FILE *fout, u8_t *r_buf);
+  buffergroup(u32_t size, FILE *fin, FILE *fout);
   /*
         析构函数:释放缓冲区组
   */
@@ -30,10 +29,8 @@ public:
   id:缓冲区索引
   return:相应缓冲区的待处理表项,若已处理完毕则输出NULL
   */
-  u8_t *require_buffer_entry(const u32_t id) { return buflst[id].get_entry(); };
-  bool update_lst(const u32_t id);
-  int judge_over(const u32_t id, u32_t tail);
+  u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };
+  bool update_lst(const u8_t id);
+  bool judge_over(const u8_t id, u8_t &tail);
 };
-#endif
-
 #endif

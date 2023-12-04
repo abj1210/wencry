@@ -10,7 +10,6 @@ typedef unsigned long long u64_t;
 BUF_SZ:用于aes的16B单元缓冲区单元数量
 iobuffer:用于aes的16B单元输入输出缓冲区
 b:缓冲区数组
-r,ld:随机缓冲哈希
 total:缓冲区被填满的单元数量
 now:将要被读写的单元索引
 tail:未被填满的单元中数据的长度
@@ -23,16 +22,12 @@ public:
 
 private:
   u8_t b[BUF_SZ][0x10];
-  union {
-    u8_t r[0x10];
-    u64_t ld[2];
-  };
   u32_t total, now;
   u8_t tail;
   FILE *fin, *fout;
 
 public:
-  bool load_files(FILE *fin, FILE *fout, const u8_t *r_buf);
+  bool load_files(FILE *fin, FILE *fout);
   u8_t *get_entry();
   u32_t update_buffer();
   /*
@@ -41,11 +36,11 @@ public:
   */
   bool buffer_over() const { return (now >= total) && (total < BUF_SZ); };
   /*
-  fin_empty:判断缓冲区写入文件指针是否为空
+  fin_empty:判断缓冲区是否为空
   return:若为空返回真否则返回假
   */
-  bool fin_empty() const { return fin == NULL; };
-  u32_t final_write(int tailin);
+  bool fin_empty() const { return (total == 0) && (tail == 0); };
+  u32_t final_write(u8_t tailin);
 };
 /*
 HBUF_SZ:用于hash的64B单元缓冲区单元数量

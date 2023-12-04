@@ -33,15 +33,11 @@ typedef unsigned long long u64_t;
   (Gmul(n0, (u8_t)(g0)) ^ Gmul(n1, (u8_t)(g1)) ^ Gmul(n2, (u8_t)(g2)) ^        \
    Gmul(n3, (u8_t)(g3)))
 //魔数
-#define Magic_Num 0xA5C3A500C3A5C3
-
-//是否开启多线程模式
-//!!!请勿去掉该宏!!!
-#define MULTI_ENABLE
+constexpr auto Magic_Num = 0xA5C3A500C3A5C3;
 //线程数
-#define THREADS_NUM 4
+constexpr auto THREADS_NUM = 4;
 //最大线程数
-#define MAX_THREADS 16
+constexpr auto MAX_THREADS = 16;
 
 #define COND_WAIT                                                              \
   std::unique_lock<std::mutex> locker(filelock);                               \

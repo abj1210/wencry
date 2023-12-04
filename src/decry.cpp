@@ -80,6 +80,19 @@ int verify(FILE *fp, keyhandle *key) {
   return res;
 }
 /*
+get_RBH:获取随机缓冲哈希
+fp:输入文件指针
+return:返回的RBH,若失败返回NULL
+*/
+u8_t *get_BRH(FILE *fp) {
+  u8_t *r_buf = new u8_t[20];
+  if (fread(r_buf, 1, 20, fp) != 20) {
+    delete r_buf;
+    return NULL;
+  }
+  return r_buf;
+}
+/*
 接口函数
 dec:将文件解密
 fp:输入文件
@@ -91,11 +104,12 @@ int dec(FILE *fp, FILE *out, keyhandle *key) {
   u8_t tail = verify(fp, key);
   if (tail < 0)
     return -tail;
-  u8_t r_buf[20];
-  if (fread(r_buf, 1, 20, fp) != 20)
-    return 1;
-  buffergroup *buf = new buffergroup(THREADS_NUM, fp, out, r_buf);
-  multidec_master(key, buf, tail);
+  u8_t *r_buf = get_BRH(fp);
+  if (r_buf == NULL)
+    return -1;
+  buffergroup *buf = new buffergroup(THREADS_NUM, fp, out);
+  multidec_master(key, buf, r_buf, tail);
   delete buf;
+  delete r_buf;
   return 0;
 }
