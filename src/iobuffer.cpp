@@ -1,5 +1,4 @@
 #include "util.h"
-#include <stdlib.h>
 #include <string.h>
 /*
 load_files:设定输入输出文件并初始化缓冲区
@@ -16,16 +15,6 @@ bool iobuffer::load_files(FILE *fin, FILE *fout) {
   total = sum >> 4;
   now = 0;
   return sum != 0;
-}
-/*
-get_entry:获取当前缓冲区单元表项
-return:返回的表项地址
-*/
-u8_t *iobuffer::get_entry() {
-  if ((now < total) || ((now == total) && (tail != 0))) {
-    return b[now++];
-  } else
-    return NULL;
 }
 /*
 update_buffer:保存缓冲区数据并更新缓冲区

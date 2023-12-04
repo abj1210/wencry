@@ -28,7 +28,13 @@ private:
 
 public:
   bool load_files(FILE *fin, FILE *fout);
-  u8_t *get_entry();
+  /*
+  get_entry:获取当前缓冲区单元表项
+  return:返回的表项地址
+  */
+  u8_t *get_entry() {
+    return ((now < total) || ((now == total) && (tail != 0))) ? b[now++] : NULL;
+  };
   u32_t update_buffer();
   /*
   bufferover:缓冲区和文件是否读取完毕

@@ -1,6 +1,5 @@
 #include "key.h"
 #include <stdlib.h>
-#include <string.h>
 /*
 构造函数:产生随机密钥
 */

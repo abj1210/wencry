@@ -1,5 +1,4 @@
 #include "sha1.h"
-#include <stdlib.h>
 #include <string.h>
 /*
 getwdata:根据每个输入单元生成sha1中w数组的值

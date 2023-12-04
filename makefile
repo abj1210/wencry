@@ -4,7 +4,7 @@ SRC= ./src/
 INC= ./include/
 TST= ./test/
 OUT= ./bin/
-OBJS= main.o encry.o decry.o sha1.o en_aes.o de_aes.o getval.o base64.o iobuffer.o multi_buffergroup.o key.o execval.o multicry.o
+OBJS= main.o encry.o decry.o sha1.o en_aes.o de_aes.o getval.o base64.o iobuffer.o multi_buffergroup.o key.o execval.o multicry.o ioprint.o
 
 
 

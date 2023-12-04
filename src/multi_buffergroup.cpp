@@ -1,5 +1,4 @@
 #include "multi_buffergroup.h"
-#include <iostream>
 /*
 构造函数:初始化缓冲组的数据
 size:缓冲区数量
@@ -12,8 +11,7 @@ buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout)
   buflst = new iobuffer[size];
   for (int i = 0; i < size; ++i)
     if (buflst[i].load_files(fin, fout))
-      std::cout << "Buffer of thread id " << i << " loaded "
-                << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
+      printload(i);
 }
 /*
 update_lst:更新相应相应的缓冲区
@@ -26,8 +24,7 @@ bool buffergroup::update_lst(const u8_t id) {
   COND_WAIT
   bool flag = (buflst[id].update_buffer() != 0);
   if (flag)
-    std::cout << "Buffer of thread id " << (u32_t)id << " loaded "
-              << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
+    printload(id);
   COND_RELEASE
   return flag;
 }

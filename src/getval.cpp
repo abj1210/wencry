@@ -60,7 +60,7 @@ get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
 vpak_t get_v_mod1() {
-  char flag, fn[] = "out", outn[138], decn[128], outk[128];
+  char flag, fn[] = "out", outn[138], decn[128];
   srand(time(NULL));
   vpak_t res;
   printf("Need encrypt, verify or decrypt?(e/v/d) ");
@@ -76,8 +76,7 @@ vpak_t get_v_mod1() {
       res.key = getInputKey();
     sprintf(outn, "%s.wenc", fn);
     res.out = fopen(outn, "wb+");
-    res.key->get_initkey((u8_t *)outk);
-    printf("Key is:\n %s\n", outk);
+    printkey(res.key);
     printf("Please input some random characters.\n");
     r = scanf("%s", res.r_buf);
   } else if (res.mode == 'd' || res.mode == 'D') {
@@ -108,7 +107,7 @@ argv:变量值列表
 return:返回的参数包
 */
 vpak_t get_v_mod2(int argc, char *argv[]) {
-  char outn[138], outk[128];
+  char outn[138];
   srand(time(NULL));
   vpak_t res;
   res.mode = argv[1][1];
@@ -135,7 +134,6 @@ vpak_t get_v_mod2(int argc, char *argv[]) {
     res.key = new keyhandle((u8_t *)argv[3]);
   } else
     res.fp = NULL;
-  res.key->get_initkey((u8_t *)outk);
-  printf("Key is:\n %s\n", outk);
+  printkey(res.key);
   return res;
 }
