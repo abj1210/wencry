@@ -55,5 +55,6 @@
         "*.in": "cpp"
     },
     "cmake.sourceDirectory": "/mnt/c/Users/闻嘉迅/liucan/code/wencry",
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "C_Cpp.errorSquiggles": "enabled"
 }

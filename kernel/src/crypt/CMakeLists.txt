@@ -1,10 +1,21 @@
 project(Crypt)
 
-add_library(${PROJECT_NAME} iobuffer.cpp key.cpp en_aes.cpp de_aes.cpp multi_buffergroup.cpp multicry.cpp)
+add_subdirectory(MBG)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Sutils)
+add_subdirectory(aeskey)
+
+add_library(${PROJECT_NAME} multicry.cpp)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC MBG)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../util
+                            ${PROJECT_SOURCE_DIR}/MBG
+                            )
+                
+target_link_libraries(${PROJECT_NAME} PUBLIC Aeskey)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+                            ${PROJECT_BINARY_DIR}
+                            ${PROJECT_SOURCE_DIR}/aeskey
                             )

@@ -108,7 +108,7 @@ int dec(FILE *fp, FILE *out, u8_t *key) {
   if (r_buf == NULL)
     return -1;
   buffergroup *buf = new buffergroup(THREADS_NUM, fp, out);
-  multidec_master(key, buf, r_buf, tail);
+  multidec_master(key, buf, r_buf, THREADS_NUM, tail);
   delete buf;
   delete r_buf;
   return 0;

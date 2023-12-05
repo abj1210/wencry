@@ -4,16 +4,7 @@ add_subdirectory(crypt)
 
 add_subdirectory(sha1)
 
-add_subdirectory(util)
-
 add_library(${PROJECT_NAME} decry.cpp encry.cpp)
-
-target_link_libraries(${PROJECT_NAME} PUBLIC Sutils)
-
-target_include_directories(${PROJECT_NAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/util
-                            )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Sha1)
 

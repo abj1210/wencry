@@ -1,4 +1,3 @@
-#include "getval.h"
 #include "base64.h"
 
 #include <stdio.h>
@@ -6,6 +5,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+typedef unsigned char u8_t;
+/*
+vpak:参数包
+fp:输入文件
+out:输出文件
+key:初始密钥
+r_buf:随机缓冲数组
+mode:模式(加密/解密)
+*/
+typedef struct{
+  FILE *fp, *out;
+  u8_t * key;
+  u8_t r_buf[256];
+  char mode;
+} vpak_t;
 void printkey(u8_t *key) {
   u8_t outk[128];
   hex_to_base64(key, 16, outk);
@@ -78,45 +92,45 @@ static void getRandomBuffer(u8_t *r_buf) {
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
-vpak_t get_v_mod1() {
+unsigned char *get_v_mod1() {
   char flag, fn[] = "out", outn[138], decn[128];
   srand(time(NULL));
-  vpak_t res;
+  vpak_t * res = new vpak_t;
   printf("Need encrypt, verify or decrypt?(e/v/d) ");
-  int r = scanf("%c", &res.mode);
+  int r = scanf("%c", &res->mode);
   printf("File name:\n");
-  res.fp = getInputFilep();
-  if (res.mode == 'e' || res.mode == 'E') {
+  res->fp = getInputFilep();
+  if (res->mode == 'e' || res->mode == 'E') {
     printf("Need generate a new key?(y/n) ");
     r = scanf("%*[\n]%c", &flag);
     if (flag == 'y' || flag == 'Y')
-      res.key = getRandomKey();
+      res->key = getRandomKey();
     else
-      res.key = getInputKey();
+      res->key = getInputKey();
     sprintf(outn, "%s.wenc", fn);
-    res.out = fopen(outn, "wb+");
-    printkey(res.key);
+    res->out = fopen(outn, "wb+");
+    printkey(res->key);
     printf("Please input some random characters.\n");
-    r = scanf("%s", res.r_buf);
-  } else if (res.mode == 'd' || res.mode == 'D') {
+    r = scanf("%s", res->r_buf);
+  } else if (res->mode == 'd' || res->mode == 'D') {
     printf("Need a new name for decrypted file?(y/n) ");
     r = scanf("%*[\n]%c", &flag);
     if (flag == 'y' || flag == 'Y') {
       printf("Enter new name:\n");
       r = scanf("%*[\n]");
       r = scanf("%s", decn);
-      res.out = fopen(decn, "wb+");
+      res->out = fopen(decn, "wb+");
     } else {
       sprintf(outn, "%s.wdec", fn);
-      res.out = fopen(outn, "wb+");
+      res->out = fopen(outn, "wb+");
     }
-    res.key = getInputKey();
-  } else if (res.mode == 'v') {
-    res.key = getInputKey();
-    res.out = NULL;
+    res->key = getInputKey();
+  } else if (res->mode == 'v') {
+    res->key = getInputKey();
+    res->out = NULL;
   } else
-    res.fp = NULL;
-  return res;
+    res->fp = NULL;
+  return (u8_t *)res;
 }
 /*
 接口函数
@@ -125,34 +139,34 @@ argc:变量数目
 argv:变量值列表
 return:返回的参数包
 */
-vpak_t get_v_mod2(int argc, char *argv[]) {
+unsigned char *get_v_mod2(int argc, char *argv[]) {
   char outn[138];
   srand(time(NULL));
-  vpak_t res;
-  res.mode = argv[1][1];
+  vpak_t * res = new vpak_t;
+  res->mode = argv[1][1];
   if (strcmp(argv[1], "-e") == 0) {
-    res.fp = getArgsFilep(argv[2]);
+    res->fp = getArgsFilep(argv[2]);
     if (strcmp(argv[3], "G") == 0)
-      res.key = getRandomKey();
+      res->key = getRandomKey();
     else
-      res.key =  getArgKey((u8_t *)argv[3]);
+      res->key =  getArgKey((u8_t *)argv[3]);
     sprintf(outn, "%s.wenc", argc == 4 ? argv[2] : argv[4]);
-    res.out = fopen(outn, "wb+");
-    getRandomBuffer(res.r_buf);
+    res->out = fopen(outn, "wb+");
+    getRandomBuffer(res->r_buf);
   } else if (strcmp(argv[1], "-d") == 0) {
-    res.fp = getArgsFilep(argv[2]);
-    res.key = getArgKey((u8_t *)argv[3]);
+    res->fp = getArgsFilep(argv[2]);
+    res->key = getArgKey((u8_t *)argv[3]);
     if (argc == 4) {
       sprintf(outn, "%s.denc", argv[2]);
-      res.out = fopen((const char *)outn, "wb+");
+      res->out = fopen((const char *)outn, "wb+");
     } else
-      res.out = fopen(argv[4], "wb+");
+      res->out = fopen(argv[4], "wb+");
   } else if (strcmp(argv[1], "-v") == 0) {
-    res.out = NULL;
-    res.fp = getArgsFilep(argv[2]);
-    res.key =  getArgKey((u8_t *)argv[3]);
+    res->out = NULL;
+    res->fp = getArgsFilep(argv[2]);
+    res->key =  getArgKey((u8_t *)argv[3]);
   } else
-    res.fp = NULL;
-  printkey(res.key);
-  return res;
+    res->fp = NULL;
+  printkey(res->key);
+  return (u8_t *)res;
 }

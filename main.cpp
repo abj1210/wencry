@@ -2,12 +2,15 @@
 #include "execval.h"
 #include "config.h"
 #include <iostream>
+/*
+version:获取版本信息
+*/
 void version(){
   std::cout<<"Wencry version: "<<PROJECT_VERSION<<". Build time: "<<V_BUILD_TIME<<"\r\n";
 }
 int main(int argc, char *argv[]) {
   //初始化
-  vpak_t vals;
+  unsigned char * vals = NULL;
   //获取参数
   if (argc == 1)
     vals = get_v_mod1();

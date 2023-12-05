@@ -2,7 +2,7 @@
 
 作者：闻嘉迅  
 日期：2023.12.5 (最后修改)  
-版本：v2.6.1  
+版本：v2.6.2  
 
 **默认4线程模式**  
 **处理速度可达80MB/s以上**  
@@ -35,45 +35,45 @@
 
 ## 文件结构
 
-- wencry:项目文件夹  
-  - main.cpp:主函数  
-  - vpak.h:参数包定义头文件  
-  - valget:获取参数包相关文件夹
+- **wencry:项目文件夹**  
+  - main.cpp:主函数   
+  - **valget:获取参数包相关文件夹**
     - base64.h:十六进制序列与base64编码的相互转换
     - base64.cpp:负责进行base64的编码和解码  
     - getval.h:获取参数包的头文件  
     - getval.cpp:负责获取操作参数  
-  - kernel:加解密核心文件夹
+  - **kernel:加解密核心文件夹**
     - execval.h:接收参数包进行操作的头文件
     - execval.cpp:负责根据获取的参数选择操作执行  
-    - src:加解密函数文件夹
+    - **src:加解密函数文件夹**
       - cry.h:加解密流程相关的头文件  
       - decry.cpp:负责整体解密流程  
       - encry.cpp:负责整体加密流程  
-      - crypt:进行aes加解密函数的文件夹
-        - aes.h:AES加解密相关的头文件  
-        - de_aes.cpp:负责AES解密的各流程  
-        - en_aes.cpp:负责AES加密的各流程  
-        - buffer.h:IO缓冲区的头文件  
-        - iobuffer.cpp:实现IO缓冲区  
-        - key.h:密钥生成相关头文件  
-        - key.cpp:负责生成密钥  
+      - **crypt:进行aes加解密函数的文件夹**
         - multicry.h:多线程进行aes加解密的相关头文件
         - multicry.cpp:多线程进行aes加解密的函数实现
-        - multi_buffergroup.h:多线程缓冲区组的相关头文件 
-        - multi_buffergroup.cpp:多线程缓冲区组的实现
-      - sha1:sha1哈希函数文件夹
+        - **aeskey:进行128bitaes加解密和密钥处理的文件夹**
+          - aes.h:AES加解密相关的头文件  
+          - de_aes.cpp:负责AES解密的各流程  
+          - en_aes.cpp:负责AES加密的各流程  
+          - key.h:密钥生成相关头文件  
+          - key.cpp:负责生成密钥  
+          - state.h:state结构体的定义 
+          - **include:通用头文件**
+            - macro.h:aes和密钥所需的宏
+            - tab.h:aes和密钥所需数表 
+        - **MBG:多线程缓冲区组的文件夹**
+          - buffer.h:IO缓冲区的头文件  
+          - iobuffer.cpp:实现IO缓冲区  
+          - multi_buffergroup.h:多线程缓冲区组的相关头文件 
+          - multi_buffergroup.cpp:多线程缓冲区组的实现
+      - **sha1:sha1哈希函数文件夹**
+        - macro.h:哈希相关宏
         - shabuffer.h:哈希输入缓冲区头文件  
         - shabuffer.cpp:哈希输入缓冲区的实现
         - sha1.h:进行sha1哈希相关的头文件  
         - sha1.cpp:负责产生sha1哈希的流程  
-      - util:加解密时需要的通用头文件和函数  
-        - ioprint.h:处理流程中向标准输出流打印的函数  
-        - ioprint.cpp:打印函数的实现  
-        - tab.h:各种数表
-        - state.h:state结构体的定义  
-        - kutil.h:必要的宏定义 
-  - test:测试文件夹
+  - **test:测试文件夹**
     - test.h:测试相关函数的头文件
     - test.cpp:测试相关函数的实现
     - testsmall1.cpp testsmall2.cpp:小文件加解密测试  
@@ -172,4 +172,4 @@ void multiencrypt_file(int id, u8_t * tailin) {
 *v2.3 新增:增加随机缓冲哈希,使得在同文件同密钥情况下加密仍能得到不同的加密文件,提高了安全性.*  
 *v2.4 新增:修复了windows环境下多线程同步失败的bug.*   
 *v2.5 新增:修复了与RBH相关的bug.(2.5.1 改变文件结构)*  
-*v2.6 新增:采用cmake自动构建和ctest自动测试.(2.6.1 增加自动速度测试版本查看并修复已知bug)*  
+*v2.6 新增:采用cmake自动构建和ctest自动测试.(2.6.1 增加自动速度测试版本查看并修复已知bug 2.6.2 修改文件结构)*  

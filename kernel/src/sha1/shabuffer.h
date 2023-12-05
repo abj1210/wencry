@@ -1,7 +1,6 @@
 #ifndef SBF
 #define SBF
-
-#include "kutil.h"
+#include "macro.h"
 #include <stdio.h>
 /*
 HBUF_SZ:用于hash的64B单元缓冲区单元数量

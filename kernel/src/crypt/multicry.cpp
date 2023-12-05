@@ -1,7 +1,6 @@
 #include "multicry.h"
 #include "aes.h"
 #include "key.h"
-#include "multi_buffergroup.h"
 #include <thread>
 buffergroup *bg;
 keyhandle *keyh;
@@ -57,11 +56,11 @@ multifunc:并发执行的函数指针
 tail:最后一单元项写入的字节数
 return:最后一单元实际装载的字节数
 */
-static u8_t multi_master_run(void (*multifunc)(u8_t, u8_t *), u8_t tail) {
-  std::thread threads[THREADS_NUM];
-  for (u8_t i = 0; i < THREADS_NUM; ++i)
+static u8_t multi_master_run(void (*multifunc)(u8_t, u8_t *), const u8_t threads_num, u8_t tail) {
+  std::thread threads[threads_num];
+  for (u8_t i = 0; i < threads_num; ++i)
     threads[i] = std::thread(multifunc, i, &tail);
-  for (u8_t i = 0; i < THREADS_NUM; ++i)
+  for (u8_t i = 0; i < threads_num; ++i)
     threads[i].join();
   delete keyh;
   return tail;
@@ -73,10 +72,10 @@ key:密钥
 buf:缓冲区组
 tail:最后一单元项写入的字节数
 */
-void multienc_master(u8_t *key, buffergroup *buf, const u8_t *r_hash,
+void multienc_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t threads_num,
                      u8_t &tail) {
   multi_master_init(key, buf, r_hash);
-  tail = multi_master_run(multiencrypt_file, tail);
+  tail = multi_master_run(multiencrypt_file, threads_num, tail);
 }
 /*
 接口函数
@@ -85,8 +84,8 @@ key:密钥
 buf:缓冲区组
 tail:最后一单元项写入的字节数
 */
-void multidec_master(u8_t *key, buffergroup *buf, const u8_t *r_hash,
+void multidec_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t threads_num,
                      const u8_t tail) {
   multi_master_init(key, buf, r_hash);
-  multi_master_run(multidecrypt_file, tail);
+  multi_master_run(multidecrypt_file, threads_num, tail);
 }

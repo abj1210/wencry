@@ -1,5 +1,4 @@
 #include "sha1.h"
-#include "kutil.h"
 #include "shabuffer.h"
 #include <string.h>
 /*

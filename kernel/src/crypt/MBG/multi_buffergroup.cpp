@@ -1,6 +1,10 @@
 #include "multi_buffergroup.h"
-#include "ioprint.h"
-#include "kutil.h"
+
+#include <iostream>
+void printload(const u8_t id, const u32_t size) {
+  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded "
+       << size << "MB data.\r\n";
+}
 /*
 构造函数:初始化缓冲组的数据
 size:缓冲区数量
@@ -13,7 +17,7 @@ buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout)
   buflst = new iobuffer[size];
   for (int i = 0; i < size; ++i)
     if (buflst[i].load_files(fin, fout))
-      printload(i);
+      printload(i, (iobuffer::BUF_SZ >> 16));
 }
 /*
 update_lst:更新相应相应的缓冲区
@@ -26,7 +30,7 @@ bool buffergroup::update_lst(const u8_t id) {
   COND_WAIT
   bool flag = (buflst[id].update_buffer() != 0);
   if (flag)
-    printload(id);
+    printload(id, (iobuffer::BUF_SZ >> 16));
   COND_RELEASE
   return flag;
 }

@@ -1,12 +1,5 @@
-#ifndef UTL
-#define UTL
-
-#include "tab.h"
-#include "state.h"
-#include "ioprint.h"
-
-//线程数
-constexpr auto THREADS_NUM = 4;
+#ifndef AMAC
+#define AMAC
 
 //转换subbyte
 #define sub_bytes(x) s_box[x]
@@ -25,16 +18,5 @@ constexpr auto THREADS_NUM = 4;
 #define GMlineA(n0, n1, n2, n3)                                                \
   (Gmul(n0, (u8_t)(g0)) ^ Gmul(n1, (u8_t)(g1)) ^ Gmul(n2, (u8_t)(g2)) ^        \
    Gmul(n3, (u8_t)(g3)))
-//魔数
-constexpr auto Magic_Num = 0xA5C3A500C3A5C3;
 
-#define COND_WAIT                                                              \
-  std::unique_lock<std::mutex> locker(filelock);                               \
-  while (turn != id)                                                           \
-    cond.wait(locker);
-
-#define COND_RELEASE                                                           \
-  turn = (turn + 1) % size;                                                    \
-  cond.notify_all();                                                           \
-  locker.unlock();
 #endif

@@ -1,9 +1,5 @@
 #include "buffer.h"
 #include <iostream>
-void printload(const u8_t id) {
-  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded "
-       << (iobuffer::BUF_SZ >> 16) << "MB data.\r\n";
-}
 /*
 load_files:设定输入输出文件并初始化缓冲区
 fin:输入文件地址

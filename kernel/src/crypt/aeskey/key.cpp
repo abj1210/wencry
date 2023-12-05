@@ -1,4 +1,6 @@
 #include "key.h"
+#include "macro.h"
+#include "tab.h"
 #include <string.h>
 /*
 构造函数:产生指定密钥

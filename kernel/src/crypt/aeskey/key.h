@@ -1,7 +1,7 @@
 #ifndef KEY
 #define KEY
 
-#include "kutil.h"
+#include "state.h"
 /*
 keyhandle:密钥的生成
 key:轮密钥数组

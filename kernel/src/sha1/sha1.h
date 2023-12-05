@@ -1,8 +1,7 @@
 #ifndef SHA1
 #define SHA1
 
-typedef unsigned char u8_t;
-typedef unsigned int u32_t;
+#include "macro.h"
 #include <stdio.h>
 /*
 wdata:sha1生成的w数组

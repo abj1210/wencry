@@ -8,6 +8,7 @@ typedef unsigned long long u64_t;
 #define turn_base64(in) b64_tab[in]
 //将base64编码转化为一个十六进制位
 #define turn_hex(in) hex_tab[in]
+
 void hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out);
 void base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out);
 

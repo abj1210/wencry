@@ -2,9 +2,6 @@
 #define TAB
 
 typedef unsigned char u8_t;
-typedef unsigned short u16_t;
-typedef unsigned int u32_t;
-typedef unsigned long long u64_t;
 
 const u8_t RC[11] = {0x00, 0x01, 0x02, 0x04, 0x08, 0x10,
                      0x20, 0x40, 0x80, 0x1B, 0x36};

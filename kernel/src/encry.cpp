@@ -49,7 +49,7 @@ void enc(FILE *fp, FILE *out, const u8_t *r_buf, u8_t *key) {
   u8_t *r_hash = getFileHeader(out, key, r_buf);
   buffergroup *buf = new buffergroup(THREADS_NUM, fp, out);
   u8_t tail = 16;
-  multienc_master(key, buf, r_hash, tail);
+  multienc_master(key, buf, r_hash, THREADS_NUM, tail);
   delete buf;
   delete r_hash;
   hashfile(out, tail);

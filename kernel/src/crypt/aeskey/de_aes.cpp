@@ -1,5 +1,6 @@
 #include "aes.h"
-#include "kutil.h"
+#include "macro.h"
+#include "tab.h"
 /*
 subbytes:aes的还原subbytes步骤
 */

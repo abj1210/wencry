@@ -4,6 +4,17 @@
 #include "buffer.h"
 #include <condition_variable>
 #include <mutex>
+
+#define COND_WAIT                                                              \
+  std::unique_lock<std::mutex> locker(filelock);                               \
+  while (turn != id)                                                           \
+    cond.wait(locker);
+
+#define COND_RELEASE                                                           \
+  turn = (turn + 1) % size;                                                    \
+  cond.notify_all();                                                           \
+  locker.unlock();
+
 /*
 buffergroup:用于多线程的缓冲区组
 buflst:缓冲区数组指针

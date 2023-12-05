@@ -1,5 +1,6 @@
 #include "aes.h"
-#include "kutil.h"
+#include "macro.h"
+#include "tab.h"
 /*
 addroundkey:aes的密钥轮加操作
 key:相应的轮密钥指针
