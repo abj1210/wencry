@@ -3,5 +3,6 @@
 
 int makeFullTest(const char * str);
 int makeBigTest(int offset);
+int makeSpeedTest();
 
 #endif

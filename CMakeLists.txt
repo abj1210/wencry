@@ -2,7 +2,17 @@ cmake_minimum_required(VERSION 3.22.1)
 
 set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
 
-project(Wencry)
+string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
+set(build_time    ${COMPILE_TIME})
+
+project(Wencry VERSION 2.6.1 LANGUAGES CXX)
+
+configure_file(
+  config.h.in
+  generated/config.h
+  @ONLY
+  )
+
 
 add_subdirectory(valget)
 
@@ -31,3 +41,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_SOURCE_DIR}/valget
                             )
                             
+target_include_directories(${PROJECT_NAME}
+PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}/generated)

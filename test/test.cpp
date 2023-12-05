@@ -53,3 +53,14 @@ int makeBigTest(int offset){
   buf[0x2000000+offset]=0;
   return makeFullTest(buf);
 }
+int makeSpeedTest(){
+  char name[]="./wencry";
+  char fname[]="test.txt";
+  char enc[]="-e";
+  char key[]="ABEiM0RVZneImaq7zN3u/w==";
+  char * argv1[]={name, enc, fname, key};
+  int argc=4;
+  if(!exec_val(get_v_mod2(argc, (char **)argv1)))
+    return 0;
+  else return 1;
+}
