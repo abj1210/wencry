@@ -3,9 +3,6 @@
 
 #include <stdio.h>
 typedef unsigned char u8_t;
-typedef unsigned short u16_t;
-typedef unsigned int u32_t;
-typedef unsigned long long u64_t;
 /*
 vpak:参数包
 fp:输入文件
