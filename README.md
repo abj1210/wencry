@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2023.12.4 (最后修改)  
-版本：v2.5.1  
+日期：2023.12.5 (最后修改)  
+版本：v2.6  
 
 **默认4线程模式**  
 **处理速度可达60MB/s以上**  
@@ -35,52 +35,61 @@
 
 ## 文件结构
 
-- include:头文件  
-    - util:通用的结构体和函数  
-        - base64.h:十六进制序列与base64编码的相互转换  
-        - buffer.h:IO缓冲区的头文件  
-        - ioprint.h:处理流程中向标准输出流打印的函数
-        - struct.h:结构体  
-        - tab.h:各种数表
-    - aes.h:AES加解密相关的头文件
-    - cry.h:加解密流程相关的头文件
-    - key.h:密钥生成相关头文件
-    - sha1.h:进行sha1哈希相关的头文件
-    - multicry.h:多线程进行aes加解密的相关头文件
-    - multi_buffergroup.h:多线程缓冲区组的相关头文件
-    - util.h:包含了util文件夹下的所有头文件和各种宏  
-    - wenctrl.h:main函数流程控制相关的头文件
-
-- src:源代码
-    - de_aes.cpp:负责AES解密的各流程
-    - en_aes.cpp:负责AES加密的各流程  
+- wencry:项目文件夹  
+  - main.cpp:主函数  
+  - vpak.h:参数包定义头文件  
+  - valget:获取参数包相关文件夹
+    - base64.h:十六进制序列与base64编码的相互转换
     - base64.cpp:负责进行base64的编码和解码  
-    - iobuffer.cpp:实现IO缓冲区  
-    - ioprint.cpp:打印函数的实现  
-    - encry.cpp:负责整体加密流程
+    - getval.h:获取参数包的头文件  
+    - getval.cpp:负责获取操作参数  
+  - kernel:加解密核心文件夹
+    - execval.h:接收参数包进行操作的头文件
     - execval.cpp:负责根据获取的参数选择操作执行  
-    - decry.cpp:负责整体解密流程
-    - getval.cpp:负责获取操作参数
-    - key.cpp:负责生成密钥
-    - main.cpp:主函数
-    - multicry.cpp:多线程进行aes加解密的函数实现
-    - multi_buffergroup.h:多线程缓冲区组的实现
-    - sha1.cpp:负责产生sha1哈希的流程
-    
-- test:测试代码和文件
-    - test.c:测试正确性代码
-    - test_file.c:测试运行效率的代码
-    - testfile.txt t2.txt:测试文件
-
-- bin:生成的二进制目标文件所在文件夹
+    - src:加解密函数文件夹
+      - cry.h:加解密流程相关的头文件  
+      - decry.cpp:负责整体解密流程  
+      - encry.cpp:负责整体加密流程  
+      - crypt:进行aes加解密函数的文件夹
+        - aes.h:AES加解密相关的头文件  
+        - de_aes.cpp:负责AES解密的各流程  
+        - en_aes.cpp:负责AES加密的各流程  
+        - buffer.h:IO缓冲区的头文件  
+        - iobuffer.cpp:实现IO缓冲区  
+        - key.h:密钥生成相关头文件  
+        - key.cpp:负责生成密钥  
+        - multicry.h:多线程进行aes加解密的相关头文件
+        - multicry.cpp:多线程进行aes加解密的函数实现
+        - multi_buffergroup.h:多线程缓冲区组的相关头文件 
+        - multi_buffergroup.cpp:多线程缓冲区组的实现
+      - sha1:sha1哈希函数文件夹
+        - shabuffer.h:哈希输入缓冲区头文件  
+        - shabuffer.cpp:哈希输入缓冲区的实现
+        - sha1.h:进行sha1哈希相关的头文件  
+        - sha1.cpp:负责产生sha1哈希的流程  
+      - util:加解密时需要的通用头文件和函数  
+        - ioprint.h:处理流程中向标准输出流打印的函数  
+        - ioprint.cpp:打印函数的实现  
+        - tab.h:各种数表
+        - state.h:state结构体的定义  
+        - kutil.h:必要的宏定义 
+  - test:测试文件夹
+    - test.h:测试相关函数的头文件
+    - test.cpp:测试相关函数的实现
+    - testsmall1.cpp testsmall2.cpp:小文件加解密测试  
+    - testbig1.cpp:大文件加解密测试
 
 具体函数和结构体作用与解释参阅源代码注释.  
 
 ## 使用方法
 
-使用`make wencry`命令进行编译  
-使用`make test_once`命令进行自动测试  
-使用`make analysis`命令进行性能分析(此时应在F变量中加入`-pg`选项和分析文件)
+**创建构建目录**  
+使用`mkdir ./build`命令创建构建目录,`cd ./build`命令进入构建目录.  
+**构建并编译**  
+使用`cmake ..`构建,`make`命令进行编译.  
+**测试**
+在项目编译后使用`ctest`命令进行测试.  
+(若想关闭测试则需在根目录`CMakeLists.txt`中关闭`BUILD_TEST`选项.)  
 
 ### 加密
 
@@ -158,3 +167,4 @@ void multiencrypt_file(int id, u8_t * tailin) {
 *v2.3 新增:增加随机缓冲哈希,使得在同文件同密钥情况下加密仍能得到不同的加密文件,提高了安全性.*  
 *v2.4 新增:修复了windows环境下多线程同步失败的bug.*   
 *v2.5 新增:修复了与RBH相关的bug.(2.5.1 改变文件结构)*  
+*v2.6 新增:采用cmake自动构建和ctest自动测试.*  
