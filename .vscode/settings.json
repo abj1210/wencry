@@ -1,7 +1,8 @@
 {
     "files.associations": {
-        "string.h": "c",
-        "stdio.h": "c",
+        "thread": "cpp",
+        "new": "cpp",
+        "condition_variable": "cpp",
         "cctype": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
@@ -19,7 +20,6 @@
         "chrono": "cpp",
         "compare": "cpp",
         "concepts": "cpp",
-        "condition_variable": "cpp",
         "cstdint": "cpp",
         "deque": "cpp",
         "string": "cpp",
@@ -41,18 +41,18 @@
         "utility": "cpp",
         "initializer_list": "cpp",
         "iosfwd": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
         "limits": "cpp",
         "mutex": "cpp",
-        "new": "cpp",
         "numbers": "cpp",
         "ostream": "cpp",
         "semaphore": "cpp",
         "stdexcept": "cpp",
         "stop_token": "cpp",
         "streambuf": "cpp",
-        "thread": "cpp",
-        "typeinfo": "cpp",
-        "iostream": "cpp",
-        "istream": "cpp"
-    }
+        "typeinfo": "cpp"
+    },
+    "cmake.sourceDirectory": "/mnt/c/Users/闻嘉迅/liucan/code/wencry/wensrc",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

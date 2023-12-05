@@ -1,0 +1,33 @@
+cmake_minimum_required(VERSION 3.22.1)
+
+set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
+
+project(Wencry)
+
+add_subdirectory(valget)
+
+add_subdirectory(kernel)
+
+option(BUILD_TEST "Whether or not to build the tests" ON)
+if (${BUILD_TEST})
+    message(STATUS "Building tests")
+    enable_testing()  # Enable testing only works in root scope
+    add_subdirectory(test)
+endif ()
+
+add_executable(${PROJECT_NAME}  main.cpp)
+
+target_link_libraries(${PROJECT_NAME} PUBLIC Wenkernel)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/kernel
+                           )
+
+target_link_libraries(${PROJECT_NAME} PUBLIC CMDvals)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+                            ${PROJECT_BINARY_DIR}
+                            ${PROJECT_SOURCE_DIR}/valget
+                            )
+                            
