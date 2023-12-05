@@ -13,11 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: cd
-      run: cd ./Wencry
     - name: cmake
-      run: cmake .
+      run: cmake ./Wencry
     - name: make_test
+      run: ./Wencry
       run: make 
     - name: test_files
       run: ctest
