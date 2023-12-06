@@ -5,7 +5,7 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
 
-project(Wencry VERSION 2.6.2 LANGUAGES CXX)
+project(Wencry VERSION 2.6.3 LANGUAGES CXX)
 
 configure_file(
   config.h.in
@@ -21,7 +21,7 @@ add_subdirectory(kernel)
 option(BUILD_TEST "Whether or not to build the tests" ON)
 if (${BUILD_TEST})
     message(STATUS "Building tests")
-    enable_testing()  # Enable testing only works in root scope
+    enable_testing()  
     add_subdirectory(test)
 endif ()
 
@@ -41,6 +41,6 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_SOURCE_DIR}/valget
                             )
                             
-target_include_directories(${PROJECT_NAME}
-PRIVATE
-    ${CMAKE_CURRENT_BINARY_DIR}/generated)
+target_include_directories(${PROJECT_NAME} PRIVATE
+                            ${CMAKE_CURRENT_BINARY_DIR}/generated
+                            )

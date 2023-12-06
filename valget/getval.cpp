@@ -1,11 +1,9 @@
 #include "base64.h"
-
 #include <stdio.h>
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-typedef unsigned char u8_t;
 /*
 vpak:参数包
 fp:输入文件

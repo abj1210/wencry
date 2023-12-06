@@ -43,6 +43,7 @@ void multidecrypt_file(u8_t id, u8_t *tailin) {
 multi_master_init:多线程初始化
 key:密钥
 buf:缓冲区组
+r_hash:随机缓冲哈希
 */
 static void multi_master_init(u8_t *key, buffergroup *buf,
                               const u8_t *r_hash) {
@@ -53,6 +54,7 @@ static void multi_master_init(u8_t *key, buffergroup *buf,
 /*
 multi_master_run:多线程运行
 multifunc:并发执行的函数指针
+threads_num:并发线程数
 tail:最后一单元项写入的字节数
 return:最后一单元实际装载的字节数
 */
@@ -70,6 +72,8 @@ static u8_t multi_master_run(void (*multifunc)(u8_t, u8_t *), const u8_t threads
 multienc_master:进行并发加密的函数
 key:密钥
 buf:缓冲区组
+r_hash:随机缓冲哈希
+threads_num:并发线程数
 tail:最后一单元项写入的字节数
 */
 void multienc_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t threads_num,
@@ -82,6 +86,8 @@ void multienc_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t
 multidec_master:进行并发解密的函数
 key:密钥
 buf:缓冲区组
+r_hash:随机缓冲哈希
+threads_num:并发线程数
 tail:最后一单元项写入的字节数
 */
 void multidec_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t threads_num,

@@ -1,5 +1,4 @@
 #include "multi_buffergroup.h"
-
 #include <iostream>
 void printload(const u8_t id, const u32_t size) {
   std::cout << "Buffer of thread id " << (const u32_t)id << " loaded "

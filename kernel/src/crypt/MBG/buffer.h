@@ -4,7 +4,6 @@
 #include <stdio.h>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
-typedef unsigned long long u64_t;
 /*
 BUF_SZ:用于aes的16B单元缓冲区单元数量
 iobuffer:用于aes的16B单元输入输出缓冲区

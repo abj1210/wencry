@@ -1,5 +1,4 @@
 #include "buffer.h"
-#include <iostream>
 /*
 load_files:设定输入输出文件并初始化缓冲区
 fin:输入文件地址
