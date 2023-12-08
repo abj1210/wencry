@@ -1,5 +1,5 @@
-#ifndef SMAC_my
-#define SMAC_my
+#ifndef SMAC
+#define SMAC
 
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;

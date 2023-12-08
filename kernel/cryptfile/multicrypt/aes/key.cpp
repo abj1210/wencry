@@ -1,5 +1,6 @@
 #include "aes.h"
-#include "util.h"
+#include "macro.h"
+#include "tab.h"
 /*
 构造函数:产生指定密钥
 initkey:指定密钥

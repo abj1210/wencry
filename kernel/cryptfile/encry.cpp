@@ -7,7 +7,8 @@ key:初始密钥
 r_buf:随机缓冲数组
 r_hash:随机缓冲哈希
 */
-static void getFileHeader(FILE *out, const u8_t *key, const u8_t *r_buf, u8_t * r_hash) {
+static void getFileHeader(FILE *out, const u8_t *key, const u8_t *r_buf,
+                          u8_t *r_hash) {
   u8_t padding[21];
   padding[20] = 0;
   u64_t mn = Magic_Num;

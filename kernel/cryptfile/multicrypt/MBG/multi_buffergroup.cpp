@@ -1,8 +1,8 @@
 #include "multi_buffergroup.h"
 #include <iostream>
 void printload(const u8_t id, const u32_t size) {
-  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded "
-       << size << "MB data.\r\n";
+  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << size
+            << "MB data.\r\n";
 }
 /*
 构造函数:初始化缓冲组的数据

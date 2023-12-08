@@ -9,7 +9,7 @@ void printtime(clock_t totalTime, u8_t threads_num) {
   cout << "Time: " << totalTime / ((double)(CLOCKS_PER_SEC * threads_num))
        << "s / " << totalTime / ((double)CLOCKS_PER_SEC) << "s\r\n";
 }
-void printenc() {cout << "Encrypt over! \r\n"; }
+void printenc() { cout << "Encrypt over! \r\n"; }
 void printres(int res) {
   if (res <= 0)
     cout << "Verify pass!\r\n";
@@ -21,6 +21,6 @@ void printres(int res) {
     cout << "File not complete.\r\n";
   else if (res == 4)
     cout << "Wrong magic number.\r\n";
-  else 
-    cout << "Unknown res number: "<<res<<".\r\n";
+  else
+    cout << "Unknown res number: " << res << ".\r\n";
 }

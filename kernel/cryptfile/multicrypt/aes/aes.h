@@ -1,7 +1,7 @@
 #ifndef AES
 #define AES
 
-#include "util.h"
+#include "state.h"
 #include <string.h>
 class aeshandle {
 protected:

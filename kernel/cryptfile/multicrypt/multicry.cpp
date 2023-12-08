@@ -1,6 +1,6 @@
 #include "multicry.h"
-#include "multi_buffergroup.h"
 #include "aes.h"
+#include "multi_buffergroup.h"
 #include <thread>
 buffergroup *bg;
 u8_t *keyh;
@@ -61,9 +61,9 @@ buf:缓冲区组
 r_hash:随机缓冲哈希
 tail:最后一单元项写入的字节数
 */
-void multienc_master(FILE * fp, FILE * out, u8_t *key, const u8_t *r_hash,
+void multienc_master(FILE *fp, FILE *out, u8_t *key, const u8_t *r_hash,
                      u8_t &tail) {
-  keyh = key, bg= new buffergroup(THREADS_NUM, fp, out), aes_r_hash = r_hash;
+  keyh = key, bg = new buffergroup(THREADS_NUM, fp, out), aes_r_hash = r_hash;
   tail = multi_master_run(multiencrypt_file, tail);
   delete bg;
 }
@@ -75,9 +75,9 @@ buf:缓冲区组
 r_hash:随机缓冲哈希
 tail:最后一单元项写入的字节数
 */
-void multidec_master(FILE * fp, FILE * out, u8_t *key, const u8_t *r_hash,
+void multidec_master(FILE *fp, FILE *out, u8_t *key, const u8_t *r_hash,
                      const u8_t tail) {
-  keyh = key, bg=new buffergroup(THREADS_NUM, fp, out), aes_r_hash = r_hash;
+  keyh = key, bg = new buffergroup(THREADS_NUM, fp, out), aes_r_hash = r_hash;
   multi_master_run(multidecrypt_file, tail);
   delete bg;
 }

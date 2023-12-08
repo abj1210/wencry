@@ -1,12 +1,11 @@
-#include "sha1.h"
 #include "macro.h"
+#include "sha1.h"
 #include <string.h>
 /*
 构造函数:获取文件的sha1哈希值
 fp:输入文件
 */
-sha1Filehash::sha1Filehash(FILE *fp):
-  sha1hash(), ibuf64(new buffer64(fp)) {
+sha1Filehash::sha1Filehash(FILE *fp) : sha1hash(), ibuf64(new buffer64(fp)) {
   u8_t s1[64];
   int flag = 0;
   for (u32_t i = 0; flag != 2; ++i) {
@@ -22,8 +21,7 @@ sha1Filehash::sha1Filehash(FILE *fp):
         s1[56 + i] = (u8_t)((b >> ((7 - i) << 3)));
       flag = 2;
     }
-    getwdata(s1);
-    gethash();
+    gethash(s1);
   }
 }
 /*
@@ -31,29 +29,22 @@ sha1Filehash::sha1Filehash(FILE *fp):
 s:输入字符串
 n:字符串长度
 */
-sha1Stringhash::sha1Stringhash(const u8_t *s,const u32_t n) {
-  u64_t b = n * 8, cnum;
-  int flag = 0;
-  if ((b + 8) % 512 >= 448)
-    cnum = b / 512 + 2;
-  else
-    cnum = b / 512 + 1;
+sha1Stringhash::sha1Stringhash(const u8_t *s, const u32_t n) {
+  u32_t nnow;
+  u64_t b = n << 3;
   u8_t s1[64];
-  for (u32_t i = 0; i < cnum; ++i) {
-    memset(s1, 0, sizeof(s1));
-    if ((i << 6) < n) {
-      if (n - (i << 6) < 64) {
-        memcpy(s1, s + (i << 6), n - (i << 6));
-        s1[n - (i << 6)] = 0x80u;
-        flag = 1;
-      } else
-        memcpy(s1, s + (i << 6), 64);
-    } else if (!flag)
-      s1[0] = 0x80u;
-    if (i == cnum - 1)
-      for (int i = 0; i < 8; ++i)
-        s1[56 + i] = (u8_t)((b >> ((7 - i) << 3)));
-    getwdata(s1);
-    gethash();
+  for (nnow = n; nnow >= 64; nnow -= 64) {
+    memcpy(s1, s + (n - nnow), 64);
+    gethash(s1);
   }
+  memset(s1, 0, sizeof(s1));
+  memcpy(s1, s + (n - nnow), nnow);
+  s1[nnow] = 0x80u;
+  if (nnow >= 56) {
+    gethash(s1);
+    memset(s1, 0, sizeof(s1));
+  }
+  for (int i = 0; i < 8; ++i)
+    s1[56 + i] = (u8_t)((b >> ((7 - i) << 3)));
+  gethash(s1);
 }
