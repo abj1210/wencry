@@ -5,6 +5,7 @@
 fp:输入文件指针
 */
 buffer64::buffer64(FILE *fp) : fp(fp), now(0) {
+  b = new Hentry[HBUF_SZ];
   u32_t sum = fread(b, 1, HBUF_SZ << 6, fp);
   tail = sum & 0x3f;
   total = sum >> 6;
@@ -22,12 +23,12 @@ u32_t buffer64::read_buffer64(u8_t *block) {
     now = 0;
   }
   if (now == total) {
-    memcpy(block, b[now], tail);
+    memcpy(block, b[now].e, tail);
     u32_t res = tail;
     tail = 0;
     return res;
   } else {
-    memcpy(block, b[now++], 64);
+    memcpy(block, b[now++].e, 64);
     return 64;
   }
 }

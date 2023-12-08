@@ -1,18 +1,4 @@
 #include "cry.h"
-#include "multicry.h"
-#include "sha1.h"
-/*
-cmphash:比较哈希值
-h1:待比较的哈希数组
-h2:待比较的哈希数组
-return:哈希是否相同
-*/
-static bool cmphash(const u8_t *h1, const u8_t *h2) {
-  for (int i = 0; i < 20; ++i)
-    if (h1[i] != h2[i])
-      return false;
-  return true;
-}
 /*
 checkMn:检查魔数
 fp:输入文件
@@ -32,12 +18,12 @@ key:输入的密钥序列
 return:若为0则检查通过,否则检查不通过
 */
 static int checkKey(FILE *fp, const u8_t *key) {
-  u8_t hash[20], chash[20];
+  u8_t hash[20];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
-  getSha1String(key, 16, chash);
-  if (!cmphash(chash, hash))
+  sha1Stringhash hashhandle(key, 16);
+  if (!hashhandle.cmphash(hash))
     return -2;
   else
     return 0;
@@ -48,7 +34,7 @@ fp:输入文件
 return:若为非负数则检查通过,返回值为原文件大小与16的模,否则检查不通过
 */
 static int checkFile(FILE *fp) {
-  u8_t hash[20], chash[29];
+  u8_t hash[20];
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20)
     return -1;
@@ -56,8 +42,8 @@ static int checkFile(FILE *fp) {
   int rx = fread(&tail, 1, 1, fp);
   if (rx != 1)
     return -1;
-  getSha1File(fp, chash);
-  if (!cmphash(chash, hash))
+  sha1Filehash hashhandle(fp);
+  if (!hashhandle.cmphash(hash))
     return -3;
   fseek(fp, 48, SEEK_SET);
   return tail;
@@ -80,19 +66,6 @@ int verify(FILE *fp, u8_t *key) {
   return res;
 }
 /*
-get_RBH:获取随机缓冲哈希
-fp:输入文件指针
-return:返回的RBH,若失败返回NULL
-*/
-u8_t *get_BRH(FILE *fp) {
-  u8_t *r_buf = new u8_t[20];
-  if (fread(r_buf, 1, 20, fp) != 20) {
-    delete r_buf;
-    return NULL;
-  }
-  return r_buf;
-}
-/*
 接口函数
 dec:将文件解密
 fp:输入文件
@@ -104,12 +77,9 @@ int dec(FILE *fp, FILE *out, u8_t *key) {
   u8_t tail = verify(fp, key);
   if (tail < 0)
     return -tail;
-  u8_t *r_buf = get_BRH(fp);
-  if (r_buf == NULL)
+  u8_t r_buf[20];
+  if (fread(r_buf, 1, 20, fp) != 20)
     return -1;
-  buffergroup *buf = new buffergroup(THREADS_NUM, fp, out);
-  multidec_master(key, buf, r_buf, THREADS_NUM, tail);
-  delete buf;
-  delete r_buf;
+  multidec_master(fp, out, key, r_buf, THREADS_NUM, tail);
   return 0;
 }

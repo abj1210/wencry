@@ -53,7 +53,7 @@ commonround:aes的一轮加密步骤
 round:该操作的轮数
 */
 void encryaes::commonround(int round) {
-  addroundkey(key->get_key(round));
+  addroundkey(key.get_key(round));
   subbytes();
   rowshift();
   columnmix();
@@ -62,10 +62,10 @@ void encryaes::commonround(int round) {
 specround:aes的最后一轮加密步骤
 */
 void encryaes::specround() {
-  addroundkey(key->get_key(9));
+  addroundkey(key.get_key(9));
   subbytes();
   rowshift();
-  addroundkey(key->get_key(10));
+  addroundkey(key.get_key(10));
 }
 /*
 接口函数

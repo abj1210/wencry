@@ -1,6 +1,6 @@
-project(Wensrc)
+project(Cryptfile)
 
-add_subdirectory(crypt)
+add_subdirectory(multicrypt)
 
 add_subdirectory(sha1)
 
@@ -13,9 +13,9 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                            ${PROJECT_SOURCE_DIR}/sha1
                            )
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Crypt)
+target_link_libraries(${PROJECT_NAME} PUBLIC Multicry)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/crypt
+                            ${PROJECT_SOURCE_DIR}/multicrypt
                             )

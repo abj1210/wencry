@@ -1,4 +1,4 @@
-project(Aeskey)
+project(Aes)
 
 add_library(${PROJECT_NAME} en_aes.cpp de_aes.cpp key.cpp)
 

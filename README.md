@@ -2,7 +2,7 @@
 
 作者：闻嘉迅  
 日期：2023.12.5 (最后修改)  
-版本：v2.6.3  
+版本：v2.7.0  
 
 **默认4线程模式**  
 **处理速度可达80MB/s以上**  
@@ -39,25 +39,26 @@
   - main.cpp:主函数   
   - config.h.in:配置文件  
   - **valget:获取参数包相关文件夹**
-    - base64.h:十六进制序列与base64编码的相互转换
-    - base64.cpp:负责进行base64的编码和解码  
     - getval.h:获取参数包的头文件  
-    - getval.cpp:负责获取操作参数  
+    - getval1.cpp:负责获取用户输入操作参数
+    - getval2.cpp:负责获取控制台操作参数
+    - **base64:base64转换文件夹**
+      - base64.h:十六进制序列与base64编码的相互转换
+      - base64.cpp:负责进行base64的编码和解码   
   - **kernel:加解密核心文件夹**
     - execval.h:接收参数包进行操作的头文件
     - execval.cpp:负责根据获取的参数选择操作执行  
-    - **src:加解密函数文件夹**
+    - **cryptfile:加解密函数文件夹**
       - cry.h:加解密流程相关的头文件  
       - decry.cpp:负责整体解密流程  
       - encry.cpp:负责整体加密流程  
-      - **crypt:进行aes加解密函数的文件夹**
+      - **multicrypt:多线程进行aes加解密函数的文件夹**
         - multicry.h:多线程进行aes加解密的相关头文件
         - multicry.cpp:多线程进行aes加解密的函数实现
-        - **aeskey:进行128bitaes加解密和密钥处理的文件夹**
+        - **aes:进行128bitaes加解密和密钥处理的文件夹**
           - aes.h:AES加解密相关的头文件  
           - de_aes.cpp:负责AES解密的各流程  
-          - en_aes.cpp:负责AES加密的各流程  
-          - key.h:密钥生成相关头文件  
+          - en_aes.cpp:负责AES加密的各流程   
           - key.cpp:负责生成密钥  
           - state.h:state结构体的定义 
           - **include:通用头文件**
@@ -65,20 +66,26 @@
             - tab.h:aes和密钥所需数表 
         - **MBG:多线程缓冲区组的文件夹**
           - buffer.h:IO缓冲区的头文件  
-          - iobuffer.cpp:实现IO缓冲区  
+          - buffer.cpp:实现IO缓冲区  
           - multi_buffergroup.h:多线程缓冲区组的相关头文件 
           - multi_buffergroup.cpp:多线程缓冲区组的实现
       - **sha1:sha1哈希函数文件夹**
+        - **shabuf:哈希缓冲区文件夹**
+          - shabuffer.h:哈希输入缓冲区头文件  
+          - shabuffer.cpp:哈希输入缓冲区的实现
         - macro.h:哈希相关宏
-        - shabuffer.h:哈希输入缓冲区头文件  
-        - shabuffer.cpp:哈希输入缓冲区的实现
         - sha1.h:进行sha1哈希相关的头文件  
         - sha1.cpp:负责产生sha1哈希的流程  
+        - sha1subclass.cpp:通过文件和字符串获取哈希的实现  
+    - **resprint:打印操作结果文件夹**
+      - resprint.h:打印操作结果的函数
+      - resprint.cpp:结果打印的实现 
   - **test:测试文件夹**
     - test.h:测试相关函数的头文件
     - test.cpp:测试相关函数的实现
     - testsmall1.cpp testsmall2.cpp:小文件加解密测试  
     - testbig1.cpp:大文件加解密测试
+    - testspeed.cpp:文件加密速度测试
 
 具体函数和结构体作用与解释参阅源代码注释.  
 
@@ -174,3 +181,4 @@ void multiencrypt_file(int id, u8_t * tailin) {
 *v2.4 新增:修复了windows环境下多线程同步失败的bug.*   
 *v2.5 新增:修复了与RBH相关的bug.(2.5.1 改变文件结构)*  
 *v2.6 新增:采用cmake自动构建和ctest自动测试.(2.6.1 增加自动速度测试版本查看并修复已知bug 2.6.2 2.6.3 修改文件结构)*  
+*v2.7 新增:改变部分功能的实现和文件结构.*  

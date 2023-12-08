@@ -1,9 +1,9 @@
 #include "multicry.h"
+#include "multi_buffergroup.h"
 #include "aes.h"
-#include "key.h"
 #include <thread>
 buffergroup *bg;
-keyhandle *keyh;
+u8_t *keyh;
 const u8_t *aes_r_hash;
 /*
 multiencrypt_file:进行加密的线程函数
@@ -40,18 +40,6 @@ void multidecrypt_file(u8_t id, u8_t *tailin) {
   return;
 }
 /*
-multi_master_init:多线程初始化
-key:密钥
-buf:缓冲区组
-r_hash:随机缓冲哈希
-*/
-static void multi_master_init(u8_t *key, buffergroup *buf,
-                              const u8_t *r_hash) {
-  keyh = new keyhandle(key);
-  bg = buf;
-  aes_r_hash = r_hash;
-}
-/*
 multi_master_run:多线程运行
 multifunc:并发执行的函数指针
 threads_num:并发线程数
@@ -64,7 +52,6 @@ static u8_t multi_master_run(void (*multifunc)(u8_t, u8_t *), const u8_t threads
     threads[i] = std::thread(multifunc, i, &tail);
   for (u8_t i = 0; i < threads_num; ++i)
     threads[i].join();
-  delete keyh;
   return tail;
 }
 /*
@@ -76,9 +63,10 @@ r_hash:随机缓冲哈希
 threads_num:并发线程数
 tail:最后一单元项写入的字节数
 */
-void multienc_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t threads_num,
+void multienc_master(FILE * fp, FILE * out, u8_t *key, const u8_t *r_hash, const u8_t threads_num,
                      u8_t &tail) {
-  multi_master_init(key, buf, r_hash);
+  buffergroup buf(THREADS_NUM, fp, out);
+  keyh = key, bg=&buf, aes_r_hash = r_hash;
   tail = multi_master_run(multiencrypt_file, threads_num, tail);
 }
 /*
@@ -90,8 +78,9 @@ r_hash:随机缓冲哈希
 threads_num:并发线程数
 tail:最后一单元项写入的字节数
 */
-void multidec_master(u8_t *key, buffergroup *buf, const u8_t *r_hash, const u8_t threads_num,
+void multidec_master(FILE * fp, FILE * out, u8_t *key, const u8_t *r_hash, const u8_t threads_num,
                      const u8_t tail) {
-  multi_master_init(key, buf, r_hash);
+  buffergroup buf(THREADS_NUM, fp, out);
+  keyh = key, bg=&buf, aes_r_hash = r_hash;
   multi_master_run(multidecrypt_file, threads_num, tail);
 }

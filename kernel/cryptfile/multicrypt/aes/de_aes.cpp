@@ -41,16 +41,16 @@ void decryaes::commonround(int round) {
   columnmix();
   rowshift();
   subbytes();
-  addroundkey(key->get_key(round));
+  addroundkey(key.get_key(round));
 }
 /*
 specround:aes的第一轮解密步骤
 */
 void decryaes::specround() {
-  addroundkey(key->get_key(10));
+  addroundkey(key.get_key(10));
   rowshift();
   subbytes();
-  addroundkey(key->get_key(9));
+  addroundkey(key.get_key(9));
 }
 /*
 接口函数

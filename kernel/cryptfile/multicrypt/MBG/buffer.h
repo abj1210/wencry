@@ -19,19 +19,25 @@ public:
   static const u32_t BUF_SZ = 0x100000;
 
 private:
-  u8_t b[BUF_SZ][0x10];
+  typedef struct {
+    u8_t e[0x10];
+  } Entry;
+  Entry *b;
   u32_t total, now;
   u8_t tail;
   FILE *fin, *fout;
 
 public:
+  iobuffer() { b = new Entry[BUF_SZ]; };
+  ~iobuffer() { delete[] b; };
   bool load_files(FILE *fin, FILE *fout);
   /*
   get_entry:获取当前缓冲区单元表项
   return:返回的表项地址
   */
   u8_t *get_entry() {
-    return ((now < total) || ((now == total) && (tail != 0))) ? b[now++] : NULL;
+    return ((now < total) || ((now == total) && (tail != 0))) ? b[now++].e
+                                                              : NULL;
   };
   u32_t update_buffer();
   /*
@@ -46,6 +52,5 @@ public:
   bool fin_empty() const { return (total == 0) && (tail == 0); };
   u32_t final_write(u8_t tailin);
 };
-
 
 #endif

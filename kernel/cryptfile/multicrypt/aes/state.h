@@ -1,5 +1,5 @@
-#ifndef STU
-#define STU
+#ifndef STT
+#define STT
 
 typedef unsigned char u8_t;
 typedef unsigned short u16_t;
@@ -18,4 +18,5 @@ typedef struct {
     u8_t s[4][4];
   };
 } state_t;
+
 #endif

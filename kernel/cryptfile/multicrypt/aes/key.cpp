@@ -1,12 +1,11 @@
-#include "key.h"
+#include "aes.h"
 #include "macro.h"
 #include "tab.h"
-#include <string.h>
 /*
 构造函数:产生指定密钥
 initkey:指定密钥
 */
-keyhandle::keyhandle(const u8_t *initkey) {
+aeshandle::keyhandle::keyhandle(const u8_t *initkey) {
   memcpy(init_key, initkey, 16);
   genall();
 }
@@ -14,7 +13,7 @@ keyhandle::keyhandle(const u8_t *initkey) {
 genkey:产生每轮的轮密钥
 round:本轮的轮数
 */
-void keyhandle::genkey(int round) {
+void aeshandle::keyhandle::genkey(int round) {
   for (int j = 0; j < 4; ++j)
     for (int i = 0; i < 4; ++i)
       if (j == 0)
@@ -30,7 +29,7 @@ void keyhandle::genkey(int round) {
 /*
 genall:产生全部密钥
 */
-void keyhandle::genall() {
+void aeshandle::keyhandle::genall() {
   for (int j = 0; j < 4; ++j)
     for (int i = 0; i < 4; ++i)
       key[0].s[i][j] = init_key[(j << 2) | (i & 0x3)];
