@@ -31,10 +31,11 @@ public:
   bool cmphash(u8_t *hash);
 };
 class sha1Filehash : public sha1hash {
-  buffer64 ibuf64;
+  buffer64 *ibuf64;
 
 public:
   sha1Filehash(FILE *fp);
+  ~sha1Filehash() { delete ibuf64; };
 };
 class sha1Stringhash : public sha1hash {
 public:

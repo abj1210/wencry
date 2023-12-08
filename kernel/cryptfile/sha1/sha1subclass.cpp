@@ -6,12 +6,12 @@
 fp:输入文件
 */
 sha1Filehash::sha1Filehash(FILE *fp):
-  sha1hash(), ibuf64(fp) {
+  sha1hash(), ibuf64(new buffer64(fp)) {
   u8_t s1[64];
   int flag = 0;
   for (u32_t i = 0; flag != 2; ++i) {
     memset(s1, 0, sizeof(s1));
-    u32_t sum = ibuf64.read_buffer64(s1);
+    u32_t sum = ibuf64->read_buffer64(s1);
     if (sum != 64 && flag == 0) {
       s1[sum++] = 0x80u;
       flag = 1;

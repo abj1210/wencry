@@ -21,7 +21,6 @@ over:关闭文件并释放空间
 v1:传入的参数包
 */
 static void over(pakout_t *v1) {
-  delete[] v1->key;
   if (v1->fp != NULL)
     fclose(v1->fp);
   if (v1->out != NULL)

@@ -40,9 +40,9 @@ tail:最后一表项要写入的字节数的引用
 return:文件是否读取完毕
 */
 bool buffergroup::judge_over(const u8_t id, u8_t &tail) {
-  bool flag = buflst[id].buffer_over();
   if (buflst[id].fin_empty())
     return false;
+  bool flag = buflst[id].buffer_over();
   if (flag) {
     COND_WAIT
     tail = buflst[id].final_write(tail);

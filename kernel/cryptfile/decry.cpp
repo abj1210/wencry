@@ -80,6 +80,6 @@ int dec(FILE *fp, FILE *out, u8_t *key) {
   u8_t r_buf[20];
   if (fread(r_buf, 1, 20, fp) != 20)
     return -1;
-  multidec_master(fp, out, key, r_buf, THREADS_NUM, tail);
+  multidec_master(fp, out, key, r_buf, tail);
   return 0;
 }

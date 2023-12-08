@@ -44,6 +44,6 @@ void enc(FILE *fp, FILE *out, const u8_t *r_buf, u8_t *key) {
   u8_t r_hash[20];
   getFileHeader(out, key, r_buf, r_hash);
   u8_t tail = 16;
-  multienc_master(fp, out, key, r_hash, THREADS_NUM, tail);
+  multienc_master(fp, out, key, r_hash, tail);
   hashfile(out, tail);
 }
