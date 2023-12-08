@@ -142,18 +142,18 @@
 文件读取的最后一个缓冲区块往往是不全的,在处理完成这样的块后MBG中的`judge_over`函数会将已写完的数据写入到输出文件并使该线程退出.而若更新时读取到了空数据(即没有数据写入该缓冲区),则`update_lst`函数会返回`false`使该线程退出.     
 
 各个线程的处理流程如下:  
-```c
-void multiencrypt_file(int id, u8_t * tailin) {
-  encryaes aes(keyh);
+```cpp
+void multiencrypt_file(u8_t id, u8_t *tailin) {
+  encryaes aes(keyh, aes_r_hash);
   while (true) {
     state_t *block = (state_t *)bg->require_buffer_entry(id);
     if (block == NULL) {
-      * tailin = bg->judge_over(id, 16);
-      if ((* tailin != 0)||(!bg->update_lst(id))) 
+      if (bg->judge_over(id, *tailin) || (!bg->update_lst(id)))
         break;
     } else
-      aes.encryaes_128bit(*block);
+      aes.encryaes_128bit(block);
   }
+  return;
 }
 ```
 首先尝试获取待处理的缓冲区单元,若不为空则进行处理,否则交由MBG判断是否已经读写完毕,若为真则进行相应处理后退出,否则尝试更新该缓冲区,若成功则继续循环,否则退出.  
