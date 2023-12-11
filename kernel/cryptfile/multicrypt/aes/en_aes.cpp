@@ -72,7 +72,7 @@ void encryaes::specround() {
 encryaes_128bit:将一个128bit的数据块进行aes加密
 w:待加解密数据块的地址
 */
-void encryaes::encryaes_128bit(state_t *w) {
+void encryaes::runaes_128bit(state_t *w) {
   this->w = w;
   addRBH();
   for (int i = 0; i < 9; ++i)

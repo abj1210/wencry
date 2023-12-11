@@ -17,13 +17,11 @@ fout:写入文件的地址
 class iobuffer {
 public:
   static const u32_t BUF_SZ = 0x100000;
-
 private:
   u8_t b[BUF_SZ][0x10];
   u32_t total, now;
   u8_t tail;
   FILE *fin, *fout;
-
 public:
   bool load_files(FILE *fin, FILE *fout);
   /*

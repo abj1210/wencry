@@ -3,7 +3,6 @@
 load_files:设定输入输出文件并初始化缓冲区
 fin:输入文件地址
 fout:输出文件地址
-r_buf:随机缓冲哈希
 return:是否成功装载数据
 */
 bool iobuffer::load_files(FILE *fin, FILE *fout) {

@@ -11,7 +11,7 @@
     cond.wait(locker);
 
 #define COND_RELEASE                                                           \
-  turn = (turn + 1) % size;                                                    \
+  turn = (turn == (size-1)) ? 0 : turn+1;                                                    \
   cond.notify_all();                                                           \
   locker.unlock();
 

@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2023.12.8 (最后修改)  
-版本：v2.7.2  
+日期：2023.12.11 (最后修改)  
+版本：v2.8.0 
 
 **默认4线程模式**  
 **处理速度可达80MB/s以上**  
@@ -70,13 +70,12 @@
           - multi_buffergroup.h:多线程缓冲区组的相关头文件 
           - multi_buffergroup.cpp:多线程缓冲区组的实现
       - **sha1:sha1哈希函数文件夹**
-        - **shabuf:哈希缓冲区文件夹**
-          - shabuffer.h:哈希输入缓冲区头文件  
-          - shabuffer.cpp:哈希输入缓冲区的实现
-        - macro.h:哈希相关宏
         - sha1.h:进行sha1哈希相关的头文件  
         - sha1.cpp:负责产生sha1哈希的流程  
         - sha1subclass.cpp:通过文件和字符串获取哈希的实现  
+        - **shabuf:哈希缓冲区文件夹**
+          - shabuffer.h:哈希输入缓冲区头文件  
+          - shabuffer.cpp:哈希输入缓冲区的实现
     - **resprint:打印操作结果文件夹**
       - resprint.h:打印操作结果的函数
       - resprint.cpp:结果打印的实现 
@@ -143,15 +142,14 @@
 
 各个线程的处理流程如下:  
 ```cpp
-void multiencrypt_file(u8_t id, u8_t *tailin) {
-  encryaes aes(keyh, aes_r_hash);
+void multiruncrypt_file(u8_t id, u8_t *tailin, aeshandle *runaes,buffergroup *bg) {
   while (true) {
     state_t *block = (state_t *)bg->require_buffer_entry(id);
     if (block == NULL) {
       if (bg->judge_over(id, *tailin) || (!bg->update_lst(id)))
         break;
     } else
-      aes.encryaes_128bit(block);
+      runaes->runaes_128bit(block);
   }
   return;
 }
@@ -182,3 +180,4 @@ void multiencrypt_file(u8_t id, u8_t *tailin) {
 *v2.5 新增:修复了与RBH相关的bug.(2.5.1 改变文件结构)*  
 *v2.6 新增:采用cmake自动构建和ctest自动测试.(2.6.1 增加自动速度测试版本查看并修复已知bug 2.6.2 2.6.3 修改文件结构)*  
 *v2.7 新增:改变部分功能的实现和文件结构(2.7.1 更改部分文件以兼容visual stdio 2.7.2 改变sha1哈希类的实现).*  
+*v2.8 新增:修改并发函数和哈希函数.*  

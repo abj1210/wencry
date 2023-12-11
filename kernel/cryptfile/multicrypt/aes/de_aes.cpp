@@ -54,10 +54,10 @@ void decryaes::specround() {
 }
 /*
 接口函数
-decryaes_128bit:将一个128bit的数据块进行aes解密
+runaes_128bit:将一个128bit的数据块进行aes解密
 w:待加解密数据块的地址
 */
-void decryaes::decryaes_128bit(state_t *w) {
+void decryaes::runaes_128bit(state_t *w) {
   this->w = w;
   specround();
   for (int i = 8; i >= 0; --i)

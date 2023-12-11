@@ -25,7 +25,6 @@ static void over(pakout_t *v1) {
     fclose(v1->fp);
   if (v1->out != NULL)
     fclose(v1->out);
-  delete v1;
 }
 /*
 encrypt: 根据传入的参数包设置加密参数并运行加密程序
