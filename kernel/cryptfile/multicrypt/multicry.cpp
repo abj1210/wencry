@@ -9,7 +9,8 @@ tailin:最后一单元项写入的字节数的地址
 runaes:加解密处理类
 bg:缓冲区组
 */
-void multiruncrypt_file(u8_t id, u8_t *tailin, aeshandle *runaes,buffergroup *bg) {
+void multiruncrypt_file(u8_t id, u8_t *tailin, aeshandle *runaes,
+                        buffergroup *bg) {
   while (true) {
     state_t *block = (state_t *)bg->require_buffer_entry(id);
     if (block == NULL) {
@@ -31,12 +32,12 @@ tail:最后一单元项写入的字节数
 */
 void multienc_master(FILE *fp, FILE *out, u8_t *key, const u8_t *r_hash,
                      u8_t &tail) {
-  encryaes * aes[THREADS_NUM];
+  encryaes *aes[THREADS_NUM];
   buffergroup bg(THREADS_NUM, fp, out);
   std::thread threads[THREADS_NUM];
-  for(u8_t i=0; i < THREADS_NUM; ++i)
+  for (u8_t i = 0; i < THREADS_NUM; ++i)
     CREATE_THREAD(encry)
-  for(u8_t i=0; i < THREADS_NUM; ++i)
+  for (u8_t i = 0; i < THREADS_NUM; ++i)
     JOIN_THREAD
 }
 /*
@@ -50,11 +51,11 @@ tail:最后一单元项写入的字节数
 */
 void multidec_master(FILE *fp, FILE *out, u8_t *key, const u8_t *r_hash,
                      u8_t tail) {
-  decryaes * aes[THREADS_NUM];
+  decryaes *aes[THREADS_NUM];
   buffergroup bg(THREADS_NUM, fp, out);
   std::thread threads[THREADS_NUM];
-  for(u8_t i=0; i < THREADS_NUM; ++i)
+  for (u8_t i = 0; i < THREADS_NUM; ++i)
     CREATE_THREAD(decry)
-  for(u8_t i=0; i < THREADS_NUM; ++i)
+  for (u8_t i = 0; i < THREADS_NUM; ++i)
     JOIN_THREAD
 }

@@ -32,6 +32,7 @@ protected:
   };
   void addroundkey(const state_t &key);
   void addRBH();
+
 public:
   /*
   构造函数:加载密钥
@@ -40,7 +41,7 @@ public:
   aeshandle(const u8_t *initkey, const u8_t *r_hash) : key(initkey), w(NULL) {
     memcpy(r, r_hash, 16);
   };
-  virtual void runaes_128bit(state_t *w){return ;};
+  virtual void runaes_128bit(state_t *w) { return; };
 };
 class encryaes : public aeshandle {
   void subbytes();
@@ -48,6 +49,7 @@ class encryaes : public aeshandle {
   void columnmix();
   void commonround(int round);
   void specround();
+
 public:
   encryaes(const u8_t *initkey, const u8_t *r_hash)
       : aeshandle(initkey, r_hash){};

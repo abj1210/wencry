@@ -1,6 +1,5 @@
 #ifndef GETV
 #define GETV
-
 #include <stdio.h>
 typedef unsigned char u8_t;
 /*
