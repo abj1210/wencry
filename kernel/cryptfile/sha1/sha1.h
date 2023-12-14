@@ -21,19 +21,23 @@ class sha1hash {
   u32_t h[2][5];
   u32_t turn;
   u32_t w[80];
-  union {u8_t s[64]; u32_t i[16];};
+  union {
+    u8_t s[64];
+    u32_t i[16];
+  };
   void getwdata();
 
 protected:
   u32_t totalsize;
   void gethash();
-  u8_t * getLoadAddr();
+  u8_t *getLoadAddr();
   void finalHash(u32_t loadsize);
+
 public:
   /*
     构造函数:设定哈希初值
   */
-  sha1hash() : turn(0), totalsize(0){
+  sha1hash() : turn(0), totalsize(0) {
     h[0][0] = 0x67452301, h[0][1] = 0xEFCDAB89, h[0][2] = 0x98BADCFE,
     h[0][3] = 0x10325476, h[0][4] = 0xC3D2E1F0;
   };

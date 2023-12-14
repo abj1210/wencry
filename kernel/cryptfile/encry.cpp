@@ -33,6 +33,7 @@ r_buf:随机缓冲数组
 */
 void runcrypt::enc(const u8_t *r_buf) {
   getFileHeader(r_buf);
-  multienc_master(fp, out, key, hash, tail);
+  multienc_master cm(fp, out, key, hash, tail);
+  tail = cm.run_multicry();
   hashfile();
 }

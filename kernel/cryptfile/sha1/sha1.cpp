@@ -29,8 +29,9 @@ void sha1hash::gethash() {
       f = (h[nxt][1] ^ h[nxt][2] ^ h[nxt][3]) + 0x6ED9EBA1;
     else if (i < 60)
       f = ((h[nxt][1] & h[nxt][2]) | (h[nxt][1] & h[nxt][3]) |
-          (h[nxt][2] & h[nxt][3])) + 0x8F1BBCDC;
-    else 
+           (h[nxt][2] & h[nxt][3])) +
+          0x8F1BBCDC;
+    else
       f = (h[nxt][1] ^ h[nxt][2] ^ h[nxt][3]) + 0xCA62C1D6;
     temp = lrot(h[nxt][0], 5) + f + h[nxt][4] + w[i];
     h[nxt][4] = h[nxt][3];
@@ -45,15 +46,15 @@ void sha1hash::gethash() {
 getLoadAddr:获取加载地址
 reutrn:加载地址
 */
-u8_t * sha1hash::getLoadAddr(){
-  memset(s,0,sizeof(s));
+u8_t *sha1hash::getLoadAddr() {
+  memset(s, 0, sizeof(s));
   return s;
 }
 /*
 finalHash:结尾的哈希处理
 loadsize:装载字节数
 */
-void sha1hash::finalHash(u32_t loadsize){
+void sha1hash::finalHash(u32_t loadsize) {
   s[loadsize] = 0x80u;
   if (loadsize >= 56) {
     gethash();

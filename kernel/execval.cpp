@@ -40,20 +40,18 @@ bool exec_val(unsigned char *v) {
   if (vals->fp == NULL)
     return printinv(0);
   clock_t totalTime = 0;
-  if (vals->mode == 'e' || vals->mode == 'E'){
+  if (vals->mode == 'e' || vals->mode == 'E') {
     runner.enc(vals->r_buf);
     printenc();
-  }
-  else if (vals->mode == 'd' || vals->mode == 'D'){
+  } else if (vals->mode == 'd' || vals->mode == 'D') {
     res = runner.dec();
-    printres(res); 
-  }
-  else if (vals->mode == 'v'){
+    printres(res);
+  } else if (vals->mode == 'v') {
     res = runner.verify();
-    printres(res); 
+    printres(res);
   }
   clock_t cl2 = clock();
-  printtime(cl2 - cl1, THREADS_NUM);
+  printtime(cl2 - cl1, multicry_master::THREADS_NUM);
   over(vals);
-  return res==0;
+  return res == 0;
 }
