@@ -47,8 +47,8 @@ class encryaes : public aeshandle {
   void subbytes();
   void rowshift();
   void columnmix();
-  void commonround(int round);
-  void specround();
+  inline void commonround(int round);
+  inline void specround();
 
 public:
   encryaes(const u8_t *initkey, const u8_t *r_hash)
@@ -59,8 +59,8 @@ class decryaes : public aeshandle {
   void subbytes();
   void rowshift();
   void columnmix();
-  void commonround(int round);
-  void specround();
+  inline void commonround(int round);
+  inline void specround();
 
 public:
   decryaes(const u8_t *initkey, const u8_t *r_hash)

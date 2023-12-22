@@ -2,10 +2,6 @@
 #define BTAB
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
-//将一个十六进制位转化为base64编码
-#define turn_base64(in) b64_tab[in]
-//将base64编码转化为一个十六进制位
-#define turn_hex(in) hex_tab[in]
 const u8_t b64_tab[64] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
                           'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
                           'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f', 'g',

@@ -10,21 +10,24 @@ key:初始密钥
 r_buf:随机缓冲数组
 mode:模式(加密/解密)
 */
-typedef struct {
-  FILE *fp, *out;
-  u8_t *key;
-  u8_t r_buf[256];
-  char mode;
+typedef union {
+  struct {
+    FILE *fp, *out;
+    u8_t *key;
+    u8_t r_buf[256];
+    char mode;
+  };
+  u8_t buf[512];
 } pakout_t;
 /*
 over:关闭文件并释放空间
 v1:传入的参数包
 */
-static void over(pakout_t *v1) {
-  if (v1->fp != NULL)
-    fclose(v1->fp);
-  if (v1->out != NULL)
-    fclose(v1->out);
+static void over(pakout_t v1) {
+  if (v1.fp != NULL)
+    fclose(v1.fp);
+  if (v1.out != NULL)
+    fclose(v1.out);
 }
 /*
 接口函数
@@ -34,19 +37,20 @@ return:返回是否成功执行
 */
 bool exec_val(unsigned char *v) {
   clock_t cl1 = clock();
-  pakout_t *vals = (pakout_t *)v;
+  pakout_t vals;
+  memcpy(vals.buf, v, 512);
   u32_t res = 0;
-  runcrypt runner(vals->fp, vals->out, vals->key);
-  if (vals->fp == NULL)
+  runcrypt runner(vals.fp, vals.out, vals.key);
+  if (vals.fp == NULL)
     return printinv(0);
   clock_t totalTime = 0;
-  if (vals->mode == 'e' || vals->mode == 'E') {
-    runner.enc(vals->r_buf);
+  if (vals.mode == 'e' || vals.mode == 'E') {
+    runner.enc(vals.r_buf);
     printenc();
-  } else if (vals->mode == 'd' || vals->mode == 'D') {
+  } else if (vals.mode == 'd' || vals.mode == 'D') {
     res = runner.dec();
     printres(res);
-  } else if (vals->mode == 'v') {
+  } else if (vals.mode == 'v') {
     res = runner.verify();
     printres(res);
   }

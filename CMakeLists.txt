@@ -5,7 +5,7 @@ set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
 
-project(Wencry VERSION 2.8.2 LANGUAGES CXX)
+project(Wencry VERSION 2.8.3 LANGUAGES CXX)
 
 configure_file(
   config.h.in

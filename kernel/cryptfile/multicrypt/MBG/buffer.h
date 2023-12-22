@@ -46,5 +46,4 @@ public:
   bool fin_empty() const { return (total == 0) && (tail == 0); };
   u32_t final_write(u8_t tailin);
 };
-
 #endif

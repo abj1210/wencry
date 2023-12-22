@@ -40,7 +40,7 @@ argc:变量数目
 argv:变量值列表
 return:返回的参数包
 */
-unsigned char *get_v_mod2(int argc, char *argv[]) {
+u8_t *get_v_mod2(int argc, char *argv[]) {
   char outn[138];
   srand(time(NULL));
   vpak_t *res = new vpak_t;
@@ -69,5 +69,5 @@ unsigned char *get_v_mod2(int argc, char *argv[]) {
   } else
     res->fp = NULL;
   printkey(res->key);
-  return (u8_t *)res;
+  return res->buf;
 }

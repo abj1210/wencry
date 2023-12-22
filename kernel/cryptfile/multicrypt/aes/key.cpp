@@ -18,10 +18,10 @@ void aeshandle::keyhandle::genkey(int round) {
     for (int i = 0; i < 4; ++i)
       if (j == 0)
         if (i == 0)
-          key[round].s[i][j] = (sub_bytes(key[round - 1].s[1][3])) ^ RC[round] ^
+          key[round].s[i][j] = (s_box[key[round - 1].s[1][3]]) ^ RC[round] ^
                                key[round - 1].s[i][j];
         else
-          key[round].s[i][j] = (sub_bytes(key[round - 1].s[(i + 1) & 0x3][3])) ^
+          key[round].s[i][j] = (s_box[key[round - 1].s[(i + 1) & 0x3][3]]) ^
                                key[round - 1].s[i][j];
       else
         key[round].s[i][j] = key[round].s[i][j - 1] ^ key[round - 1].s[i][j];

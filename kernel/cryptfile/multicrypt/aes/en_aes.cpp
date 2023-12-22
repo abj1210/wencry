@@ -22,8 +22,8 @@ subbytes:aes的subbytes操作
 void encryaes::subbytes() {
   for (int i = 0; i < 4; ++i) {
     u32_t t = w->g[i];
-    setbytes(w->g[i], sub_bytes((u8_t)t), sub_bytes((u8_t)(t >> 8)),
-             sub_bytes((u8_t)(t >> 16)), sub_bytes((u8_t)(t >> 24)));
+    setbytes(w->g[i], s_box[(u8_t)t], s_box[(u8_t)(t >> 8)],
+             s_box[(u8_t)(t >> 16)], s_box[(u8_t)(t >> 24)]);
   }
 }
 /*
@@ -41,10 +41,10 @@ columnmix:aes的columnmix操作
 void encryaes::columnmix() {
   u32_t g0 = w->g[0], g1 = w->g[1], g2 = w->g[2], g3 = w->g[3];
   for (int i = 0; i < 4; ++i) {
-    w->s[0][i] = GMlineA(25, 1, 0, 0);
-    w->s[1][i] = GMlineA(0, 25, 1, 0);
-    w->s[2][i] = GMlineA(0, 0, 25, 1);
-    w->s[3][i] = GMlineA(1, 0, 0, 25);
+    w->s[0][i] = GMumLine(25, 1, 0, 0);
+    w->s[1][i] = GMumLine(0, 25, 1, 0);
+    w->s[2][i] = GMumLine(0, 0, 25, 1);
+    w->s[3][i] = GMumLine(1, 0, 0, 25);
     g0 >>= 8, g1 >>= 8, g2 >>= 8, g3 >>= 8;
   }
 }
@@ -52,7 +52,7 @@ void encryaes::columnmix() {
 commonround:aes的一轮加密步骤
 round:该操作的轮数
 */
-void encryaes::commonround(int round) {
+inline void encryaes::commonround(int round) {
   addroundkey(key.get_key(round));
   subbytes();
   rowshift();
@@ -61,7 +61,7 @@ void encryaes::commonround(int round) {
 /*
 specround:aes的最后一轮加密步骤
 */
-void encryaes::specround() {
+inline void encryaes::specround() {
   addroundkey(key.get_key(9));
   subbytes();
   rowshift();

@@ -56,7 +56,7 @@ static u8_t *getInputKey() {
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
 */
-unsigned char *get_v_mod1() {
+u8_t *get_v_mod1() {
   char flag, fn[] = "out", outn[138], decn[128];
   srand(time(NULL));
   vpak_t *res = new vpak_t;
@@ -94,5 +94,5 @@ unsigned char *get_v_mod1() {
     res->out = NULL;
   } else
     res->fp = NULL;
-  return (u8_t *)res;
+  return res->buf;
 }

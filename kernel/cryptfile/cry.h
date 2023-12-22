@@ -30,4 +30,5 @@ public:
   u8_t verify();
   u8_t dec();
 };
+
 #endif

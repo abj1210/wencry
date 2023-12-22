@@ -13,20 +13,20 @@ void hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out) {
     j = (j + 1) % 3;
     if (j == 0) {
       for (int j = 0; j < 4; ++j)
-        base64_out[idx++] = turn_base64((h_in >> (6 * (3 - j))) & 0x3f);
+        base64_out[idx++] = b64_tab[(h_in >> (6 * (3 - j))) & 0x3f];
       h_in = 0;
     }
   }
   if (j == 1)
     for (int j = 0; j < 4; ++j)
       if (j < 2)
-        base64_out[idx++] = turn_base64((h_in >> (6 * (3 - j))) & 0x3f);
+        base64_out[idx++] = b64_tab[(h_in >> (6 * (3 - j))) & 0x3f];
       else
         base64_out[idx++] = '=';
   else if (j == 2)
     for (int j = 0; j < 4; ++j)
       if (j < 3)
-        base64_out[idx++] = turn_base64((h_in >> (6 * (3 - j))) & 0x3f);
+        base64_out[idx++] = b64_tab[(h_in >> (6 * (3 - j))) & 0x3f];
       else
         base64_out[idx++] = '=';
   base64_out[idx] = '\0';
@@ -44,7 +44,7 @@ void base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out) {
     if (base64_in[i] == '=')
       tail++;
     else {
-      h_in = h_in | (((u32_t)turn_hex(base64_in[i])) << (6 * (3 - j)));
+      h_in = h_in | (((u32_t)hex_tab[base64_in[i]]) << (6 * (3 - j)));
       j = (j + 1) % 4;
       if (j == 0) {
         for (int j = 0; j < 3; ++j)
