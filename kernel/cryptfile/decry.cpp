@@ -11,22 +11,11 @@ void runcrypt::checkMn() {
   }
   state = (mn == Magic_Num) ? 0 : 4;
 }
+
 /*
-checkKey:检查密钥是否一致
+checkHmac:检查HMAC
 */
-void runcrypt::checkKey() {
-  int sum = fread(hash, 1, 20, fp);
-  if (sum != 20) {
-    state = 1;
-    return;
-  }
-  sha1Stringhash hashhandle(key, 16);
-  state = hashhandle.cmphash(hash) ? 0 : 2;
-}
-/*
-checkFile:检查文件是否被篡改
-*/
-void runcrypt::checkFile() {
+void runcrypt::checkHmac(){
   int sum = fread(hash, 1, 20, fp);
   if (sum != 20) {
     state = 1;
@@ -37,11 +26,10 @@ void runcrypt::checkFile() {
     state = 1;
     return;
   }
-  sha1Filehash hashhandle(fp);
-  state = hashhandle.cmphash(hash) ? 0 : 3;
-  fseek(fp, 48, SEEK_SET);
+  state = hmachandle.cmphmac(key, fp, hash)? 0 : 2;
+  fseek(fp, 28, SEEK_SET);
 }
-/*
+/*5ufuDLvBXAo9pc5R5mpBEg==
 接口函数
 verify:验证密钥和文件
 return:若为0则检查通过,否则检查不通过
@@ -50,10 +38,7 @@ u8_t runcrypt::verify() {
   checkMn();
   if (state != 0)
     return state;
-  checkKey();
-  if (state != 0)
-    return state;
-  checkFile();
+  checkHmac();
   return state;
 }
 /*

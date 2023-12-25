@@ -73,16 +73,3 @@ void sha1hash::getres(u8_t *hashout) {
   for (int i = 0; i < 20; ++i)
     hashout[i] = (u8_t)((h[turn][i >> 2]) >> ((3 - (i & 0x3)) << 3));
 }
-/*
-接口函数
-cmphash:比较哈希值
-hash:带比较的哈希值
-return:比较是否相等
-*/
-bool sha1hash::cmphash(u8_t *hash) const {
-  for (int i = 0; i < 20; ++i) {
-    if ((u8_t)((h[turn][i >> 2]) >> ((3 - (i & 0x3)) << 3)) != hash[i])
-      return false;
-  }
-  return true;
-}

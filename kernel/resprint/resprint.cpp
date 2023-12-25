@@ -16,7 +16,7 @@ void printres(int res) {
   else if (res == 1)
     cout << "File too short.\r\n";
   else if (res == 2)
-    cout << "Wrong key.\r\n";
+    cout << "Wrong key or File not complete.\r\n";
   else if (res == 3)
     cout << "File not complete.\r\n";
   else if (res == 4)

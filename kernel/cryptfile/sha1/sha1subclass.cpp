@@ -16,6 +16,22 @@ sha1Filehash::sha1Filehash(FILE *fp) : sha1hash(), ibuf64(new buffer64(fp)) {
   }
 }
 /*
+构造函数:获取拼接的sha1哈希值
+block:拼接块
+fp:输入文件
+*/
+sha1Filehash::sha1Filehash(u8_t * block, FILE *fp): sha1hash(), ibuf64(new buffer64(block, fp)){
+  while (true) {
+    u64_t sum = ibuf64->read_buffer64(getLoadAddr());
+    totalsize += sum << 3;
+    if (sum != 64) {
+      finalHash(sum);
+      break;
+    }
+    gethash();
+  }
+}
+/*
 构造函数:获取字符串的sha1哈希值
 s:输入字符串
 n:字符串长度

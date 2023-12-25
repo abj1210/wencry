@@ -2,6 +2,7 @@
 #define CRY
 #include "multicry.h"
 #include "sha1.h"
+#include "hmac.h"
 #include <stdio.h>
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
@@ -11,12 +12,11 @@ class runcrypt {
   u8_t tail, state, hash[20];
   FILE *fp, *out;
   u8_t *key;
+  hmac hmachandle;
   void getFileHeader(const u8_t *r_buf);
   void hashfile();
   void checkMn();
-  void checkKey();
-  void checkFile();
-
+  void checkHmac();
 public:
   /*
       构造函数:设定输入输出和密钥
@@ -25,7 +25,7 @@ public:
       key:初始密钥序列
   */
   runcrypt(FILE *fp, FILE *out, u8_t *key)
-      : fp(fp), out(out), key(key), tail(16), state(0){};
+      : fp(fp), out(out), key(key), tail(16), state(0), hmachandle(0){};
   void enc(const u8_t *r_buf);
   u8_t verify();
   u8_t dec();

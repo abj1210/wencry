@@ -4,7 +4,7 @@ add_subdirectory(multicrypt)
 
 add_subdirectory(sha1)
 
-add_library(${PROJECT_NAME} decry.cpp encry.cpp)
+add_library(${PROJECT_NAME} decry.cpp encry.cpp hmac.cpp)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Sha1)
 

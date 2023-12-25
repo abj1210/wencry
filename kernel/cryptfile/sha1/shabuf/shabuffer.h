@@ -21,6 +21,7 @@ class buffer64 {
 
 public:
   buffer64(FILE *fp);
+  buffer64(u8_t * block, FILE *fp);
   u32_t read_buffer64(u8_t *block);
 };
 #endif

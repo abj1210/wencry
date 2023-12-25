@@ -42,13 +42,13 @@ public:
     h[0][3] = 0x10325476, h[0][4] = 0xC3D2E1F0;
   };
   void getres(u8_t *hashout);
-  bool cmphash(u8_t *hash) const;
 };
 class sha1Filehash : public sha1hash {
   buffer64 *ibuf64;
 
 public:
   sha1Filehash(FILE *fp);
+  sha1Filehash(u8_t * block, FILE *fp);
   ~sha1Filehash() { delete ibuf64; };
 };
 class sha1Stringhash : public sha1hash {
