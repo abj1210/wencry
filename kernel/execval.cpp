@@ -15,7 +15,7 @@ typedef union {
     FILE *fp, *out;
     u8_t *key;
     u8_t r_buf[256];
-    char mode;
+    char mode, ctype;
   };
   u8_t buf[512];
 } pakout_t;
@@ -45,10 +45,10 @@ bool exec_val(unsigned char *v) {
     return printinv(0);
   clock_t totalTime = 0;
   if (vals.mode == 'e' || vals.mode == 'E') {
-    runner.enc(vals.r_buf);
+    runner.enc(vals.r_buf, vals.ctype);
     printenc();
   } else if (vals.mode == 'd' || vals.mode == 'D') {
-    res = runner.dec();
+    res = runner.dec(vals.ctype);
     printres(res);
   } else if (vals.mode == 'v') {
     res = runner.verify();

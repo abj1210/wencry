@@ -1,6 +1,6 @@
 project(Cryptfile)
 
-add_subdirectory(multicrypt)
+add_subdirectory(mcry)
 
 add_subdirectory(sha1)
 
@@ -17,5 +17,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Multicry)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/multicrypt
+                            ${PROJECT_SOURCE_DIR}/mcry
                             )

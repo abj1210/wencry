@@ -21,19 +21,18 @@ public:
 private:
   u8_t b[BUF_SZ][0x10];
   u32_t total, now;
-  u8_t tail;
+  u8_t tail, pad;
   FILE *fin, *fout;
+  bool ispadding;
 
 public:
-  bool load_files(FILE *fin, FILE *fout);
+  bool load_files(FILE *fin, FILE *fout, bool &over, bool ispadding);
   /*
   get_entry:获取当前缓冲区单元表项
   return:返回的表项地址
   */
-  u8_t *get_entry() {
-    return ((now < total) || ((now == total) && (tail != 0))) ? b[now++] : NULL;
-  };
-  u32_t update_buffer();
+  u8_t *get_entry() { return (now < total) ? b[now++] : NULL; };
+  u32_t update_buffer(bool &over);
   /*
   bufferover:缓冲区和文件是否读取完毕
   return:若为0则未读取完毕,否则已读取完毕
@@ -44,6 +43,6 @@ public:
   return:若为空返回真否则返回假
   */
   bool fin_empty() const { return (total == 0) && (tail == 0); };
-  u32_t final_write(u8_t tailin);
+  void final_write();
 };
 #endif

@@ -18,8 +18,7 @@ hash:sha1的hash基本单元
 h:20B数据
 */
 class sha1hash {
-  u32_t h[2][5];
-  u32_t turn;
+  u32_t h[5];
   u32_t w[80];
   union {
     u8_t s[64];
@@ -37,9 +36,9 @@ public:
   /*
     构造函数:设定哈希初值
   */
-  sha1hash() : turn(0), totalsize(0) {
-    h[0][0] = 0x67452301, h[0][1] = 0xEFCDAB89, h[0][2] = 0x98BADCFE,
-    h[0][3] = 0x10325476, h[0][4] = 0xC3D2E1F0;
+  sha1hash() : totalsize(0) {
+    h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476,
+    h[4] = 0xC3D2E1F0;
   };
   void getres(u8_t *hashout);
 };
@@ -48,7 +47,7 @@ class sha1Filehash : public sha1hash {
 
 public:
   sha1Filehash(FILE *fp);
-  sha1Filehash(u8_t * block, FILE *fp);
+  sha1Filehash(u8_t *block, FILE *fp);
   ~sha1Filehash() { delete ibuf64; };
 };
 class sha1Stringhash : public sha1hash {

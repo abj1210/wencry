@@ -1,12 +1,20 @@
 #include "test.h"
 #include "gtest/gtest.h"
 
-TEST(Testsmall1, tests1) {
+TEST(Testsmall, tests1) {
   EXPECT_EQ(
       1,
       makeFullTest(
           "ababrteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrfseaba"
           "brteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrfse"));
+}
+
+TEST(Testsmall, tests2) {
+  EXPECT_EQ(
+      1,
+      makeFullTest(
+          "ababrteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrfseaba"
+          "brteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrf"));
 }
 
 int main(int argc, char **argv) {

@@ -47,25 +47,32 @@ u8_t *get_v_mod2(int argc, char *argv[]) {
   res->mode = argv[1][1];
   if (strcmp(argv[1], "-e") == 0) {
     res->fp = getArgsFilep(argv[2]);
-    if (strcmp(argv[3], "G") == 0)
+    res->ctype = atoi(argv[3]);
+    if (res->ctype > 4 || res->ctype < 0)
+      res->ctype = 0;
+    if (strcmp(argv[4], "G") == 0)
       res->key = getRandomKey();
     else
-      res->key = getArgsKey(argv[3]);
-    sprintf(outn, "%s.wenc", argc == 4 ? argv[2] : argv[4]);
+      res->key = getArgsKey(argv[4]);
+    sprintf(outn, "%s.wenc", argc == 5 ? argv[2] : argv[5]);
     res->out = fopen(outn, "wb+");
     getRandomBuffer(res->r_buf);
   } else if (strcmp(argv[1], "-d") == 0) {
     res->fp = getArgsFilep(argv[2]);
-    res->key = getArgsKey(argv[3]);
-    if (argc == 4) {
+    res->ctype = atoi(argv[3]);
+    if (res->ctype > 4 || res->ctype < 0)
+      res->ctype = 0;
+    res->key = getArgsKey(argv[4]);
+    if (argc == 5) {
       sprintf(outn, "%s.denc", argv[2]);
       res->out = fopen((const char *)outn, "wb+");
     } else
-      res->out = fopen(argv[4], "wb+");
+      res->out = fopen(argv[5], "wb+");
   } else if (strcmp(argv[1], "-v") == 0) {
     res->out = NULL;
     res->fp = getArgsFilep(argv[2]);
     res->key = getArgsKey(argv[3]);
+    res->ctype = 0;
   } else
     res->fp = NULL;
   printkey(res->key);

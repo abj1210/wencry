@@ -1,39 +1,33 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2023.12.25 (最后修改)  
-版本：v2.9.0 
+日期：2023.12.30 (最后修改)  
+版本：v3.0.0 
 
-**默认4线程模式**  
+**默认4线程,ECB加密模式**  
 **处理速度可达80MB/s以上**  
-**内存占用小于80MB**  
-
-***即将发布v3.0.0:支持包括ECB,CBC等加密模式和多种哈希算法(SHA1,MD5等)的HMAC验证算法.***  
-***等我期末考完试***  
+**内存占用小于80MB**   
 
 ## 加密原理
 
 **加密**  
-输入随机缓冲数组并哈希
-对于目标文件与随机缓冲哈希进行异或后进行AES128加密  
-对加密后的信息,随机缓冲哈希和密钥进行sha1哈希操作  
+根据输入或随机数计算IV
+根据选定的加密模式,使用密钥和IV(初始向量)进行AES128加密  
+根据密文和密钥生成HMAC
 得到最终的加密文件  
 
 **解密**  
 先检查魔数,确定为正确加密后的文件  
-再对密钥进行哈希比较,确定为正确的密钥  
-再对文件进行哈希比较,确定文件未被篡改 
-提取随机缓冲哈希  
-最后对文件件与随机缓冲哈希进行异或后进行AES128解密  
+再提取文件的HMAC与计算的HMAC比较,确保文件完整  
+提取IV  
+最后根据加密模式对文件进行AES128解密  
 得到解密后的文件  
 
 **加密文件结构**  
 加密后的文件带有后缀.wenc,其结构如下:
-- 0B-6B:魔数  
-- 7B-26B:HMAC-SHA1值    
-- 27B:源文件字节数与16取模后的数值  
-- 28B-47B:随机缓冲哈希  
-- 48B-文件结尾:加密后的文件数据
+- 0B-7B:魔数  
+- 8B-27B:HMAC-SHA1值        
+- 28B-文件结尾:IV和加密后的文件数据
 
 ## 文件结构
 
@@ -56,18 +50,21 @@
       - encry.cpp:负责整体加密流程
       - hmac.h:生成和校验HMAC的头文件
       - hmac.cpp:生成和校验HMAC  
-      - **multicrypt:多线程进行aes加解密函数的文件夹**
+      - **mcry:多线程进行aes加解密函数的文件夹**
         - multicry.h:多线程进行aes加解密的相关头文件
         - multicry.cpp:多线程进行aes加解密的函数实现
-        - **aes:进行128bitaes加解密和密钥处理的文件夹**
-          - aes.h:AES加解密相关的头文件  
-          - de_aes.cpp:负责AES解密的各流程  
-          - en_aes.cpp:负责AES加密的各流程   
-          - key.cpp:负责生成密钥  
-          - state.h:加解密所需的结构体
-          - **utils:通用头文件**  
-            - macro.h:加解密所需的宏定义
-            - tab.h:加解密所需的数表
+        - **aesmode:应用多种aes加密模式加密器的文件夹**
+          - aesmode.h:不同模式的aes加密器的相关头文件
+          - aesmode.cpp:不同模式的aes加密器的实现
+          - **aes:进行128bitaes加解密和密钥处理的文件夹**
+            - aes.h:AES加解密相关的头文件  
+            - de_aes.cpp:负责AES解密的各流程  
+            - en_aes.cpp:负责AES加密的各流程   
+            - key.cpp:负责生成密钥  
+            - state.h:加解密所需的结构体
+            - **utils:通用头文件**  
+              - macro.h:加解密所需的宏定义
+              - tab.h:加解密所需的数表
         - **MBG:多线程缓冲区组的文件夹**
           - buffer.h:IO缓冲区的头文件  
           - buffer.cpp:实现IO缓冲区  
@@ -84,9 +81,22 @@
       - resprint.h:打印操作结果的函数
       - resprint.cpp:结果打印的实现 
   - **test:测试文件夹**
+    - testutil.h:基础组件测试相关函数的头文件
+    - testutil.cpp:基础组件测试相关函数的实现
     - test.h:测试相关函数的头文件
     - test.cpp:测试相关函数的实现
-    - testsmall1.cpp testsmall2.cpp:小文件加解密测试  
+    - testutest.cpp:testutil函数测试
+    - testsha1.cpp:sha1哈希测试
+    - testaes.cpp:单块aes测试
+    - testbase64.cpp:base64编码测试
+    - testhmac.cpp:HMAC编码测试
+    - testECB.cpp:ECB模式下多块aes测试
+    - testCBC.cpp:CBC模式下多块aes测试
+    - testCTR.cpp:CTR模式下多块aes测试
+    - testCFB.cpp:CFB模式下多块aes测试
+    - testOFB.cpp:OFB模式下多块aes测试
+    - testsmall.cpp:小文件加解密测试
+    - testsmode.cpp:不同模式下文件加解密测试  
     - testbig1.cpp:大文件加解密测试
     - testspeed.cpp:文件加密速度测试
 
@@ -108,8 +118,8 @@
 直接使用`./Wencry`命令，按提示进行操作  
 加密后会生成`out.wenc`文件  
 
-使用`./Wencry -e [fin] [code] [fout]`命令进行加密  
-其中 -e 代表加密选项 fin 为输入文件的路径 code 为ase64编码后的16字节16进制数(编码后共24位),若输入G则为程序生成 fout 为输出文件名，缺省为 fin 值.  
+使用`./Wencry -e [fin] [mode] [code] [fout]`命令进行加密  
+其中 -e 代表加密选项 fin 为输入文件的路径 mode 为加密模式(参见加密原理部分) code 为ase64编码后的16字节16进制数(编码后共24位),若输入G则为程序生成 fout 为输出文件名，缺省为 fin 值.  
 
 加密完毕后会生成名为 [fout].wenc 的加密文件.
 
@@ -118,7 +128,7 @@
 直接使用`./Wencry`命令,按提示进行操作
 
 使用`./Wencry -v [fin] [code]`命令进行验证  
-其中 -v 代表验证选项 fin 为输入文件的路径 code 为base64编码后的16字节16进制数(编码后共24位).  
+其中 -v 代表验证选项 fin 为输入文件的路径 mode 为加密模式(参见加密原理部分) code 为base64编码后的16字节16进制数(编码后共24位).  
 
 若密码无误且文件完整则会显示`File verified!`.  
 
@@ -126,7 +136,7 @@
 
 直接使用`./Wencry`命令,按提示进行操作
 
-使用`./Wencry -d [fin] [code] [fout]`命令进行加密  
+使用`./Wencry -d [fin] [mode] [code] [fout]`命令进行加密  
 其中 -d 代表解密选项 fin 为输入文件的路径 code 为base64编码后的16字节16进制数(编码后共24位), fout 为输出文件名,缺省为 [fin].wdec .
 
 解密完毕后若无误则会生成名为 fout 的还原文件.  
@@ -146,14 +156,14 @@
 
 各个线程的处理流程如下:  
 ```cpp
-void multiruncrypt_file(u8_t id, u8_t *tailin, aeshandle *runaes,buffergroup *bg) {
+void multiruncrypt_file(u8_t id, multicry_master *cm) {
   while (true) {
-    state_t *block = (state_t *)bg->require_buffer_entry(id);
+    u8_t *block = cm->bg.require_buffer_entry(id);
     if (block == NULL) {
-      if (bg->judge_over(id, *tailin) || (!bg->update_lst(id)))
+      if (cm->bg.judge_over(id) || (!cm->bg.update_lst(id)))
         break;
     } else
-      runaes->runaes_128bit(block);
+      cm->process(id, block);
   }
   return;
 }
@@ -162,6 +172,29 @@ void multiruncrypt_file(u8_t id, u8_t *tailin, aeshandle *runaes,buffergroup *bg
 
 
 详细过程参阅相关代码.  
+
+## 加密流程更新
+
+2.9,3.0版本更新大幅改动了加密流程,通过增加HMAC,AES加密模式,pcks7填充等方法进一步增加了安全性.  
+
+### HMAC
+HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过校验HMAC可以同时确定密钥和密文是否正确,未来还将支持MD5等其他哈希算法.  
+
+### AES加密模式
+早期版本的加密方式为确定性加密,安全性较差,易遭到选择明文攻击.此次更新引入了五种不同的AES加密模式:  
+  - 0:电子密码本ECB  
+  - 1:密码块链CBC  
+  - 2:计数器模式CTR  
+  - 3:密文反馈CFB  
+  - 4:输出反馈OFB  
+
+进行加解密时可输入相应的序号(命令行参数中的mode)以选择相应的加密方式,若输入不在0-4之间,择默认选择0号ECB模式(个人不建议选择0号).  
+以上五种模式除ECB外均为非确定性加密,需要初始向量IV.在命令行模式中可以手动输入字符串以生成IV(不建议重复使用相同的字符串,会造成安全风险).在命令行参数模式下系统会自动生成随机的IV.  
+
+***!!!重要:加解密同一文件时一定要选择相同的加密模式,否则会解密失败!!!***
+
+### pcks7填充  
+在加密信息尾部处理时,经常会遇到填充问题,此前采用的0填充需另行记录尾部字节数(即tail),较为繁琐也不安全.更新后的加密采用了较为流行的pcks7填充方式,使加解密更简洁安全性更高.  
 
 ## 更新日志
 
@@ -186,3 +219,4 @@ void multiruncrypt_file(u8_t id, u8_t *tailin, aeshandle *runaes,buffergroup *bg
 *v2.7 新增:改变部分功能的实现和文件结构(2.7.1 更改部分文件以兼容visual stdio 2.7.2 改变sha1哈希类的实现).*  
 *v2.8 新增:修改并发函数和哈希函数(2.8.1 2.8.2 2.8.3 更改部分函数实现).*  
 *v2.9 新增:使用HMAC-SHA1进行文件验证.*  
+*v3.0 新增:可选用不同的加密模式,采用pcks7进行填充,增加大量测试用例以测试核心组件的正确性,修复部分bug.*  

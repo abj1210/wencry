@@ -27,9 +27,10 @@ class buffergroup {
   u32_t turn;
   std::mutex filelock;
   std::condition_variable cond;
+  bool over;
 
 public:
-  buffergroup(u32_t size, FILE *fin, FILE *fout);
+  buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding);
   /*
         析构函数:释放缓冲区组
   */
@@ -41,6 +42,6 @@ public:
   */
   u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };
   bool update_lst(const u8_t id);
-  bool judge_over(const u8_t id, u8_t &tail);
+  bool judge_over(const u8_t id);
 };
 #endif

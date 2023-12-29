@@ -20,10 +20,11 @@ sha1Filehash::sha1Filehash(FILE *fp) : sha1hash(), ibuf64(new buffer64(fp)) {
 block:拼接块
 fp:输入文件
 */
-sha1Filehash::sha1Filehash(u8_t * block, FILE *fp): sha1hash(), ibuf64(new buffer64(block, fp)){
+sha1Filehash::sha1Filehash(u8_t *block, FILE *fp)
+    : sha1hash(), ibuf64(new buffer64(block, fp)) {
   while (true) {
     u64_t sum = ibuf64->read_buffer64(getLoadAddr());
-    totalsize += sum << 3;
+    totalsize += (sum << 3);
     if (sum != 64) {
       finalHash(sum);
       break;
@@ -37,9 +38,9 @@ s:输入字符串
 n:字符串长度
 */
 sha1Stringhash::sha1Stringhash(const u8_t *s, const u32_t n) : sha1hash() {
-  u32_t nnow;
+  u32_t nnow = n;
   totalsize = n << 3;
-  for (nnow = n; nnow >= 64; nnow -= 64) {
+  for (; nnow >= 64; nnow -= 64) {
     memcpy(getLoadAddr(), s + (n - nnow), 64);
     gethash();
   }

@@ -15,7 +15,7 @@ typedef union {
     FILE *fp, *out;
     u8_t *key;
     u8_t r_buf[256];
-    char mode;
+    char mode, ctype;
   };
   u8_t buf[512];
 } vpak_t;

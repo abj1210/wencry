@@ -2,10 +2,9 @@
 #define AES
 
 #include "state.h"
-#include <string.h>
 class aeshandle {
 protected:
-  state_t *w;
+  state_t w;
   /*
   keyhandle:密钥的生成
   key:轮密钥
@@ -26,22 +25,15 @@ protected:
     */
     const state_t &get_key(int round) { return key[round]; };
   } key;
-  union {
-    u8_t r[0x10];
-    u64_t ld[2];
-  };
   void addroundkey(const state_t &key);
-  void addRBH();
 
 public:
   /*
   构造函数:加载密钥
   key:待加载的密钥
   */
-  aeshandle(const u8_t *initkey, const u8_t *r_hash) : key(initkey), w(NULL) {
-    memcpy(r, r_hash, 16);
-  };
-  virtual void runaes_128bit(state_t *w) { return; };
+  aeshandle(const u8_t *initkey) : key(initkey){};
+  virtual void runaes_128bit(u8_t *w) = 0;
 };
 class encryaes : public aeshandle {
   void subbytes();
@@ -51,9 +43,8 @@ class encryaes : public aeshandle {
   inline void specround();
 
 public:
-  encryaes(const u8_t *initkey, const u8_t *r_hash)
-      : aeshandle(initkey, r_hash){};
-  void runaes_128bit(state_t *w);
+  encryaes(const u8_t *initkey) : aeshandle(initkey){};
+  void runaes_128bit(u8_t *w);
 };
 class decryaes : public aeshandle {
   void subbytes();
@@ -63,9 +54,8 @@ class decryaes : public aeshandle {
   inline void specround();
 
 public:
-  decryaes(const u8_t *initkey, const u8_t *r_hash)
-      : aeshandle(initkey, r_hash){};
-  void runaes_128bit(state_t *w);
+  decryaes(const u8_t *initkey) : aeshandle(initkey){};
+  void runaes_128bit(u8_t *w);
 };
 
 #endif

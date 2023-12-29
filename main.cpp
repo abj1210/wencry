@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   else if (argc == 2 && argv[1][1] == 'V') {
     version();
     return 0;
-  } else if (argc == 5 || argc == 4)
+  } else if (argc >= 4)
     vals = get_v_mod2(argc, argv);
   else
     return 1;

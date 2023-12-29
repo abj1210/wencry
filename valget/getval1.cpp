@@ -52,6 +52,18 @@ static u8_t *getInputKey() {
   return keyout;
 }
 /*
+selectMode:选择加解密模式
+return:选择的模式
+*/
+static u8_t selectMode() {
+  u32_t c;
+  printf("Select a crypt mode(0:ECB, 1:CBC, 2:CTR, 3:CFB, 4:OFB).\n");
+  int r = scanf("%d", &c);
+  if (c > 4 || c < 0)
+    c = 0;
+  return (u8_t)c;
+}
+/*
 接口函数
 get_v_mod1:根据用户输入获得参数包
 return:返回的参数包
@@ -74,8 +86,11 @@ u8_t *get_v_mod1() {
     sprintf(outn, "%s.wenc", fn);
     res->out = fopen(outn, "wb+");
     printkey(res->key);
-    printf("Please input some random characters.\n");
-    r = scanf("%s", res->r_buf);
+    res->ctype = selectMode();
+    if (res->ctype != 0) {
+      printf("Please input some random characters.\n");
+      int r = scanf("%s", res->r_buf);
+    }
   } else if (res->mode == 'd' || res->mode == 'D') {
     printf("Need a new name for decrypted file?(y/n) ");
     r = scanf("%*[\n]%c", &flag);
@@ -89,9 +104,11 @@ u8_t *get_v_mod1() {
       res->out = fopen(outn, "wb+");
     }
     res->key = getInputKey();
+    res->ctype = selectMode();
   } else if (res->mode == 'v') {
     res->key = getInputKey();
     res->out = NULL;
+    res->ctype = 0;
   } else
     res->fp = NULL;
   return res->buf;

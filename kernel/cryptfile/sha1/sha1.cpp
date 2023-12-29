@@ -19,28 +19,29 @@ gethash:获取每一步的哈希值
 */
 void sha1hash::gethash() {
   getwdata();
-  u32_t nxt = turn ? 0 : 1;
-  memcpy(h[nxt], h[turn], 20);
+  u32_t temph[5];
+  memcpy(temph, h, sizeof(h));
   u32_t f, temp;
   for (u32_t i = 0; i < 80; ++i) {
     if (i < 20)
-      f = ((h[nxt][1] & h[nxt][2]) | ((~h[nxt][1]) & h[nxt][3])) + 0x5A827999;
+      f = ((temph[1] & temph[2]) | ((~temph[1]) & temph[3])) + 0x5A827999;
     else if (i < 40)
-      f = (h[nxt][1] ^ h[nxt][2] ^ h[nxt][3]) + 0x6ED9EBA1;
+      f = (temph[1] ^ temph[2] ^ temph[3]) + 0x6ED9EBA1;
     else if (i < 60)
-      f = ((h[nxt][1] & h[nxt][2]) | (h[nxt][1] & h[nxt][3]) |
-           (h[nxt][2] & h[nxt][3])) +
+      f = ((temph[1] & temph[2]) | (temph[1] & temph[3]) |
+           (temph[2] & temph[3])) +
           0x8F1BBCDC;
     else
-      f = (h[nxt][1] ^ h[nxt][2] ^ h[nxt][3]) + 0xCA62C1D6;
-    temp = lrot(h[nxt][0], 5) + f + h[nxt][4] + w[i];
-    h[nxt][4] = h[nxt][3];
-    h[nxt][3] = h[nxt][2];
-    h[nxt][2] = lrot(h[nxt][1], 30);
-    h[nxt][1] = h[nxt][0];
-    h[nxt][0] = temp;
+      f = (temph[1] ^ temph[2] ^ temph[3]) + 0xCA62C1D6;
+    temp = lrot(temph[0], 5) + f + temph[4] + w[i];
+    temph[4] = temph[3];
+    temph[3] = temph[2];
+    temph[2] = lrot(temph[1], 30);
+    temph[1] = temph[0];
+    temph[0] = temp;
   }
-  turn = nxt;
+  for (u32_t i = 0; i < 5; ++i)
+    h[i] += temph[i];
 }
 /*
 getLoadAddr:获取加载地址
@@ -60,8 +61,10 @@ void sha1hash::finalHash(u32_t loadsize) {
     gethash();
     memset(s, 0, sizeof(s));
   }
-  for (int i = 0; i < 8; ++i)
-    s[56 + i] = (u8_t)((totalsize >> ((7 - i) << 3)));
+
+  for (int i = 0; i < 8; ++i) {
+    s[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
+  }
   gethash();
 }
 /*
@@ -71,5 +74,5 @@ hashout:输出字符串地址
 */
 void sha1hash::getres(u8_t *hashout) {
   for (int i = 0; i < 20; ++i)
-    hashout[i] = (u8_t)((h[turn][i >> 2]) >> ((3 - (i & 0x3)) << 3));
+    hashout[i] = (u8_t)((h[i >> 2]) >> ((3 - (i & 0x3)) << 3));
 }

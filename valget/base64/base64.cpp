@@ -5,7 +5,7 @@ hex_in:输入的十六进制串
 len:输入串的长度
 base64_out:base64编码后的结果
 */
-void hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out) {
+bool hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out) {
   int j = 0, idx = 0;
   u32_t h_in = 0;
   for (int i = 0; i < len; ++i) {
@@ -30,6 +30,7 @@ void hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out) {
       else
         base64_out[idx++] = '=';
   base64_out[idx] = '\0';
+  return true;
 }
 /*
 hex_to_base64:将输入串base64解码为十六进制串
@@ -37,13 +38,15 @@ base64_in:输入的base64编码串
 len:输入串的长度
 hex_out:解码后的十六进制串
 */
-void base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out) {
+bool base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out) {
   int tail = 0, j = 0, idx = 0;
   u32_t h_in = 0;
   for (int i = 0; i < len; ++i)
     if (base64_in[i] == '=')
       tail++;
     else {
+      if (base64_in[i] == 255)
+        return false;
       h_in = h_in | (((u32_t)hex_tab[base64_in[i]]) << (6 * (3 - j)));
       j = (j + 1) % 4;
       if (j == 0) {
@@ -52,10 +55,11 @@ void base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out) {
         h_in = 0;
       }
     }
-  if (tail == 1)
+  if (tail == 2)
     hex_out[idx++] = (h_in >> 16) & 0xff;
-  else if (tail == 2) {
+  else if (tail == 1) {
     hex_out[idx++] = (h_in >> 16) & 0xff;
     hex_out[idx++] = (h_in >> 8) & 0xff;
   }
+  return true;
 }
