@@ -6,7 +6,7 @@ key:密钥序列
 fp:需验证文件指针
 */
 void hmac::getres(u8_t *key, FILE *fp) {
-  u8_t block=hashmaster.getblen(), length=hashmaster.gethlen();
+  u8_t block = hashmaster.getblen(), length = hashmaster.gethlen();
   u8_t key1[block], h1[block], h2[block + length];
   memset(key1, 0, sizeof(key1));
   memcpy(key1, key, 16);

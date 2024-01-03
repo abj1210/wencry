@@ -15,31 +15,34 @@ typedef unsigned long long u64_t;
 /*
 typehash:哈希函数抽象类
 */
-class typehash{
+class typehash {
   const u8_t blocklength, hashlength;
+
 protected:
   u32_t totalsize;
   /*
   addtotal:累加总长度
   len:长度
   */
-  void addtotal(u32_t len){totalsize += (len<<3);};
+  void addtotal(u32_t len) { totalsize += (len << 3); };
+
 public:
-  typehash(u8_t blocklength, u8_t hashlength): blocklength(blocklength), hashlength(hashlength){};
-  u8_t getblen(){return blocklength;};
-  u8_t gethlen(){return hashlength;};
-  virtual void gethash()=0;
-  virtual u8_t *getLoadAddr()=0;
-  virtual void finalHash(u32_t loadsize)=0;
-  virtual void reset()=0;
-  virtual void getres(u8_t *hashout)=0;
+  typehash(u8_t blocklength, u8_t hashlength)
+      : blocklength(blocklength), hashlength(hashlength){};
+  u8_t getblen() { return blocklength; };
+  u8_t gethlen() { return hashlength; };
+  virtual void gethash() = 0;
+  virtual u8_t *getLoadAddr() = 0;
+  virtual void finalHash(u32_t loadsize) = 0;
+  virtual void reset() = 0;
+  virtual void getres(u8_t *hashout) = 0;
 };
 
 /*
 hash:sha1的hash基本单元
 h:20B数据
 */
-class sha1hash : public typehash{
+class sha1hash : public typehash {
   u32_t h[5];
   u32_t w[80];
   union {
@@ -47,16 +50,20 @@ class sha1hash : public typehash{
     u32_t i[16];
   };
   void getwdata();
+
 public:
   /*
     构造函数:设定哈希初值
   */
-  sha1hash() : typehash(64, 20){reset();};
+  sha1hash() : typehash(64, 20) { reset(); };
   void gethash();
   u8_t *getLoadAddr();
   void finalHash(u32_t loadsize);
-  void reset(){h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476,
-    h[4] = 0xC3D2E1F0;totalsize=0;};
+  void reset() {
+    h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476,
+    h[4] = 0xC3D2E1F0;
+    totalsize = 0;
+  };
   void getres(u8_t *hashout);
 };
 #endif
