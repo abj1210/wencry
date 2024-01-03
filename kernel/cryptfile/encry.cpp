@@ -1,4 +1,5 @@
 #include "cry.h"
+#include "hashmaster.h"
 #include <string.h>
 /*
 getFileHeader:构造加密文件头
@@ -10,11 +11,11 @@ void runcrypt::getFileHeader(const u8_t *r_buf) {
   u64_t mn = Magic_Num;
   fwrite(&mn, 1, 8, out);
   fwrite(padding, 1, 20, out);
-  sha1Stringhash(r_buf, strlen((const char *)r_buf)).getres(iv);
+  Hashmaster hm(Hashmaster::SHA1);
+  hm.getStringHash(r_buf, strlen((const char *)r_buf), iv);
   fwrite(iv, 1, 20, out);
   for (int i = 1; i < multicry_master::THREADS_NUM; ++i) {
-    sha1Stringhash(iv + (20 * (i - 1)), strlen((const char *)r_buf))
-        .getres(iv + (20 * i));
+    hm.getStringHash(r_buf, strlen((const char *)r_buf), iv);
     fwrite(iv + (20 * i), 1, 20, out);
   }
 }

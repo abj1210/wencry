@@ -1,4 +1,4 @@
-#include "shabuffer.h"
+#include "hashbuffer.h"
 #include <string.h>
 /*
 构造函数:加载数据

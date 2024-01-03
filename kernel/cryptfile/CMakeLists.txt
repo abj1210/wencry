@@ -2,15 +2,15 @@ project(Cryptfile)
 
 add_subdirectory(mcry)
 
-add_subdirectory(sha1)
+add_subdirectory(hash)
 
 add_library(${PROJECT_NAME} decry.cpp encry.cpp hmac.cpp)
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Sha1)
+target_link_libraries(${PROJECT_NAME} PUBLIC Hash)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
-                           ${PROJECT_SOURCE_DIR}/sha1
+                           ${PROJECT_SOURCE_DIR}/hash
                            )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Multicry)

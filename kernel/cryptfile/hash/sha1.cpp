@@ -1,4 +1,4 @@
-#include "sha1.h"
+#include "hashtype.h"
 #include <string.h>
 /*
 getwdata:根据每个输入单元生成sha1中w数组的值
@@ -19,6 +19,7 @@ gethash:获取每一步的哈希值
 */
 void sha1hash::gethash() {
   getwdata();
+  addtotal(64);
   u32_t temph[5];
   memcpy(temph, h, sizeof(h));
   u32_t f, temp;
@@ -56,12 +57,12 @@ finalHash:结尾的哈希处理
 loadsize:装载字节数
 */
 void sha1hash::finalHash(u32_t loadsize) {
+  addtotal(loadsize);
   s[loadsize] = 0x80u;
   if (loadsize >= 56) {
     gethash();
     memset(s, 0, sizeof(s));
   }
-
   for (int i = 0; i < 8; ++i) {
     s[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
   }

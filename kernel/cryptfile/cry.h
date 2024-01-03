@@ -2,7 +2,6 @@
 #define CRY
 #include "hmac.h"
 #include "multicry.h"
-#include "sha1.h"
 #include <stdio.h>
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
