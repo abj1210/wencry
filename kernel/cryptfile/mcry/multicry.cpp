@@ -22,7 +22,7 @@ multicry_master::multicry_master(FILE *fp, FILE *out, u8_t *key, const u8_t *iv,
                                  u8_t ctype, bool isenc)
     : bg(THREADS_NUM, fp, out, isenc) {
   for (int i = 0; i < THREADS_NUM; ++i)
-    am[i] = selectCryptMode(key, iv, ctype);
+    am[i] = selectCryptMode(key, iv+(20*i), ctype);
 };
 /*
 析构函数
