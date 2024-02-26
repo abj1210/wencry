@@ -10,22 +10,16 @@ Aesmode *selectCryptMode(u8_t *key, const u8_t *iv, u8_t type) {
   switch (type) {
   case 0:
     return new AesECB(key, iv);
-    break;
   case 1:
     return new AesCBC(key, iv);
-    break;
   case 2:
     return new AesCTR(key, iv);
-    break;
   case 3:
     return new AesCFB(key, iv);
-    break;
   case 4:
     return new AesOFB(key, iv);
-    break;
   default:
     return NULL;
-    break;
   }
 }
 /*
@@ -37,8 +31,6 @@ void Aesmode::getXor(u8_t *x, u8_t *mask) {
   for (int i = 0; i < 16; ++i)
     x[i] = x[i] ^ mask[i];
 }
-void AesECB::getencry(u8_t *block) { encryhandle.runaes_128bit(block); }
-void AesECB::getdecry(u8_t *block) { decryhandle.runaes_128bit(block); }
 void AesCBC::getencry(u8_t *block) {
   getXor(block, iv);
   encryhandle.runaes_128bit(block);
@@ -52,13 +44,9 @@ void AesCBC::getdecry(u8_t *block) {
   memcpy(iv, nxt_iv, 16);
 }
 void AesCTR::ctrInc() {
-  bool inc = true;
   for (int i = 15; i >= 0; i--) {
-    if (inc) {
-      iv[i]++;
-      if (iv[i] != 0)
-        inc = false;
-    } else
+    iv[i]++;
+    if (iv[i] != 0)
       break;
   }
 }
@@ -69,7 +57,6 @@ void AesCTR::getencry(u8_t *block) {
   getXor(block, mask);
   ctrInc();
 }
-void AesCTR::getdecry(u8_t *block) { getencry(block); }
 void AesCFB::getencry(u8_t *block) {
   encryhandle.runaes_128bit(iv);
   getXor(block, iv);
@@ -86,4 +73,3 @@ void AesOFB::getencry(u8_t *block) {
   encryhandle.runaes_128bit(iv);
   getXor(block, iv);
 }
-void AesOFB::getdecry(u8_t *block) { getencry(block); }

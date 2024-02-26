@@ -4,7 +4,7 @@ add_subdirectory(mcry)
 
 add_subdirectory(hash)
 
-add_library(${PROJECT_NAME} decry.cpp encry.cpp hmac.cpp)
+add_library(${PROJECT_NAME} cry.cpp)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Hash)
 
