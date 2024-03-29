@@ -42,11 +42,11 @@ int makeFullTest(const char *str, u8_t type = 0) {
   sprintf(ctype, "%d", type);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
-  //if (!exec_val(get_v_opt(8, (char **)argv1)))
-    return 1;
+  if (!exec_val(get_v_opt(8, (char **)argv1)))
+    return 0;
   char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, kflg, key, oflg, fout};
-  //if (!exec_val(get_v_opt(10, (char **)argv2)))
-    return 1;
+  if (!exec_val(get_v_opt(10, (char **)argv2)))
+    return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
   return cmp_file(f1, f2);

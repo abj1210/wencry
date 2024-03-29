@@ -85,6 +85,8 @@ vals:传入的参数包
 return:返回是否成功执行
 */
 bool exec_val(unsigned char *v) {
+  if (v == NULL)
+    return printinv(0);
   clock_t cl1 = clock();
   pakout_t vals;
   memcpy(vals.buf, v, 512);

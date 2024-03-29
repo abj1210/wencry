@@ -217,7 +217,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     }
     else if (res->mode == 'e' || res->mode == 'd' || res->mode == 'v')
     {
-        if (res->ctype == -1)
+        if (res->ctype == 100)
         {
             fprintf(stderr, "Using ECB mode\n");
             res->ctype = 0;
