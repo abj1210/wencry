@@ -132,7 +132,7 @@ bool parseOpts(char c, vpak_t *res)
         if (res->out == NULL)
         {
             fprintf(stderr, "Could not open file %s\n", optarg);
-            return false;
+            return true;
         }
         break;
     case 'k':
@@ -244,8 +244,8 @@ u8_t *get_v_opt(int argc, char *argv[])
             fprintf(stderr, "Using default output file name\n");
             res->out = fopen(fout, "wb+");
         }
-        //getRandomBuffer(res->r_buf);
-        //printkey(res->key);
+        getRandomBuffer(res->r_buf);
+        printkey(res->key);
     }
     return res->buf;
 }
