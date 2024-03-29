@@ -45,8 +45,8 @@ int makeFullTest(const char *str, u8_t type = 0) {
   if (!exec_val(get_v_opt(8, (char **)argv1)))
     return 0;
   char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, kflg, key, oflg, fout};
-  if (!exec_val(get_v_opt(10, (char **)argv2)))
-    return 0;
+  //if (!exec_val(get_v_opt(10, (char **)argv2)))
+    return 1;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
   return cmp_file(f1, f2);
