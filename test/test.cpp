@@ -32,14 +32,20 @@ int makeFullTest(const char *str, u8_t type = 0) {
   char fname[] = "test.txt";
   char fwenc[] = "test.txt.wenc";
   char fout[] = "test.out";
+  char eflg[] = "-e";
+  char dflg[] = "-d";
+  char iflg[] = "-i";
+  char oflg[] = "-o";
+  char kflg[] = "-k";
+  char mflg[] = "-m";
   char ctype[100];
   sprintf(ctype, "%d", type);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
-  char *argv1[] = {name, "-e", "-i", fname, "-m", ctype, "-k", key};
+  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
   int argc = 5;
   if (!exec_val(get_v_opt(argc, (char **)argv1)))
     return 0;
-  char *argv2[] = {name, "-d", "-i", fwenc, "-m", ctype, "-k", key, "-o", fout};
+  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, kflg, key, oflg, fout};
   argc = 6;
   if (!exec_val(get_v_opt(argc, (char **)argv2)))
     return 0;
@@ -57,9 +63,13 @@ int makeSpeedTest(u8_t type = 0) {
   char name[] = "./wencry";
   char fname[] = "test.txt";
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
+   char eflg[] = "-e";
+  char iflg[] = "-i";
+  char kflg[] = "-k";
+  char mflg[] = "-m";
   char ctype[100];
   sprintf(ctype, "%d", type);
-  char *argv1[] = {name, "-e", "-i", fname, "-m", ctype, "-k", key};
+  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
   int argc = 5;
   if (!exec_val(get_v_opt(argc, (char **)argv1)))
     return 0;
