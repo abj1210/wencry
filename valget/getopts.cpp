@@ -4,6 +4,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 /*################################
   全局变量
 ################################*/
@@ -140,7 +141,7 @@ bool parseOpts(char c, vpak_t *res)
     case 'n':
         break;
     case 'm':
-        if (res->ctype == -1)
+        if (res->ctype == 100)
         {
             res->ctype = atoi(optarg);
             printCryptMode(res->ctype);
@@ -188,10 +189,11 @@ return:vpak_t结构体指针x
 */
 u8_t *get_v_opt(int argc, char *argv[])
 {
+    srand((unsigned)time(NULL));
     int option_index = 0;
     vpak_t *res = new vpak_t;
     res->mode = 'u';
-    res->ctype = -1;
+    res->ctype = 100;
     res->fp = NULL;
     res->out = NULL;
     res->key = NULL;
