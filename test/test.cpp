@@ -1,5 +1,5 @@
 #include "execval.h"
-#include "getopts.h"
+#include "getval.h"
 
 #include <stdio.h>
 #include <string.h>
