@@ -49,7 +49,7 @@ int makeFullTest(const char *str, u8_t type = 0) {
     return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
-  return 1;
+  return cmp_file(f1, f2);
 }
 char buf[0x2000010];
 int makeBigTest(int offset, u8_t type = 0) {

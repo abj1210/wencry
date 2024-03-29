@@ -21,6 +21,7 @@ typedef union
   };
   u8_t buf[512];
 } vpak_t;
+
 void printkey(u8_t *key);
 u8_t *getRandomKey();
 u8_t *get_v_mod1();

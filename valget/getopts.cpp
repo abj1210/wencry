@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+
 /*################################
   全局变量
 ################################*/
@@ -191,6 +192,7 @@ u8_t *get_v_opt(int argc, char *argv[])
 {
     srand((unsigned)time(NULL));
     int option_index = 0;
+    optind = 1;
     vpak_t *res = new vpak_t;
     res->mode = 'u';
     res->ctype = 100;
@@ -211,7 +213,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     }
     if (res->mode == 'u')
     {
-        fprintf(stderr, "Wrong Mode\n");
+        fprintf(stderr, "Wrong Mode %c\n", res->mode);
         delete res;
         return NULL;
     }
