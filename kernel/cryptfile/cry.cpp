@@ -1,6 +1,4 @@
 #include "cry.h"
-#include "hashmaster.h"
-#include <string.h>
 /*################################
   HMAC函数
 ################################*/
@@ -46,6 +44,7 @@ bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out) {
       return false;
   return true;
 }
+
 /*################################
   加密辅助函数
 ################################*/

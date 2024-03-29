@@ -1,5 +1,5 @@
 #include "execval.h"
-#include "getval.h"
+#include "getopts.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -32,17 +32,16 @@ int makeFullTest(const char *str, u8_t type = 0) {
   char fname[] = "test.txt";
   char fwenc[] = "test.txt.wenc";
   char fout[] = "test.out";
-  char enc[] = "-e", dec[] = "-d";
   char ctype[100];
   sprintf(ctype, "%d", type);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
-  char *argv1[] = {name, enc, fname, ctype, key};
+  char *argv1[] = {name, "-e", "-i", fname, "-m", ctype, "-k", key};
   int argc = 5;
-  if (!exec_val(get_v_mod2(argc, (char **)argv1)))
+  if (!exec_val(get_v_opt(argc, (char **)argv1)))
     return 0;
-  char *argv2[] = {name, dec, fwenc, ctype, key, fout};
+  char *argv2[] = {name, "-d", "-i", fwenc, "-m", ctype, "-k", key, "-o", fout};
   argc = 6;
-  if (!exec_val(get_v_mod2(argc, (char **)argv2)))
+  if (!exec_val(get_v_opt(argc, (char **)argv2)))
     return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
@@ -57,13 +56,12 @@ int makeBigTest(int offset, u8_t type = 0) {
 int makeSpeedTest(u8_t type = 0) {
   char name[] = "./wencry";
   char fname[] = "test.txt";
-  char enc[] = "-e";
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char ctype[100];
   sprintf(ctype, "%d", type);
-  char *argv1[] = {name, enc, fname, ctype, key};
+  char *argv1[] = {name, "-e", "-i", fname, "-m", ctype, "-k", key};
   int argc = 5;
-  if (!exec_val(get_v_mod2(argc, (char **)argv1)))
+  if (!exec_val(get_v_opt(argc, (char **)argv1)))
     return 0;
   else
     return 1;

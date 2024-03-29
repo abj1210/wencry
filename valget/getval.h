@@ -10,8 +10,10 @@ key:初始密钥
 r_buf:随机缓冲数组
 mode:模式(加密/解密)
 */
-typedef union {
-  struct {
+typedef union
+{
+  struct
+  {
     FILE *fp, *out;
     u8_t *key;
     u8_t r_buf[256];
@@ -22,6 +24,6 @@ typedef union {
 void printkey(u8_t *key);
 u8_t *getRandomKey();
 u8_t *get_v_mod1();
-u8_t *get_v_mod2(int argc, char *argv[]);
+u8_t *get_v_opt(int argc, char *argv[]);
 
 #endif

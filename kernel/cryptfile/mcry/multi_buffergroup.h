@@ -3,6 +3,8 @@
 
 #include <condition_variable>
 #include <mutex>
+#include <iostream>
+#include <string.h>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 

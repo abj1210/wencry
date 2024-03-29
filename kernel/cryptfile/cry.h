@@ -3,9 +3,9 @@
 #include "multicry.h"
 #include "hashmaster.h"
 #include <stdio.h>
+#include <string.h>
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
-
 class hmac {
 private:
   static const u8_t ipad = 0x36, opad = 0x5c;

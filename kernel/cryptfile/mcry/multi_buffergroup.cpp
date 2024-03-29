@@ -1,6 +1,4 @@
 #include "multi_buffergroup.h"
-#include <iostream>
-#include <string.h>
 
 /*################################
   单缓冲区函数

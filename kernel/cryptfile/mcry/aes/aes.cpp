@@ -1,7 +1,5 @@
 #include "aes.h"
-#include "macro.h"
 #include "tab.h"
-#include <string.h>
 /*################################
   密钥函数
 ################################*/

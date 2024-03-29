@@ -2,7 +2,7 @@ project(CMDvals)
 
 add_subdirectory(base64)
 
-add_library(${PROJECT_NAME} getval1.cpp getval2.cpp)
+add_library(${PROJECT_NAME} getval1.cpp getopts.cpp)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Base64)
 
