@@ -90,6 +90,7 @@ return:是否解析成功
 */
 bool parseOpts(char c, vpak_t *res)
 {
+    int tnum;
     switch (c)
     {
     case 'e':
@@ -140,6 +141,7 @@ bool parseOpts(char c, vpak_t *res)
         res->key = getArgsKey(optarg);
         break;
     case 'n':
+        res->no_echo = true;
         break;
     case 'm':
         if (res->ctype == 100)
@@ -196,6 +198,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     vpak_t *res = new vpak_t;
     res->mode = 'u';
     res->ctype = 100;
+    res->no_echo = false;
     res->fp = NULL;
     res->out = NULL;
     res->key = NULL;

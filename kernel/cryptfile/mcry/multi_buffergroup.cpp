@@ -62,7 +62,7 @@ void iobuffer::final_write() {
   多缓冲区函数
 ################################*/
 void printload(const u8_t id, const u32_t size) {
-  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << size
+    std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << size
             << "MB data.\r\n";
 }
 /*
@@ -72,12 +72,13 @@ fin:输入文件指针
 fout:输出文件指针
 ispadding:是否为填充模式
 */
-buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding)
-    : size(size), turn(0), over(false) {
+buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, bool no_echo)
+    : size(size), turn(0), over(false), no_echo(no_echo) {
   buflst = new iobuffer[size];
   for (int i = 0; i < size; ++i)
     if (buflst[i].load_files(fin, fout, over, ispadding))
-      printload(i, (iobuffer::BUF_SZ >> 16));
+      if(!no_echo)
+        printload(i, (iobuffer::BUF_SZ >> 16));
 }
 /*
 update_lst:更新相应相应的缓冲区
@@ -89,7 +90,7 @@ bool buffergroup::update_lst(const u8_t id) {
     return false;
   COND_WAIT
   bool flag = (buflst[id].update_buffer(over) != 0);
-  if (flag)
+  if (flag&&(!no_echo))
     printload(id, (iobuffer::BUF_SZ >> 16));
   COND_RELEASE
   return flag;

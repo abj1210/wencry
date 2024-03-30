@@ -8,12 +8,17 @@ int cmp_file(FILE *x, FILE *y) {
   char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
   int read1, read2;
   int flag = 0;
+  int cnt = 0;
   while (1) {
     memset(buffer1, 0, BUFFER_SIZE + 2);
     memset(buffer2, 0, BUFFER_SIZE + 2);
     read1 = fread(buffer1, 1, BUFFER_SIZE, x);
     read2 = fread(buffer2, 1, BUFFER_SIZE, y);
     flag = (read1 == read2) && (strcmp(buffer1, buffer2) == 0);
+    if(!flag){
+      printf("A%d:%s\nB%d:%s\n", cnt, buffer1, cnt, buffer2);
+    }
+    cnt++;
     if ((!flag) || read1 != BUFFER_SIZE)
       break;
   }

@@ -81,6 +81,7 @@ u8_t *get_v_mod1()
   char flag, fn[] = "out", outn[138], decn[128];
   srand(time(NULL));
   vpak_t *res = new vpak_t;
+  res->no_echo = false;
   printf("Need encrypt, verify or decrypt?(e/v/d) ");
   int r = scanf("%c", &res->mode);
   printf("File name:\n");

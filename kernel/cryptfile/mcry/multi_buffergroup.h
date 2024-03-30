@@ -70,10 +70,10 @@ class buffergroup {
   u32_t turn;
   std::mutex filelock;
   std::condition_variable cond;
-  bool over;
+  bool over, no_echo;
 
 public:
-  buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding);
+  buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, bool no_echo);
   /*
         析构函数:释放缓冲区组
   */

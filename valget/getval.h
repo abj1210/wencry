@@ -12,12 +12,12 @@ mode:模式(加密/解密)
 */
 typedef union
 {
-  struct
-  {
+  struct {
     FILE *fp, *out;
     u8_t *key;
     u8_t r_buf[256];
     char mode, ctype;
+    bool no_echo;
   };
   u8_t buf[512];
 } vpak_t;

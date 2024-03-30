@@ -19,6 +19,7 @@ typedef union {
     u8_t *key;
     u8_t r_buf[256];
     char mode, ctype;
+    bool no_echo;
   };
   u8_t buf[512];
 } pakout_t;
@@ -91,21 +92,25 @@ bool exec_val(unsigned char *v) {
   pakout_t vals;
   memcpy(vals.buf, v, 512);
   u32_t res = 0;
-  runcrypt runner(vals.fp, vals.out, vals.key);//配置运行器
+  runcrypt runner(vals.fp, vals.out, vals.key, vals.no_echo, THREAD_NUM);//配置运行器
   if (vals.fp == NULL)
     return printinv(0);
   if (vals.mode == 'e' || vals.mode == 'E') {
     runner.enc(vals.r_buf, vals.ctype);//运行加密
-    printenc();//打印结果
+    if(!vals.no_echo)
+      printenc();//打印结果
   } else if (vals.mode == 'd' || vals.mode == 'D') {
     res = runner.dec(vals.ctype);//运行解密
-    printres(res);//打印结果
+    if(!vals.no_echo)
+      printres(res);//打印结果
   } else if (vals.mode == 'v') {
     res = runner.verify();//运行验证
-    printres(res);//打印结果
+    if(!vals.no_echo)
+      printres(res);//打印结果
   }
   clock_t cl2 = clock();
-  printtime(cl2 - cl1, multicry_master::THREADS_NUM);//打印时间
+  if(!vals.no_echo)
+    printtime(cl2 - cl1, runner.get_tnum());//打印时间
   over(vals);//关闭文件
   return res == 0;
 }

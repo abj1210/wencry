@@ -61,7 +61,7 @@ void runcrypt::getFileHeader(const u8_t *r_buf) {
   Hashmaster hm(Hashmaster::SHA1);
   hm.getStringHash(r_buf, strlen((const char *)r_buf), iv);
   fwrite(iv, 1, 20, out);
-  for (int i = 1; i < multicry_master::THREADS_NUM; ++i) {
+  for (int i = 1; i < thread_num; ++i) {
     hm.getStringHash(r_buf, strlen((const char *)r_buf), iv);
     fwrite(iv + (20 * i), 1, 20, out);
   }
@@ -117,7 +117,7 @@ ctype:加密模式
 */
 void runcrypt::enc(const u8_t *r_buf, u8_t ctype) {
   getFileHeader(r_buf);
-  multienc_master cm(fp, out, key, iv, ctype);
+  multienc_master cm(fp, out, key, iv, ctype, thread_num, no_echo);
   cm.run_multicry();
   hashfile();
 }
@@ -130,11 +130,11 @@ u8_t runcrypt::dec(u8_t ctype) {
   verify();
   if (state != 0)
     return state;
-  for (int i = 0; i < multicry_master::THREADS_NUM; ++i) {
+  for (int i = 0; i < thread_num; ++i) {
     if (fread(iv + (20 * i), 1, 20, fp) != 20)
       return -1;
   }
-  multidec_master dm(fp, out, key, iv, ctype);
+  multidec_master dm(fp, out, key, iv, ctype, thread_num, no_echo);
   dm.run_multicry();
   return 0;
 }
