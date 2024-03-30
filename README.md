@@ -41,31 +41,29 @@
     - **base64:base64转换文件夹**
       - base64.h:十六进制序列与base64编码的相互转换
       - base64.cpp:负责进行base64的编码和解码   
-  - **kernel:加解密核心文件夹**
-    - execval.h:接收参数包进行操作的头文件
-    - execval.cpp:负责根据获取的参数选择操作执行  
-    - **cryptfile:加解密函数文件夹**
-      - cry.h:加解密流程相关的头文件  
-      - cry.cpp:负责整体加解密流程  
-      - **multi_aes:多线程进行aes加解密函数的文件夹**
-        - multicry.h:多线程进行aes加解密的相关头文件
-        - multicry.cpp:多线程进行aes加解密的函数实现
-        - multi_buffergroup.h:多线程缓冲区组的相关头文件 
-        - multi_buffergroup.cpp:多线程缓冲区组的实现
-        - **aesmode:应用多种aes加密模式加密器的文件夹**
-          - aesmode.h:不同模式的aes加密器的相关头文件
-          - aesmode.cpp:不同模式的aes加密器的实现
-          - aes.h:AES加解密相关的头文件  
-          - aes.cpp:负责AES加解密的各流程  
-          - tab.h:加解密所需的数表
-      - **hash:哈希函数文件夹**
-        - hashtype.h:进行哈希操作相关的头文件  
-        - sha1.cpp:负责产生sha1哈希的流程  
-        - hashmaster.h:产生不同类型哈希的头文件
-        - hashmaster.cpp:产生不同类型哈希类的实现  
-        - **hashbuf:哈希缓冲区文件夹**
-          - hashbuffer.h:哈希输入缓冲区头文件  
-          - hashbuffer.cpp:哈希输入缓冲区的实现
+  - **kernel:加解密核心文件夹**  
+    - cry.h:加解密流程相关的头文件  
+    - cry.cpp:负责整体加解密流程  
+    - fheader.cpp:负责文件头的生成和验证流程
+    - **multi_aes:多线程进行aes加解密函数的文件夹**
+      - multicry.h:多线程进行aes加解密的相关头文件
+      - multicry.cpp:多线程进行aes加解密的函数实现
+      - multi_buffergroup.h:多线程缓冲区组的相关头文件 
+      - multi_buffergroup.cpp:多线程缓冲区组的实现
+      - **aesmode:应用多种aes加密模式加密器的文件夹**
+        - aesmode.h:不同模式的aes加密器的相关头文件
+        - aesmode.cpp:不同模式的aes加密器的实现
+        - aes.h:AES加解密相关的头文件  
+        - aes.cpp:负责AES加解密的各流程  
+        - tab.h:加解密所需的数表
+    - **hash:哈希函数文件夹**
+      - hashtype.h:进行哈希操作相关的头文件  
+      - sha1.cpp:负责产生sha1哈希的流程  
+      - hashmaster.h:产生不同类型哈希的头文件
+      - hashmaster.cpp:产生不同类型哈希类的实现  
+      - **hashbuf:哈希缓冲区文件夹**
+        - hashbuffer.h:哈希输入缓冲区头文件  
+        - hashbuffer.cpp:哈希输入缓冲区的实现
   - **test:测试文件夹**
     - testutil.h:基础组件测试相关函数的头文件
     - testutil.cpp:基础组件测试相关函数的实现

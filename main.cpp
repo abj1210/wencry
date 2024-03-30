@@ -1,5 +1,5 @@
 #include "config.h"
-#include "execval.h"
+#include "cry.h"
 #include "getval.h"
 #include <iostream>
 /*
@@ -49,6 +49,7 @@ int main(int argc, char *argv[]) {
     }
   }
   //执行任务
-  bool flag = exec_val(vals);
+  runcrypt runner(vals);
+  bool flag = runner.exec_val();
   return flag ? 0 : -1;
 }

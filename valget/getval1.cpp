@@ -8,8 +8,8 @@ void printkey(u8_t *key)
 {
   u8_t outk[128];
   hex_to_base64(key, 16, outk);
-  std::cout << "Key is:\r\n"
-            << outk << "\r\n";
+  std::cout << "Key is:\n"
+            << outk << "\n";
 }
 /*
 getInputFilep:从输入中获取文件指针

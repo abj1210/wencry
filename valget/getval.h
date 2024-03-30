@@ -11,15 +11,16 @@ r_buf:随机缓冲数组
 mode:模式(加密/解密)
 */
 typedef union
-{
-  struct {
-    FILE *fp, *out;
-    u8_t *key;
-    u8_t r_buf[256];
-    char mode, ctype;
-    bool no_echo;
-  };
-  u8_t buf[512];
+  {
+    struct
+    {
+      FILE *fp, *out;
+      u8_t *key;
+      u8_t r_buf[256];
+      char mode, ctype;
+      bool no_echo;
+    };
+    u8_t buf[512];
 } vpak_t;
 
 void printkey(u8_t *key);

@@ -1,4 +1,4 @@
-#include "execval.h"
+#include "cry.h"
 #include "getval.h"
 
 #include <stdio.h>
@@ -47,10 +47,12 @@ int makeFullTest(const char *str, u8_t type = 0) {
   sprintf(ctype, "%d", type);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
-  if (!exec_val(get_v_opt(8, (char **)argv1)))
+  runcrypt runner1(get_v_opt(8, (char **)argv1));
+  if (!runner1.exec_val())
     return 0;
   char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, kflg, key, oflg, fout};
-  if (!exec_val(get_v_opt(10, (char **)argv2)))
+  runcrypt runner2(get_v_opt(10, (char **)argv2));
+  if (!runner2.exec_val())
     return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
@@ -73,7 +75,8 @@ int makeSpeedTest(u8_t type = 0) {
   char ctype[100];
   sprintf(ctype, "%d", type);
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
-  if (!exec_val(get_v_opt(8, (char **)argv1)))
+  runcrypt runner(get_v_opt(8, (char **)argv1));
+  if (!runner.exec_val())
     return 0;
   else
     return 1;
