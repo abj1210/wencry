@@ -73,7 +73,7 @@ class buffergroup {
   bool over, no_echo;
 
 public:
-  buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, bool no_echo);
+  buffergroup(u32_t size, bool no_echo);
   /*
         析构函数:释放缓冲区组
   */
@@ -83,6 +83,7 @@ public:
   id:缓冲区索引
   return:相应缓冲区的待处理表项,若已处理完毕则输出NULL
   */
+  void load_files(FILE *fin, FILE *fout, bool ispadding);
   u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };
   bool update_lst(const u8_t id);
   bool judge_over(const u8_t id);

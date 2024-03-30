@@ -17,6 +17,7 @@ bool iobuffer::load_files(FILE *fin, FILE *fout, bool &over, bool ispadding) {
   this->ispadding = ispadding;
   u32_t sum = BUF_SZ << 4;
   u32_t load = fread(b, 1, sum, fin);
+  printf("%u\n", load);
   tail = load & 0xf;
   total = load >> 4;
   now = 0;
@@ -68,14 +69,20 @@ void printload(const u8_t id, const u32_t size) {
 /*
 构造函数:初始化缓冲组的数据
 size:缓冲区数量
-fin:输入文件指针
-fout:输出文件指针
+no_echo:是否屏蔽输出
+*/
+buffergroup::buffergroup(u32_t size, bool no_echo)
+    : buflst(NULL), size(size), turn(0), over(false), no_echo(no_echo) {
+}
+/*
+load_files:加载文件到缓冲区
+fin:输入文件地址
+fout:输出文件地址
 ispadding:是否为填充模式
 */
-buffergroup::buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, bool no_echo)
-    : size(size), turn(0), over(false), no_echo(no_echo) {
+void buffergroup::load_files(FILE *fin, FILE *fout, bool ispadding){
   buflst = new iobuffer[size];
-  for (int i = 0; i < size; ++i)
+   for (int i = 0; i < size; ++i)
     if (buflst[i].load_files(fin, fout, over, ispadding))
       if(!no_echo)
         printload(i, (iobuffer::BUF_SZ >> 16));

@@ -16,7 +16,7 @@ int cmp_file(FILE *x, FILE *y) {
     read2 = fread(buffer2, 1, BUFFER_SIZE, y);
     flag = (read1 == read2) && (strcmp(buffer1, buffer2) == 0);
     if(!flag){
-      printf("A%d:%s\nB%d:%s\n", cnt, buffer1, cnt, buffer2);
+      printf("A%d-%d:%s\nB%d-%d:%s\n", cnt, read1, buffer1, cnt, read2, buffer2);
     }
     cnt++;
     if ((!flag) || read1 != BUFFER_SIZE)

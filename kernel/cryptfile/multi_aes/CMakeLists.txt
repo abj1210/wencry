@@ -1,4 +1,4 @@
-project(Multicry)
+project(Multiaes)
 
 add_subdirectory(aes)
 

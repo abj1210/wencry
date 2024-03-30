@@ -13,6 +13,7 @@ protected:
   void getXor(u8_t *x, u8_t *mask);
 
 public:
+  Aesmode(u8_t *key) : encryhandle(key), decryhandle(key) {};
   Aesmode(u8_t *key, const u8_t *iv) : encryhandle(key), decryhandle(key) {
     memcpy(initiv, iv, 16);
     resetIV();
@@ -20,6 +21,7 @@ public:
   /*
   resetIV:重设初始向量
   */
+  void resetIV(u8_t *iv) {memcpy(initiv, iv, 16);resetIV();};
   void resetIV() { memcpy(iv, initiv, 16); };
   /*
   getencry:加密方法
