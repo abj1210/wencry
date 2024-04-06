@@ -12,7 +12,7 @@
 /*
 长选项设置
 */
-struct option longOpts[] = {
+const struct option longOpts[] = {
     {"encode", no_argument, NULL, 'e'},
     {"decode", no_argument, NULL, 'd'},
     {"verify", no_argument, NULL, 'v'},
@@ -27,7 +27,7 @@ struct option longOpts[] = {
 /*
 短选项设置
 */
-char shortOpts[] = "edvVhni:o:k:m:";
+const char shortOpts[] = "edvVhni:o:k:m:";
 char fout[128];
 /*################################
   辅助函数
@@ -49,7 +49,6 @@ r_buf:缓冲数组地址
 */
 static void getRandomBuffer(u8_t *r_buf)
 {
-    printf("fdd\n");
     for (int i = 0; i < 256; ++i)
         r_buf[i] = rand();
 }
@@ -148,7 +147,6 @@ bool parseOpts(char c, vpak_t *res)
         {
             res->ctype = atoi(optarg);
             printCryptMode(res->ctype);
-            printf("ssssss\n");
         }
         else
         {
@@ -194,6 +192,7 @@ return:vpak_t结构体指针x
 u8_t *get_v_opt(int argc, char *argv[])
 {
     srand((unsigned)time(NULL));
+    memset(fout, 0, sizeof(fout));
     int option_index = 0;
     optind = 1;
     vpak_t *res = new vpak_t;

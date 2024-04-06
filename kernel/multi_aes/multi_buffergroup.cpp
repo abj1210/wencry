@@ -9,7 +9,6 @@ u32_t iobuffer::update_buffer(bool write, bool &over) {
   if(write)
     fwrite(b, 1, sum, fout);
   u32_t load = fread(b, 1, sum, fin);
-  printf("%d\n", load);
   tail = load & 0xf;
   total = load >> 4;
   now = 0;

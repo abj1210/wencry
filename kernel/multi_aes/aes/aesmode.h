@@ -3,26 +3,32 @@
 
 #include "aes.h"
 #include <string.h>
+#include <stdio.h>
 
-class Aesmode {
+class Aesmode
+{
 protected:
   encryaes encryhandle;
   decryaes decryhandle;
-  u8_t iv[16];
-  u8_t initiv[16];
+  u8_t iv[16], initiv[16];
   void getXor(u8_t *x, u8_t *mask);
 
 public:
-  Aesmode(u8_t *key) : encryhandle(key), decryhandle(key) {};
-  Aesmode(u8_t *key, const u8_t *iv) : encryhandle(key), decryhandle(key) {
+  Aesmode(u8_t *key) : encryhandle(key), decryhandle(key)
+  {
+    memset(initiv, 0, sizeof(initiv));
+    resetIV();
+  };
+  Aesmode(u8_t *key, const u8_t *iv) : encryhandle(key), decryhandle(key)
+  {
     memcpy(initiv, iv, 16);
     resetIV();
   };
   /*
   resetIV:重设初始向量
   */
-  void resetIV(u8_t *iv) {memcpy(initiv, iv, 16);resetIV();};
-  void resetIV() { memcpy(iv, initiv, 16); };
+  void resetIV(u8_t *iv);
+  void resetIV();
   /*
   getencry:加密方法
   block:加密块
@@ -35,21 +41,24 @@ public:
   virtual void getdecry(u8_t *block) = 0;
 };
 
-class AesECB : public Aesmode {
+class AesECB : public Aesmode
+{
 public:
   AesECB(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
   virtual void getencry(u8_t *block) { encryhandle.runaes_128bit(block); };
   virtual void getdecry(u8_t *block) { decryhandle.runaes_128bit(block); };
 };
 
-class AesCBC : public Aesmode {
+class AesCBC : public Aesmode
+{
 public:
   AesCBC(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
   virtual void getencry(u8_t *block);
   virtual void getdecry(u8_t *block);
 };
 
-class AesCTR : public Aesmode {
+class AesCTR : public Aesmode
+{
   void ctrInc();
 
 public:
@@ -58,14 +67,16 @@ public:
   virtual void getdecry(u8_t *block) { getencry(block); };
 };
 
-class AesCFB : public Aesmode {
+class AesCFB : public Aesmode
+{
 public:
   AesCFB(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
   virtual void getencry(u8_t *block);
   virtual void getdecry(u8_t *block);
 };
 
-class AesOFB : public Aesmode {
+class AesOFB : public Aesmode
+{
 public:
   AesOFB(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
   virtual void getencry(u8_t *block);

@@ -73,8 +73,8 @@ iv:初始向量数组
 void FileHeader::getIV(FILE *fp, u8_t *iv)
 {
     fseek(fp, FILE_IV_MARK, SEEK_SET);
-    for (int i = 0; i < num; ++i)
-        fread(iv + (20 * i), 1, 20, fp);
+    u8_t sum = fread(iv, 1, 20 * num, fp);
+    fflush(stdout);
 }
 /*
 getFileHeader:构造加密文件头
@@ -86,12 +86,28 @@ void FileHeader::getFileHeader(u8_t *iv)
     memset(padding, 0, sizeof(padding));
     u64_t mn = Magic_Num;
     fwrite(&mn, 1, 8, out);
+    fwrite(&ctype, 1, 1, out);
+    fwrite(&htype, 1, 1, out);
     fwrite(padding, 1, PADDING, out);
     for (int i = 0; i < num; ++i)
     {
         fwrite(iv + (20 * i), 1, 20, out);
     }
-    printf("aaaa\n");
+}
+/*
+checkType:检查加密和哈希模式
+*/
+bool FileHeader::checkType()
+{
+    fseek(fp, FILE_MODE_MARK, SEEK_SET);
+    u8_t ct, ht;
+    fread(&ct, 1, 1, fp);
+    fread(&ht, 1, 1, fp);
+    if (ct!= ctype || ht!= htype){
+        printf("Type not match, it shuld be : ctype %d htype %d\n", ct, ht);
+        return false;
+    }
+    else return true;
 }
 /*
 checkMn:检查魔数
@@ -132,8 +148,9 @@ return: 返回值
 */
 u8_t ResultPrint::printinv(const u8_t ret)
 {
-  if(!no_echo)std::cout << "Invalid values.\r\n";
-  return ret;
+    if (!no_echo)
+        std::cout << "Invalid values.\r\n";
+    return ret;
 }
 /*
 printtime: 打印时间
@@ -142,32 +159,37 @@ threads_num: 线程数
 */
 void ResultPrint::printtime(clock_t totalTime)
 {
-  if(!no_echo)std::cout << "Time: " << totalTime / ((double)(CLOCKS_PER_SEC * threads_num))
-            << "s / " << totalTime / ((double)CLOCKS_PER_SEC) << "s\r\n";
+    if (!no_echo)
+        std::cout << "Time: " << totalTime / ((double)(CLOCKS_PER_SEC * threads_num))
+                  << "s / " << totalTime / ((double)CLOCKS_PER_SEC) << "s\r\n";
 }
 /*
 printenc: 打印加密结果
 */
-void ResultPrint::printenc() { if(!no_echo)std::cout << "Encrypt over! \r\n"; }
+void ResultPrint::printenc()
+{
+    if (!no_echo)
+        std::cout << "Encrypt over! \r\n";
+}
 /*
 printres: 打印解密结果
 res: 解密结果
 */
 void ResultPrint::printres(int res)
 {
-  if(!no_echo)
-  {
-    if (res <= 0)
-        std::cout << "Verify pass!\r\n";
-    else if (res == 1)
-        std::cout << "File too short.\r\n";
-    else if (res == 2)
-        std::cout << "Wrong key or File not complete.\r\n";
-    else if (res == 3)
-        std::cout << "File not complete.\r\n";
-    else if (res == 4)
-        std::cout << "Wrong magic number.\r\n";
-    else
-        std::cout << "Unknown res number: " << res << ".\r\n";
-  }
+    if (!no_echo)
+    {
+        if (res <= 0)
+            std::cout << "Verify pass!\r\n";
+        else if (res == 1)
+            std::cout << "File too short.\r\n";
+        else if (res == 2)
+            std::cout << "Wrong key or File not complete.\r\n";
+        else if (res == 3)
+            std::cout << "Aes / hash mode not match.\r\n";
+        else if (res == 4)
+            std::cout << "Wrong magic number.\r\n";
+        else
+            std::cout << "Unknown res number: " << res << ".\r\n";
+    }
 }

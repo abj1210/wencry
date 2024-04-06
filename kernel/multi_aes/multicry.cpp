@@ -23,8 +23,9 @@ iv:新的初始向量
 */
 void multicry_master::load_iv(u8_t *iv)
 {
-  for (int i = 0; i < THREADS_NUM; ++i)
+  for (int i = 0; i < THREADS_NUM; ++i){
     am[i]->resetIV(iv + (20 * i));
+  }
 }
 /*
 multiruncrypt_file:进行加解密的线程函数

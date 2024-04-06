@@ -15,7 +15,7 @@ typedef unsigned long long u64_t;
 #define FILE_HMAC_MARK 10
 #define FILE_IV_MARK 48
 #define FILE_TEXT_MARK(threads_num) (48 + (20 * threads_num))
-#define PADDING 40
+#define PADDING 38
 
 /*计算HMAC类*/
 class hmac
@@ -37,7 +37,7 @@ public:
   ~hmac() { delete[] hmac_res; };
   void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out);
   bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out);
-  u8_t get_length(){return hashmaster.gethlen();};
+  u8_t get_length() { return hashmaster.gethlen(); };
 };
 /*文件头处理类*/
 class FileHeader
@@ -45,13 +45,15 @@ class FileHeader
   // 魔数
   static const u64_t Magic_Num = 0xA5C3A5C3A5C3A5C3;
   u8_t hash[20], *key, num;
+  u8_t ctype, htype;
   FILE *fp, *out;
 
 public:
-  FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t num) : fp(fp), out(out), key(key), num(num){};
+  FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t ctype, u8_t htype, u8_t num) : fp(fp), out(out), key(key), ctype(ctype), htype(htype), num(num){};
   void getIV(const u8_t *r_buf, u8_t *iv);
   void getIV(FILE *fp, u8_t *iv);
   void getFileHeader(u8_t *iv);
+  bool checkType();
   bool checkMn();
   u8_t *getHmac();
 };
@@ -63,7 +65,7 @@ class ResultPrint
   u8_t threads_num;
 
 public:
-  ResultPrint(u8_t threads_num, bool no_echo):threads_num(threads_num), no_echo(no_echo){};
+  ResultPrint(u8_t threads_num, bool no_echo) : threads_num(threads_num), no_echo(no_echo){};
   u8_t printinv(const u8_t ret);
   void printtime(clock_t totalTime);
   void printenc();
@@ -83,12 +85,12 @@ class runcrypt
       FILE *fp, *out;
       u8_t *key;
       u8_t r_buf[256];
-      char mode, ctype;
+      char mode, ctype, htype;
       bool no_echo;
     };
     u8_t buf[512];
   } pakout_t;
-  pakout_t * pakout;
+  pakout_t *pakout;
   u8_t threads_num, iv[multicry_master::THREAD_MAX * 20];
 
   FileHeader header;
@@ -106,8 +108,8 @@ public:
   /*
       构造函数:设定各部件参数
   */
-  runcrypt(u8_t *data, u8_t threads_num=THREAD_NUM);
-  ~runcrypt(){delete pakout;};
+  runcrypt(u8_t *data, u8_t threads_num = THREAD_NUM);
+  ~runcrypt() { delete pakout; };
   bool exec_val();
 };
 

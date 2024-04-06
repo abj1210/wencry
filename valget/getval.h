@@ -17,7 +17,7 @@ typedef union
       FILE *fp, *out;
       u8_t *key;
       u8_t r_buf[256];
-      char mode, ctype;
+      char mode, ctype, htype;
       bool no_echo;
     };
     u8_t buf[512];

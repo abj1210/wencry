@@ -55,7 +55,7 @@ class GetCryMaster
   bool no_echo;
 public:
   GetCryMaster(FILE *fp, FILE *out, u8_t *key, const u8_t *iv, u8_t ctype, u8_t thread_num,
-              bool no_echo): fp(fp), out(out), key(key), iv(iv), thread_num(thread_num), no_echo(no_echo), cm(NULL){};
+              bool no_echo): fp(fp), out(out), key(key), iv(iv), ctype(ctype), thread_num(thread_num), no_echo(no_echo), cm(NULL){};
   ~GetCryMaster(){delete cm;};
   multicry_master * get_multicry_master(char mode);
 };
