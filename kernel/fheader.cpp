@@ -72,13 +72,9 @@ iv:初始向量数组
 */
 void FileHeader::getIV(FILE *fp, u8_t *iv)
 {
-    fseek(fp, 28, SEEK_SET);
+    fseek(fp, FILE_IV_MARK, SEEK_SET);
     for (int i = 0; i < num; ++i)
-    {
-        if (fread(iv + (20 * i), 1, 20, fp) != 20)
-            printf("Error reading.\n");
-        return;
-    }
+        fread(iv + (20 * i), 1, 20, fp);
 }
 /*
 getFileHeader:构造加密文件头
@@ -86,22 +82,23 @@ iv:初始向量数组
 */
 void FileHeader::getFileHeader(u8_t *iv)
 {
-    u8_t padding[21];
-    padding[20] = 0;
+    u8_t padding[PADDING];
+    memset(padding, 0, sizeof(padding));
     u64_t mn = Magic_Num;
     fwrite(&mn, 1, 8, out);
-    fwrite(padding, 1, 20, out);
+    fwrite(padding, 1, PADDING, out);
     for (int i = 0; i < num; ++i)
     {
         fwrite(iv + (20 * i), 1, 20, out);
     }
+    printf("aaaa\n");
 }
 /*
 checkMn:检查魔数
 */
 bool FileHeader::checkMn()
 {
-    fseek(fp, 0, SEEK_SET);
+    fseek(fp, FILE_MN_MARK, SEEK_SET);
     u64_t mn = 0;
     int sum = fread(&mn, 1, 8, fp);
     if (sum != 8)
@@ -116,11 +113,61 @@ return:HMAC地址
 */
 u8_t *FileHeader::getHmac()
 {
-    fseek(fp, 8, SEEK_SET);
+    fseek(fp, FILE_HMAC_MARK, SEEK_SET);
     int sum = fread(hash, 1, 20, fp);
     if (sum != 20)
     {
         return NULL;
     }
     return hash;
+}
+
+/*################################
+  结果打印辅助函数
+################################*/
+
+/*
+printinv: 打印非法
+return: 返回值
+*/
+u8_t ResultPrint::printinv(const u8_t ret)
+{
+  if(!no_echo)std::cout << "Invalid values.\r\n";
+  return ret;
+}
+/*
+printtime: 打印时间
+totalTime: 总时间
+threads_num: 线程数
+*/
+void ResultPrint::printtime(clock_t totalTime)
+{
+  if(!no_echo)std::cout << "Time: " << totalTime / ((double)(CLOCKS_PER_SEC * threads_num))
+            << "s / " << totalTime / ((double)CLOCKS_PER_SEC) << "s\r\n";
+}
+/*
+printenc: 打印加密结果
+*/
+void ResultPrint::printenc() { if(!no_echo)std::cout << "Encrypt over! \r\n"; }
+/*
+printres: 打印解密结果
+res: 解密结果
+*/
+void ResultPrint::printres(int res)
+{
+  if(!no_echo)
+  {
+    if (res <= 0)
+        std::cout << "Verify pass!\r\n";
+    else if (res == 1)
+        std::cout << "File too short.\r\n";
+    else if (res == 2)
+        std::cout << "Wrong key or File not complete.\r\n";
+    else if (res == 3)
+        std::cout << "File not complete.\r\n";
+    else if (res == 4)
+        std::cout << "Wrong magic number.\r\n";
+    else
+        std::cout << "Unknown res number: " << res << ".\r\n";
+  }
 }

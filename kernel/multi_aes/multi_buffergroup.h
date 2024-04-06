@@ -39,13 +39,13 @@ private:
   bool ispadding;
 
 public:
-  bool load_files(FILE *fin, FILE *fout, bool &over, bool ispadding);
+  void init(FILE *fin, FILE *fout, bool ispadding){this->fin=fin;this->fout=fout;this->ispadding=ispadding;};
   /*
   get_entry:获取当前缓冲区单元表项
   return:返回的表项地址
   */
   u8_t *get_entry() { return (now < total) ? b[now++] : NULL; };
-  u32_t update_buffer(bool &over);
+  u32_t update_buffer(bool write, bool &over);
   /*
   bufferover:缓冲区和文件是否读取完毕
   return:若为0则未读取完毕,否则已读取完毕
@@ -78,11 +78,6 @@ public:
         析构函数:释放缓冲区组
   */
   ~buffergroup() { delete[] buflst; };
-  /*
-  require_buffer_entry:获取相应的缓冲区表项
-  id:缓冲区索引
-  return:相应缓冲区的待处理表项,若已处理完毕则输出NULL
-  */
   void load_files(FILE *fin, FILE *fout, bool ispadding);
   u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };
   bool update_lst(const u8_t id);

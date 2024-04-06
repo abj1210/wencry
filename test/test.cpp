@@ -29,7 +29,7 @@ int cmp_file(FILE *x, FILE *y) {
   else
     return 0;
 }
-int makeFullTest(const char *str, u8_t type = 0) {
+int makeFullTest(const char *str, u8_t type) {
   FILE *fp = fopen("test.txt", "w");
   fwrite(str, 1, strlen(str), fp);
   fclose(fp);

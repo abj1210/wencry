@@ -7,6 +7,7 @@
 void printkey(u8_t *key)
 {
   u8_t outk[128];
+  printf("aaaa\n");
   hex_to_base64(key, 16, outk);
   std::cout << "Key is:\n"
             << outk << "\n";

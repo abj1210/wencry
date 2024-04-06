@@ -40,7 +40,6 @@ public:
 
 /*
 hash:sha1的hash基本单元
-h:20B数据
 */
 class sha1hash : public typehash {
   u32_t h[5];
@@ -62,6 +61,27 @@ public:
   void reset() {
     h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476,
     h[4] = 0xC3D2E1F0;
+    totalsize = 0;
+  };
+  void getres(u8_t *hashout);
+};
+
+class md5hash : public typehash {
+  u32_t h[4];
+  union {
+    u8_t s[64];
+    u32_t x[16];
+  };
+public:
+  /*
+    构造函数:设定哈希初值
+  */
+  md5hash() : typehash(64, 16){ reset(); };
+  void gethash();
+  u8_t *getLoadAddr();
+  void finalHash(u32_t loadsize);
+  void reset() {
+    h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476;
     totalsize = 0;
   };
   void getres(u8_t *hashout);

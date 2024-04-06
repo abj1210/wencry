@@ -49,8 +49,8 @@ r_buf:缓冲数组地址
 */
 static void getRandomBuffer(u8_t *r_buf)
 {
-    u8_t len = rand();
-    for (int i = 0; i < len; ++i)
+    printf("fdd\n");
+    for (int i = 0; i < 256; ++i)
         r_buf[i] = rand();
 }
 /*
@@ -59,7 +59,7 @@ mode:模式
 */
 static void printCryptMode(u8_t mode)
 {
-    fprintf(stderr, "Crypt mode :");
+    fprintf(stderr, "Using Crypt mode :");
     switch (mode)
     {
     case 0:
@@ -148,6 +148,7 @@ bool parseOpts(char c, vpak_t *res)
         {
             res->ctype = atoi(optarg);
             printCryptMode(res->ctype);
+            printf("ssssss\n");
         }
         else
         {
@@ -202,7 +203,6 @@ u8_t *get_v_opt(int argc, char *argv[])
     res->fp = NULL;
     res->out = NULL;
     res->key = NULL;
-
     while (true)
     {
         char c = getopt_long(argc, argv, shortOpts, longOpts, &option_index);

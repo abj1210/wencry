@@ -2,7 +2,7 @@ project(Hash)
 
 add_subdirectory(hashbuf)
 
-add_library(${PROJECT_NAME} sha1.cpp hashmaster.cpp)
+add_library(${PROJECT_NAME} sha1.cpp md5.cpp hashmaster.cpp)
 
 target_link_libraries(${PROJECT_NAME} PUBLIC Hashbuf)
 

@@ -23,6 +23,9 @@ Hashmaster::Hashmaster(HASH_TYPE type) : type(type) {
   case SHA1:
     hasher = new sha1hash();
     break;
+  case MD5:
+    hasher = new md5hash();
+    break;
   default:
     hasher = NULL;
     break;

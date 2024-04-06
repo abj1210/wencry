@@ -1,44 +1,15 @@
 #include "multi_buffergroup.h"
-
-/*################################
-  单缓冲区函数
-################################*/
-/*
-load_files:设定输入输出文件并初始化缓冲区
-fin:输入文件地址
-fout:输出文件地址
-over:加载是否结束
-ispadding:是否为填充模式
-return:是否成功装载数据
-*/
-bool iobuffer::load_files(FILE *fin, FILE *fout, bool &over, bool ispadding) {
-  this->fin = fin;
-  this->fout = fout;
-  this->ispadding = ispadding;
-  u32_t sum = BUF_SZ << 4;
-  u32_t load = fread(b, 1, sum, fin);
-  printf("%u\n", load);
-  tail = load & 0xf;
-  total = load >> 4;
-  now = 0;
-  if (ispadding && (load != sum) && (!over)) {
-    u8_t padding = 16 - tail;
-    memset(b[total] + tail, padding, padding);
-    over = true;
-    total++;
-    return true;
-  }
-  return load != 0;
-}
 /*
 update_buffer:保存缓冲区数据并更新缓冲区
 over:加载是否结束
 return:重新读入的字节数
 */
-u32_t iobuffer::update_buffer(bool &over) {
+u32_t iobuffer::update_buffer(bool write, bool &over) {
   u32_t sum = BUF_SZ << 4;
-  fwrite(b, 1, sum, fout);
+  if(write)
+    fwrite(b, 1, sum, fout);
   u32_t load = fread(b, 1, sum, fin);
+  printf("%d\n", load);
   tail = load & 0xf;
   total = load >> 4;
   now = 0;
@@ -82,10 +53,12 @@ ispadding:是否为填充模式
 */
 void buffergroup::load_files(FILE *fin, FILE *fout, bool ispadding){
   buflst = new iobuffer[size];
-   for (int i = 0; i < size; ++i)
-    if (buflst[i].load_files(fin, fout, over, ispadding))
+  for (int i = 0; i < size; ++i){
+    buflst[i].init(fin, fout, ispadding);
+    if (buflst[i].update_buffer(false, over))
       if(!no_echo)
         printload(i, (iobuffer::BUF_SZ >> 16));
+    }
 }
 /*
 update_lst:更新相应相应的缓冲区
@@ -96,7 +69,7 @@ bool buffergroup::update_lst(const u8_t id) {
   if (buflst[id].fin_empty())
     return false;
   COND_WAIT
-  bool flag = (buflst[id].update_buffer(over) != 0);
+  bool flag = (buflst[id].update_buffer(true, over) != 0);
   if (flag&&(!no_echo))
     printload(id, (iobuffer::BUF_SZ >> 16));
   COND_RELEASE
