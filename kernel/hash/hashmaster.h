@@ -9,6 +9,7 @@ public:
 
 private:
   HASH_TYPE type;
+  u8_t hashblock[64];
   typehash *hasher;
   buffer64 *hashbuf;
 

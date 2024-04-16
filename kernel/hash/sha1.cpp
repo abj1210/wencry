@@ -17,7 +17,9 @@ void sha1hash::getwdata() {
 /*
 gethash:获取每一步的哈希值
 */
-void sha1hash::gethash() {
+void sha1hash::getHash(const u8_t * input) {
+  memset(s, 0, sizeof(s));
+  memcpy(s, input, sizeof(s));
   getwdata();
   addtotal(64);
   u32_t temph[5];
@@ -44,29 +46,25 @@ void sha1hash::gethash() {
   for (u32_t i = 0; i < 5; ++i)
     h[i] += temph[i];
 }
-/*
-getLoadAddr:获取加载地址
-reutrn:加载地址
-*/
-u8_t *sha1hash::getLoadAddr() {
-  memset(s, 0, sizeof(s));
-  return s;
-}
+
 /*
 finalHash:结尾的哈希处理
 loadsize:装载字节数
 */
-void sha1hash::finalHash(u32_t loadsize) {
-  addtotal(loadsize);
-  s[loadsize] = 0x80u;
-  if (loadsize >= 56) {
-    gethash();
-    memset(s, 0, sizeof(s));
+void sha1hash::getHash(const u8_t * input, u32_t final_loadsize) {
+  addtotal(final_loadsize);
+  u8_t temp[getblen()];
+  memset(temp, 0, getblen());
+  memcpy(temp, input, final_loadsize);
+  temp[final_loadsize] = 0x80u;
+  if (final_loadsize >= 56){ 
+    getHash(temp);
+    memset(temp, 0, getblen());
   }
   for (int i = 0; i < 8; ++i) {
-    s[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
+    temp[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
   }
-  gethash();
+  getHash(temp);
 }
 /*
 接口函数

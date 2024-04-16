@@ -21,7 +21,8 @@ const struct option longOpts[] = {
     {"input", required_argument, NULL, 'i'},
     {"output", required_argument, NULL, 'o'},
     {"key", required_argument, NULL, 'k'},
-    {"mode", required_argument, NULL, 'm'},
+    {"cmode", required_argument, NULL, 1},
+    {"hmode", required_argument, NULL, 2},
     {"no_echo", no_argument, NULL, 'n'},
     {0, 0, 0, 0}};
 /*
@@ -75,6 +76,25 @@ static void printCryptMode(u8_t mode)
         break;
     case 4:
         fprintf(stderr, "OFB\n");
+        break;
+    default:
+        fprintf(stderr, "Unknown\n");
+        break;
+    }
+}
+/*
+printCryptMode:打印Hash模式
+mode:模式
+*/
+static void printHashMode(u8_t mode){
+    fprintf(stderr, "Using Hash mode :");
+    switch (mode)
+    {
+    case 0:
+        fprintf(stderr, "sha1\n");
+        break;
+    case 1:
+        fprintf(stderr, "md5\n");
         break;
     default:
         fprintf(stderr, "Unknown\n");
@@ -142,7 +162,7 @@ bool parseOpts(char c, vpak_t *res)
     case 'n':
         res->no_echo = true;
         break;
-    case 'm':
+    case 1:
         if (res->ctype == 100)
         {
             res->ctype = atoi(optarg);
@@ -151,6 +171,18 @@ bool parseOpts(char c, vpak_t *res)
         else
         {
             fprintf(stderr, "Only one ctype can be specified\n");
+            return false;
+        }
+        break;
+    case 2:
+        if (res->htype == 100)
+        {
+            res->htype = atoi(optarg);
+            printCryptMode(res->htype);
+        }
+        else
+        {
+            fprintf(stderr, "Only one htype can be specified\n");
             return false;
         }
         break;
@@ -198,6 +230,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     vpak_t *res = new vpak_t;
     res->mode = 'u';
     res->ctype = 100;
+    res->htype = 100;
     res->no_echo = false;
     res->fp = NULL;
     res->out = NULL;
@@ -229,6 +262,17 @@ u8_t *get_v_opt(int argc, char *argv[])
         else if (res->ctype < 0 || res->ctype > 4)
         {
             fprintf(stderr, "Wrong ctype\n");
+            delete res;
+            return NULL;
+        }
+        if (res->htype == 100)
+        {
+            fprintf(stderr, "Using sha1 mode\n");
+            res->htype = 0;
+        }
+        else if (res->htype < 0 || res->htype > 1)
+        {
+            fprintf(stderr, "Wrong htype\n");
             delete res;
             return NULL;
         }

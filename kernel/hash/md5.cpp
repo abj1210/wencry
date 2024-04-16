@@ -47,12 +47,14 @@
  (a) += (b); \
   }
 
-void md5hash::gethash(){
-    addtotal(64);
-    unsigned int a = h[0];
-    unsigned int b = h[1];
-    unsigned int c = h[2];
-    unsigned int d = h[3];
+void md5hash::getHash(const u8_t *input){
+  memset(s, 0, sizeof(s));
+  memcpy(s, input, sizeof(s));
+  addtotal(64);
+  unsigned int a = h[0];
+  unsigned int b = h[1];
+  unsigned int c = h[2];
+  unsigned int d = h[3];
       //第1轮循环变换
   FF (a, b, c, d, x[ 0], S11, 0xd76aa478); /* 1 */
   FF (d, a, b, c, x[ 1], S12, 0xe8c7b756); /* 2 */
@@ -127,22 +129,20 @@ void md5hash::gethash(){
     h[3] += d;
 }
 
-u8_t *md5hash::getLoadAddr() {
-  memset(s, 0, sizeof(s));
-  return s;
-}
-
-void md5hash::finalHash(u32_t loadsize) {
-  addtotal(loadsize);
-  s[loadsize] = 0x80u;
-  if (loadsize >= 56) {
-    gethash();
-    memset(s, 0, sizeof(s));
+void md5hash::getHash(const u8_t * input, u32_t final_loadsize) {
+  addtotal(final_loadsize);
+  u8_t temp[getblen()];
+  memset(temp, 0, getblen());
+  memcpy(temp, input, final_loadsize);
+  temp[final_loadsize] = 0x80u;
+  if (final_loadsize >= 56){ 
+    getHash(temp);
+    memset(temp, 0, getblen());
   }
   for (int i = 0; i < 8; ++i) {
-    s[56 + i] = (u8_t)(((u64_t)totalsize >> (i << 3)));
+    temp[56 + i] = (u8_t)(((u64_t)totalsize >> (i << 3)));
   }
-  gethash();
+  getHash(temp);
 }
 
 void md5hash::getres(u8_t *hashout) {

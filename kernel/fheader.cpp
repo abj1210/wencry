@@ -29,10 +29,9 @@ key:密钥序列
 fp:需验证文件指针
 hmac_out:输出地址
 */
-void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out)
-{
-    getres(key, fp);
-    memcpy(hmac_out, hmac_res, hashmaster.gethlen());
+void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out) {
+  getres(key, fp);
+  memcpy(hmac_out, hmac_res, hashmaster.gethlen());
 }
 /*
 cmphmac:校验HMAC值
@@ -48,6 +47,19 @@ bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out)
         if (hmac_out[i] != hmac_res[i])
             return false;
     return true;
+}
+/*
+writeFileHmac:写入HMAC值
+fp:文件指针
+hashMark:开始hash的地址
+writeMark:写入Hmac的地址
+*/
+void hmac::writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark)
+{
+    fseek(fp, hashMark, SEEK_SET);
+    getres(key, fp);
+    fseek(fp, writeMark, SEEK_SET);
+    fwrite(hmac_res, 1, get_length(), fp);
 }
 
 /*################################
@@ -103,11 +115,13 @@ bool FileHeader::checkType()
     u8_t ct, ht;
     fread(&ct, 1, 1, fp);
     fread(&ht, 1, 1, fp);
-    if (ct!= ctype || ht!= htype){
+    if (ct != ctype || ht != htype)
+    {
         printf("Type not match, it shuld be : ctype %d htype %d\n", ct, ht);
         return false;
     }
-    else return true;
+    else
+        return true;
 }
 /*
 checkMn:检查魔数
@@ -127,11 +141,11 @@ bool FileHeader::checkMn()
 checkHmac:获得HMAC
 return:HMAC地址
 */
-u8_t *FileHeader::getHmac()
+u8_t *FileHeader::getHmac(u8_t len)
 {
     fseek(fp, FILE_HMAC_MARK, SEEK_SET);
-    int sum = fread(hash, 1, 20, fp);
-    if (sum != 20)
+    int sum = fread(hash, 1, len, fp);
+    if (sum != len)
     {
         return NULL;
     }

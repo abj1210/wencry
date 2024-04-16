@@ -42,16 +42,18 @@ int makeFullTest(const char *str, u8_t type) {
   char iflg[] = "-i";
   char oflg[] = "-o";
   char kflg[] = "-k";
-  char mflg[] = "-m";
-  char ctype[100];
-  sprintf(ctype, "%d", type);
+  char mflg[] = "--cmode";
+  char hflg[] = "--hmode";
+  char ctype[100], htype[100];
+  sprintf(ctype, "%d", type&0xf);
+  sprintf(htype, "%d", (type>>4)&0xf);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
-  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
-  runcrypt runner1(get_v_opt(8, (char **)argv1));
+  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key};
+  runcrypt runner1(get_v_opt(10, (char **)argv1));
   if (!runner1.exec_val())
     return 0;
-  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, kflg, key, oflg, fout};
-  runcrypt runner2(get_v_opt(10, (char **)argv2));
+  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
+  runcrypt runner2(get_v_opt(12, (char **)argv2));
   if (!runner2.exec_val())
     return 0;
   FILE *f1 = fopen(fname, "rb");
@@ -71,7 +73,7 @@ int makeSpeedTest(u8_t type = 0) {
   char eflg[] = "-e";
   char iflg[] = "-i";
   char kflg[] = "-k";
-  char mflg[] = "-m";
+  char mflg[] = "--cmode";
   char ctype[100];
   sprintf(ctype, "%d", type);
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};

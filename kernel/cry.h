@@ -37,6 +37,7 @@ public:
   ~hmac() { delete[] hmac_res; };
   void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out);
   bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out);
+  void writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark);
   u8_t get_length() { return hashmaster.gethlen(); };
 };
 /*文件头处理类*/
@@ -55,7 +56,7 @@ public:
   void getFileHeader(u8_t *iv);
   bool checkType();
   bool checkMn();
-  u8_t *getHmac();
+  u8_t *getHmac(u8_t len);
 };
 
 /*结果打印类*/
@@ -92,13 +93,11 @@ class runcrypt
   } pakout_t;
   pakout_t *pakout;
   u8_t threads_num, iv[multicry_master::THREAD_MAX * 20];
-
   FileHeader header;
   GetCryMaster crym;
   hmac hmachandle;
   ResultPrint resultprint;
 
-  void hashfile();
   void enc(const u8_t *r_buf);
   u8_t verify();
   u8_t dec();

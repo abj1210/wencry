@@ -40,12 +40,12 @@ void Hashmaster::getFileHash(FILE *fp, u8_t *hashres) {
   hasher->reset();
   hashbuf = new buffer64(fp);
   while (true) {
-    u64_t sum = hashbuf->read_buffer64(hasher->getLoadAddr());
+    u64_t sum = hashbuf->read_buffer64(hashblock);
     if (sum != 64) {
-      hasher->finalHash(sum);
+      hasher->getHash(hashblock, sum);
       break;
     }
-    hasher->gethash();
+    hasher->getHash(hashblock);
   }
   hasher->getres(hashres);
   delete hashbuf;
@@ -60,12 +60,12 @@ void Hashmaster::getFileOffsetHash(FILE *fp, u8_t *block, u8_t *hashres) {
   hasher->reset();
   hashbuf = new buffer64(block, fp);
   while (true) {
-    u64_t sum = hashbuf->read_buffer64(hasher->getLoadAddr());
+    u64_t sum = hashbuf->read_buffer64(hashblock);
     if (sum != 64) {
-      hasher->finalHash(sum);
+      hasher->getHash(hashblock, sum);
       break;
     }
-    hasher->gethash();
+    hasher->getHash(hashblock);
   }
   hasher->getres(hashres);
   delete hashbuf;
@@ -81,10 +81,8 @@ void Hashmaster::getStringHash(const u8_t *string, u32_t length,
   hasher->reset();
   u32_t nnow = length;
   for (; nnow >= 64; nnow -= 64) {
-    memcpy(hasher->getLoadAddr(), string + (length - nnow), 64);
-    hasher->gethash();
+    hasher->getHash(string + (length - nnow));
   }
-  memcpy(hasher->getLoadAddr(), string + (length - nnow), nnow);
-  hasher->finalHash(nnow);
+  hasher->getHash(string + (length - nnow) ,nnow);
   hasher->getres(hashres);
 }

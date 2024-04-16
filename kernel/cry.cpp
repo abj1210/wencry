@@ -15,17 +15,6 @@ void runcrypt::over()
     fclose(pakout->out);
 }
 /*
-hashfile:计算文件的HMAC
-*/
-void runcrypt::hashfile()
-{
-  u8_t hash[40];
-  fseek(pakout->out, FILE_IV_MARK, SEEK_SET);
-  hmachandle.gethmac(pakout->key, pakout->out, hash);
-  fseek(pakout->out, FILE_HMAC_MARK, SEEK_SET);
-  fwrite(hash, 1, hmachandle.get_length(), pakout->out);
-}
-/*
 enc:将文件加密
 r_buf:随机缓冲数组
 */
@@ -36,7 +25,7 @@ void runcrypt::enc(const u8_t *r_buf)
   cm->load_iv(iv);
   header.getFileHeader(iv);
   cm->run_multicry();
-  hashfile();
+  hmachandle.writeFileHmac(pakout->out, pakout->key, FILE_IV_MARK, FILE_HMAC_MARK);
   delete cm;
 }
 /*
@@ -66,7 +55,9 @@ u8_t runcrypt::verify()
     return 4;
   if (!header.checkType())
     return 3;
-  u8_t *hash = header.getHmac();
+  u8_t *hash = header.getHmac(hmachandle.get_length());
+  if (hash == NULL)
+    return 1;
   fseek(pakout->fp, FILE_IV_MARK, SEEK_SET);
   if (!hmachandle.cmphmac(pakout->key, pakout->fp, hash))
     return 2;
@@ -78,8 +69,8 @@ u8_t runcrypt::verify()
   接口函数
 ################################*/
 runcrypt::runcrypt(u8_t *data, u8_t threads_num) : threads_num(threads_num),
-                                                   header(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), 0, threads_num), hmachandle(0),
-                                                   resultprint(threads_num, GET_VAL(data, no_echo)),
+                                                   header(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), GET_VAL(data, htype), threads_num),
+                                                   hmachandle(GET_VAL(data, htype)), resultprint(threads_num, GET_VAL(data, no_echo)),
                                                    crym(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), iv, GET_VAL(data, ctype), threads_num, GET_VAL(data, no_echo))
 {
   pakout = new pakout_t;
