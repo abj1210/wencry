@@ -68,7 +68,8 @@
         "sstream": "cpp",
         "cinttypes": "cpp",
         "typeindex": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "*.ispc": "cpp"
     },
     "cmake.sourceDirectory": "/mnt/c/Users/闻嘉迅/liucan/code/wencry",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",

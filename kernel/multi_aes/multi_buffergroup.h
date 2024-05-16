@@ -8,14 +8,14 @@
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 
-#define COND_WAIT                                                              \
-  std::unique_lock<std::mutex> locker(filelock);                               \
-  while (turn != id)                                                           \
+#define COND_WAIT                                \
+  std::unique_lock<std::mutex> locker(filelock); \
+  while (turn != id)                             \
     cond.wait(locker);
 
-#define COND_RELEASE                                                           \
-  turn = (turn == (size - 1)) ? 0 : turn + 1;                                  \
-  cond.notify_all();                                                           \
+#define COND_RELEASE                          \
+  turn = (turn == (size - 1)) ? 0 : turn + 1; \
+  cond.notify_all();                          \
   locker.unlock();
 /*
 BUF_SZ:用于aes的16B单元缓冲区单元数量
@@ -27,7 +27,8 @@ tail:未被填满的单元中数据的长度
 fin:读取文件的地址
 fout:写入文件的地址
 */
-class iobuffer {
+class iobuffer
+{
 public:
   static const u32_t BUF_SZ = 0x100000;
 
@@ -39,7 +40,12 @@ private:
   bool ispadding;
 
 public:
-  void init(FILE *fin, FILE *fout, bool ispadding){this->fin=fin;this->fout=fout;this->ispadding=ispadding;};
+  void init(FILE *fin, FILE *fout, bool ispadding)
+  {
+    this->fin = fin;
+    this->fout = fout;
+    this->ispadding = ispadding;
+  };
   /*
   get_entry:获取当前缓冲区单元表项
   return:返回的表项地址
@@ -64,7 +70,8 @@ buflst:缓冲区数组指针
 size:缓冲区个数
 fileaccess:控制相应序号缓冲区文件读写的互斥锁序列
 */
-class buffergroup {
+class buffergroup
+{
   iobuffer *buflst;
   const u32_t size;
   u32_t turn;

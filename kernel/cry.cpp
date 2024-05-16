@@ -1,6 +1,8 @@
 #include "cry.h"
-#include <time.h>
+#include <chrono>
 #include <iostream>
+using namespace std;
+using namespace chrono;
 /*################################
   辅助函数
 ################################*/
@@ -85,7 +87,7 @@ return:返回是否成功执行
 bool runcrypt::exec_val()
 {
   int res = 0;
-  clock_t cl1 = clock();
+  auto start = system_clock::now();
   if (pakout->fp == NULL)
     return resultprint.printinv(0);
   if (pakout->mode == 'e' || pakout->mode == 'E')
@@ -107,8 +109,9 @@ bool runcrypt::exec_val()
   {
     return resultprint.printinv(6);
   }
-  clock_t cl2 = clock();
-  resultprint.printtime(cl2 - cl1); // 打印时间
-  over();                           // 关闭文件
+  auto end = system_clock::now();
+  auto duration = duration_cast<microseconds>(end - start);
+  resultprint.printtime(duration); // 打印时间
+  over();                          // 关闭文件
   return res == 0;
 }

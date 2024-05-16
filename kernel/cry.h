@@ -2,6 +2,7 @@
 #define CRY
 #include "multicry.h"
 #include "hashmaster.h"
+#include <chrono>
 #include <stdio.h>
 #include <string.h>
 typedef unsigned char u8_t;
@@ -68,7 +69,7 @@ class ResultPrint
 public:
   ResultPrint(u8_t threads_num, bool no_echo) : threads_num(threads_num), no_echo(no_echo){};
   u8_t printinv(const u8_t ret);
-  void printtime(clock_t totalTime);
+  void printtime(std::chrono::microseconds totalTime);
   void printenc();
   void printres(int res);
 };

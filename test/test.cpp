@@ -66,7 +66,7 @@ int makeBigTest(int offset, u8_t type = 0) {
   buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
 }
-int makeSpeedTest(u8_t type = 0) {
+int makeSpeedTest(u8_t type = 1) {
   char name[] = "./wencry";
   char fname[] = "test.txt";
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";

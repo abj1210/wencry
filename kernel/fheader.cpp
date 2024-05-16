@@ -1,6 +1,8 @@
 #include "cry.h"
-#include <time.h>
+#include <chrono>
 #include <iostream>
+using namespace std;
+using namespace chrono;
 /*################################
   HMAC函数
 ################################*/
@@ -171,11 +173,11 @@ printtime: 打印时间
 totalTime: 总时间
 threads_num: 线程数
 */
-void ResultPrint::printtime(clock_t totalTime)
+void ResultPrint::printtime(std::chrono::microseconds  totalTime)
 {
     if (!no_echo)
-        std::cout << "Time: " << totalTime / ((double)(CLOCKS_PER_SEC * threads_num))
-                  << "s / " << totalTime / ((double)CLOCKS_PER_SEC) << "s\r\n";
+        std::cout << "Time: " <<double(totalTime.count()) * microseconds::period::num / microseconds::period::den 
+                  << "s\r\n";
 }
 /*
 printenc: 打印加密结果

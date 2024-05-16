@@ -3,9 +3,15 @@
 
 #include "hashbuffer.h"
 #include "hashtype.h"
-class Hashmaster {
+class Hashmaster
+{
 public:
-  enum HASH_TYPE { SHA1, MD5, Unknown };
+  enum HASH_TYPE
+  {
+    SHA1,
+    MD5,
+    Unknown
+  };
 
 private:
   HASH_TYPE type;

@@ -41,8 +41,8 @@ mask:异或掩码
 */
 void Aesmode::getXor(u8_t *x, u8_t *mask)
 {
-  for (int i = 0; i < 16; ++i)
-    x[i] = x[i] ^ mask[i];
+  for (int i = 0; i < 4; ++i)
+    *(((u32_t *)x) + i) ^= *(((u32_t *)mask) + i);
 }
 void AesCBC::getencry(u8_t *block)
 {

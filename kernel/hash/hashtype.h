@@ -7,16 +7,18 @@
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
-//将x循环左移i位
+// 将x循环左移i位
 
 #define lrot(x, i) (((x) << (i)) | ((x) >> (32 - i)))
-#define setbytes(t, b0, b1, b2, b3)                                            \
+#define setbytes(t, b0, b1, b2, b3) \
   t = ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
 /*
 typehash:哈希函数抽象类
 */
-class typehash {
+class typehash
+{
   const u8_t blocklength, hashlength;
+
 protected:
   u32_t totalsize;
   /*
@@ -24,13 +26,14 @@ protected:
   len:长度
   */
   void addtotal(u32_t len) { totalsize += (len << 3); };
+
 public:
   typehash(u8_t blocklength, u8_t hashlength)
       : blocklength(blocklength), hashlength(hashlength){};
   const u8_t getblen() { return blocklength; };
   const u8_t gethlen() { return hashlength; };
-  virtual void getHash(const u8_t * input) = 0;
-  virtual void getHash(const u8_t * input, u32_t final_loadsize) = 0;
+  virtual void getHash(const u8_t *input) = 0;
+  virtual void getHash(const u8_t *input, u32_t final_loadsize) = 0;
   virtual void reset() = 0;
   virtual void getres(u8_t *hashout) = 0;
 };
@@ -38,10 +41,12 @@ public:
 /*
 hash:sha1的hash基本单元
 */
-class sha1hash : public typehash {
+class sha1hash : public typehash
+{
   u32_t h[5];
   u32_t w[80];
-  union{
+  union
+  {
     u8_t s[64];
     u32_t i[16];
   };
@@ -52,9 +57,10 @@ public:
     构造函数:设定哈希初值
   */
   sha1hash() : typehash(64, 20) { reset(); };
-  void getHash(const u8_t * input);
-  void getHash(const u8_t * input, u32_t final_loadsize);
-  void reset() {
+  void getHash(const u8_t *input);
+  void getHash(const u8_t *input, u32_t final_loadsize);
+  void reset()
+  {
     h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476,
     h[4] = 0xC3D2E1F0;
     totalsize = 0;
@@ -62,20 +68,24 @@ public:
   void getres(u8_t *hashout);
 };
 
-class md5hash : public typehash {
+class md5hash : public typehash
+{
   u32_t h[4];
-  union{
+  union
+  {
     u8_t s[64];
     u32_t x[16];
   };
+
 public:
   /*
     构造函数:设定哈希初值
   */
-  md5hash() : typehash(64, 16){ reset(); };
-  void getHash(const u8_t * input);
-  void getHash(const u8_t * input, u32_t final_loadsize);
-  void reset() {
+  md5hash() : typehash(64, 16) { reset(); };
+  void getHash(const u8_t *input);
+  void getHash(const u8_t *input, u32_t final_loadsize);
+  void reset()
+  {
     h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476;
     totalsize = 0;
   };
