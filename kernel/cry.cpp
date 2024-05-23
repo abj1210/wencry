@@ -22,20 +22,22 @@ r_buf:随机缓冲数组
 */
 void runcrypt::enc(const u8_t *r_buf)
 {
+  // 准备初始向量
   u8_t iv[multicry_master::THREAD_MAX * 20];
-  
   header.getIV(r_buf, iv);
-  header.getFileHeader(iv); 
-  multicry_master *cm = crym.get_multicry_master(iv, 'e');
-  aesfactory.loadiv(iv);
+  header.getFileHeader(iv);
+  // 准备缓冲区和aes加密器
   iobuffer.load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), true);
-  Aesmode * mode[threads_num];
-  for(int i=0; i<threads_num; i++)
+  Aesmode *mode[threads_num];
+  aesfactory.loadiv(iv);
+  for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(true, GET_VAL(pakout, ctype));
-  cm->run_multicry(iobuffer, mode);
+  // 运行加密
+  crym.run_multicry(iobuffer, mode);
+  // 写入hamc
   hmachandle.writeFileHmac(pakout->out, pakout->key, FILE_IV_MARK, FILE_HMAC_MARK);
-  delete cm;
-  for(int i=0; i<threads_num; i++)
+  // 释放空间
+  for (int i = 0; i < threads_num; i++)
     delete mode[i];
 }
 /*
@@ -44,21 +46,24 @@ return:若成功解密则返回0,否则返回非零值
 */
 u8_t runcrypt::dec()
 {
-  u8_t iv[multicry_master::THREAD_MAX * 20];
+  // 验证文件
   u8_t state = verify();
   if (state != 0)
     return state;
+  // 准备初始向量
+  u8_t iv[multicry_master::THREAD_MAX * 20];
   header.getIV(pakout->fp, iv);
-  fseek(pakout->fp, FILE_TEXT_MARK(threads_num), SEEK_SET);
-  multicry_master *dm = crym.get_multicry_master(iv, 'd');
+  // 准备缓冲区和aes解密器
   aesfactory.loadiv(iv);
+  fseek(pakout->fp, FILE_TEXT_MARK(threads_num), SEEK_SET);
   iobuffer.load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), false);
-  Aesmode * mode[threads_num];
-  for(int i=0; i<threads_num; i++)
+  Aesmode *mode[threads_num];
+  for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(false, GET_VAL(pakout, ctype));
-  dm->run_multicry(iobuffer, mode);
-  delete dm;
-  for(int i=0; i<threads_num; i++)
+  // 运行解密
+  crym.run_multicry(iobuffer, mode);
+  // 释放空间
+  for (int i = 0; i < threads_num; i++)
     delete mode[i];
   return 0;
 }
@@ -87,10 +92,13 @@ u8_t runcrypt::verify()
 ################################*/
 runcrypt::runcrypt(u8_t *data, u8_t threads_num) : threads_num(threads_num),
                                                    header(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), GET_VAL(data, htype), threads_num),
-                                                   hmachandle(GET_VAL(data, htype)), resultprint(threads_num, GET_VAL(data, no_echo)), iobuffer(threads_num, GET_VAL(data, no_echo)),
-                                                   aesfactory(GET_VAL(data, key)),
-                                                   crym(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), threads_num, GET_VAL(data, no_echo))
+                                                   hmachandle(GET_VAL(data, htype)), iobuffer(threads_num, GET_VAL(data, no_echo)),
+                                                   aesfactory(GET_VAL(data, key)), crym(threads_num)
 {
+  if (GET_VAL(data, no_echo))
+    resultprint = new NullResPrint;
+  else
+    resultprint = new ResultPrint;
   pakout = new pakout_t;
   memcpy(pakout->buf, GET_VAL(data, buf), 512);
 };
@@ -104,29 +112,29 @@ bool runcrypt::exec_val()
   int res = 0;
   auto start = system_clock::now();
   if (pakout->fp == NULL)
-    return resultprint.printinv(0);
+    return resultprint->printinv(0);
   if (pakout->mode == 'e' || pakout->mode == 'E')
   {
-    enc(pakout->r_buf);     // 运行加密
-    resultprint.printenc(); // 打印结果
+    enc(pakout->r_buf);      // 运行加密
+    resultprint->printenc(); // 打印结果
   }
   else if (pakout->mode == 'd' || pakout->mode == 'D')
   {
-    res = dec();               // 运行解密
-    resultprint.printres(res); // 打印结果
+    res = dec();                // 运行解密
+    resultprint->printres(res); // 打印结果
   }
   else if (pakout->mode == 'v')
   {
-    res = verify();            // 运行验证
-    resultprint.printres(res); // 打印结果
+    res = verify();             // 运行验证
+    resultprint->printres(res); // 打印结果
   }
   else
   {
-    return resultprint.printinv(6);
+    return resultprint->printinv(6);
   }
   auto end = system_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
-  resultprint.printtime(duration); // 打印时间
-  over();                          // 关闭文件
+  resultprint->printtime(duration); // 打印时间
+  over();                           // 关闭文件
   return res == 0;
 }

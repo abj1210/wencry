@@ -14,16 +14,17 @@ fp:需验证文件指针
 */
 void hmac::getres(u8_t *key, FILE *fp)
 {
-    u8_t block = hashmaster.getblen(), length = hashmaster.gethlen();
+    Hashmaster *hashmaster = hf.getHasher(type);
+    const u8_t block = hf.getBlkLength(type), length = hf.getHashLength(type);
     u8_t key1[block], h1[block], h2[block + length];
     memset(key1, 0, sizeof(key1));
     memcpy(key1, key, 16);
     for (int i = 0; i < block; ++i)
         h1[i] = key1[i] ^ ipad;
-    hashmaster.getFileOffsetHash(fp, h1, &h2[block]);
+    hashmaster->getFileOffsetHash(fp, h1, &h2[block]);
     for (int i = 0; i < block; ++i)
         h2[i] = key1[i] ^ opad;
-    hashmaster.getStringHash(h2, block + length, hmac_res);
+    hashmaster->getStringHash(h2, block + length, hmac_res);
 }
 /*
 gethmac:获取HMAC值
@@ -31,9 +32,10 @@ key:密钥序列
 fp:需验证文件指针
 hmac_out:输出地址
 */
-void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out) {
-  getres(key, fp);
-  memcpy(hmac_out, hmac_res, hashmaster.gethlen());
+void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out)
+{
+    getres(key, fp);
+    memcpy(hmac_out, hmac_res, hf.getHashLength(type));
 }
 /*
 cmphmac:校验HMAC值
@@ -45,7 +47,7 @@ return:校验是否成功
 bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out)
 {
     getres(key, fp);
-    for (int i = 0; i < hashmaster.gethlen(); ++i)
+    for (int i = 0; i < hf.getHashLength(type); ++i)
         if (hmac_out[i] != hmac_res[i])
             return false;
     return true;
@@ -74,10 +76,11 @@ iv:初始向量数组
 */
 void FileHeader::getIV(const u8_t *r_buf, u8_t *iv)
 {
-    Hashmaster hm(Hashmaster::SHA1);
-    hm.getStringHash(r_buf, strlen((const char *)r_buf), iv);
+    Hashmaster *hm = hf.getHasher(HashFactory::SHA1);
+    hm->getStringHash(r_buf, strlen((const char *)r_buf), iv);
     for (int i = 1; i < num; ++i)
-        hm.getStringHash(iv + (20 * (i - 1)), 20, iv + (20 * i));
+        hm->getStringHash(iv + (20 * (i - 1)), 20, iv + (20 * i));
+    delete hm;
 }
 /*
 getIV:获取初始向量(从文件)
@@ -164,8 +167,7 @@ return: 返回值
 */
 u8_t ResultPrint::printinv(const u8_t ret)
 {
-    if (!no_echo)
-        std::cout << "Invalid values.\r\n";
+    std::cout << "Invalid values.\r\n";
     return ret;
 }
 /*
@@ -173,19 +175,17 @@ printtime: 打印时间
 totalTime: 总时间
 threads_num: 线程数
 */
-void ResultPrint::printtime(std::chrono::microseconds  totalTime)
+void ResultPrint::printtime(std::chrono::microseconds totalTime)
 {
-    if (!no_echo)
-        std::cout << "Time: " <<double(totalTime.count()) * microseconds::period::num / microseconds::period::den 
-                  << "s\r\n";
+    std::cout << "Time: " << double(totalTime.count()) * microseconds::period::num / microseconds::period::den
+              << "s\r\n";
 }
 /*
 printenc: 打印加密结果
 */
 void ResultPrint::printenc()
 {
-    if (!no_echo)
-        std::cout << "Encrypt over! \r\n";
+    std::cout << "Encrypt over! \r\n";
 }
 /*
 printres: 打印解密结果
@@ -193,19 +193,16 @@ res: 解密结果
 */
 void ResultPrint::printres(int res)
 {
-    if (!no_echo)
-    {
-        if (res <= 0)
-            std::cout << "Verify pass!\r\n";
-        else if (res == 1)
-            std::cout << "File too short.\r\n";
-        else if (res == 2)
-            std::cout << "Wrong key or File not complete.\r\n";
-        else if (res == 3)
-            std::cout << "Aes / hash mode not match.\r\n";
-        else if (res == 4)
-            std::cout << "Wrong magic number.\r\n";
-        else
-            std::cout << "Unknown res number: " << res << ".\r\n";
-    }
+    if (res <= 0)
+        std::cout << "Verify pass!\r\n";
+    else if (res == 1)
+        std::cout << "File too short.\r\n";
+    else if (res == 2)
+        std::cout << "Wrong key or File not complete.\r\n";
+    else if (res == 3)
+        std::cout << "Aes / hash mode not match.\r\n";
+    else if (res == 4)
+        std::cout << "Wrong magic number.\r\n";
+    else
+        std::cout << "Unknown res number: " << res << ".\r\n";
 }

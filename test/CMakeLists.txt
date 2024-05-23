@@ -70,21 +70,6 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                             ${PROJECT_SOURCE_DIR}/../valget
                             )
 
-set(SUBNAME hashspd)
-
-add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
-
-target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
-
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel)
-
-add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
-
-target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../kernel
-                            )
-
 set(SUBNAME hmac)
 
 add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)

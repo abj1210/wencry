@@ -31,7 +31,8 @@ TEST(Testsha1, testsha1_3) {
 }
 
 int main(int argc, char **argv) {
-  htest = new Hashmaster(Hashmaster::SHA1);
+  HashFactory hf;
+  htest = hf.getHasher(HashFactory::HASH_TYPE::SHA1);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

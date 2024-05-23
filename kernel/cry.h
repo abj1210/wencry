@@ -21,25 +21,25 @@ typedef unsigned long long u64_t;
 /*计算HMAC类*/
 class hmac
 {
-private:
   static const u8_t ipad = 0x36, opad = 0x5c;
-  Hashmaster hashmaster;
-  u8_t *hmac_res, type;
+  HashFactory hf;
+  HashFactory::HASH_TYPE type;
+  u8_t *hmac_res;
   void getres(u8_t *key, FILE *fp);
 
 public:
   /*
   构造函数:设定哈希模式
   */
-  hmac(u8_t hashtype) : type(hashtype), hashmaster(Hashmaster(Hashmaster::getType(hashtype)))
+  hmac(u8_t hashtype) : type(hf.getType(hashtype))
   {
-    hmac_res = new u8_t[hashmaster.gethlen()];
+    hmac_res = new u8_t[hf.getHashLength(type)];
   };
   ~hmac() { delete[] hmac_res; };
   void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out);
   bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out);
   void writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark);
-  u8_t get_length() { return hashmaster.gethlen(); };
+  const u8_t get_length() { return hf.getHashLength(type); };
 };
 /*文件头处理类*/
 class FileHeader
@@ -49,6 +49,7 @@ class FileHeader
   u8_t hash[20], *key, num;
   u8_t ctype, htype;
   FILE *fp, *out;
+  HashFactory hf;
 
 public:
   FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t ctype, u8_t htype, u8_t num) : fp(fp), out(out), key(key), ctype(ctype), htype(htype), num(num){};
@@ -61,17 +62,31 @@ public:
 };
 
 /*结果打印类*/
-class ResultPrint
+class AbsResultPrint
 {
-  bool no_echo;
-  u8_t threads_num;
-
 public:
-  ResultPrint(u8_t threads_num, bool no_echo) : threads_num(threads_num), no_echo(no_echo){};
-  u8_t printinv(const u8_t ret);
-  void printtime(std::chrono::microseconds totalTime);
-  void printenc();
-  void printres(int res);
+  virtual u8_t printinv(const u8_t ret) = 0;
+  virtual void printtime(std::chrono::microseconds totalTime) = 0;
+  virtual void printenc() = 0;
+  virtual void printres(int res) = 0;
+};
+
+class NullResPrint : public AbsResultPrint
+{
+public:
+  virtual u8_t printinv(const u8_t ret) { return ret; };
+  virtual void printtime(std::chrono::microseconds totalTime) {};
+  virtual void printenc() {};
+  virtual void printres(int res) {};
+};
+
+class ResultPrint : public AbsResultPrint
+{
+public:
+  virtual u8_t printinv(const u8_t ret);
+  virtual void printtime(std::chrono::microseconds totalTime);
+  virtual void printenc();
+  virtual void printres(int res);
 };
 
 /*整体加密类*/
@@ -92,21 +107,22 @@ class runcrypt
     };
     u8_t buf[512];
   } pakout_t;
-  
+
   pakout_t *pakout;
   const u8_t threads_num;
 
+  // 文件头构造器
   FileHeader header;
-
+  // 文件缓冲区
   buffergroup iobuffer;
-
+  // aes加解密工厂
   AesFactory aesfactory;
-
-  GetCryMaster crym;
-
+  // 并发加解密器
+  multicry_master crym;
+  // hmac计算器
   hmac hmachandle;
-
-  ResultPrint resultprint;
+  // 结果打印器
+  AbsResultPrint *resultprint;
 
   void enc(const u8_t *r_buf);
   u8_t verify();
@@ -118,7 +134,11 @@ public:
       构造函数:设定各部件参数
   */
   runcrypt(u8_t *data, u8_t threads_num = THREAD_NUM);
-  ~runcrypt() { delete pakout; };
+  ~runcrypt()
+  {
+    delete pakout;
+    delete resultprint;
+  };
   bool exec_val();
 };
 

@@ -1,4 +1,4 @@
-#include "hashtype.h"
+#include "hashmaster.h"
 #include <string.h>
 
 // 循环左移的位数
