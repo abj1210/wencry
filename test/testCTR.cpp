@@ -16,9 +16,10 @@ char res[] = "932f13241d607db9e194a270d42aa03ffc8e35ff18aab86a97d679b134dd3c500"
 TEST(TestCTR, testCTR1) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
-  AesCTR CTRtest(key, iv);
+  AesFactory af(key, iv);
+  Aesmode *AEStest = af.createCryMaster(true, 2);
   for (int i = 0; i < 4; i++)
-    CTRtest.getencry(block + (16 * i));
+    AEStest->runcry(block + (16 * i));
   gethex(res, blcmp);
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
@@ -26,24 +27,27 @@ TEST(TestCTR, testCTR2) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
   memcpy(blcmp, str, 64);
-  AesCTR CTRtest(key, iv);
+  AesFactory af(key, iv);
+  Aesmode * AEStest = af.createCryMaster(true, 2),
+          * AESdecrypt = af.createCryMaster(false, 2);
   for (int i = 0; i < 4; i++)
-    CTRtest.getencry(block + (16 * i));
-  CTRtest.resetIV();
+    AEStest->runcry(block + (16 * i));
   for (int i = 0; i < 4; i++)
-    CTRtest.getdecry(block + (16 * i));
+    AESdecrypt->runcry(block + (16 * i));
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
 TEST(TestCTR, testCTR3) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
   memcpy(blcmp, str, 64);
-  AesCTR CTRt1(key, iv);
-  AesCTR CTRt2(key, iv2);
+  AesFactory af1(key, iv);
+  AesFactory af2(key, iv2);
+  Aesmode * AESt1 = af1.createCryMaster(true, 2);
+  Aesmode * AESt2 = af2.createCryMaster(true, 2);
   for (int i = 0; i < 4; i++)
-    CTRt1.getencry(block + (16 * i));
+    AESt1->runcry(block + (16 * i));
   for (int i = 0; i < 4; i++)
-    CTRt2.getencry(blcmp + (16 * i));
+    AESt2->runcry(blcmp + (16 * i));
   EXPECT_FALSE(cmpstr(block, blcmp, 64));
 }
 

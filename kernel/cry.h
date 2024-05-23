@@ -92,11 +92,20 @@ class runcrypt
     };
     u8_t buf[512];
   } pakout_t;
+  
   pakout_t *pakout;
-  u8_t threads_num, iv[multicry_master::THREAD_MAX * 20];
+  const u8_t threads_num;
+
   FileHeader header;
+
+  buffergroup iobuffer;
+
+  AesFactory aesfactory;
+
   GetCryMaster crym;
+
   hmac hmachandle;
+
   ResultPrint resultprint;
 
   void enc(const u8_t *r_buf);

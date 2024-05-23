@@ -16,9 +16,10 @@ char res[] = "7f268e32fa3589c5b37fa0917e21f3267f268e32fa3589c5b37fa0917e21f3267"
 TEST(TestECB, testECB1) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
-  AesECB ECBtest(key, iv);
+  AesFactory af(key, iv);
+  Aesmode *AEStest = af.createCryMaster(true, 0);
   for (int i = 0; i < 4; i++)
-    ECBtest.getencry(block + (16 * i));
+    AEStest->runcry(block + (16 * i));
   gethex(res, blcmp);
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
@@ -27,12 +28,13 @@ TEST(TestECB, testECB2) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
   memcpy(blcmp, str, 64);
-  AesECB ECBtest(key, iv);
+  AesFactory af(key, iv);
+  Aesmode * AEStest = af.createCryMaster(true, 0),
+          * AESdecrypt = af.createCryMaster(false, 0);
   for (int i = 0; i < 4; i++)
-    ECBtest.getencry(block + (16 * i));
-  ECBtest.resetIV();
+    AEStest->runcry(block + (16 * i));
   for (int i = 0; i < 4; i++)
-    ECBtest.getdecry(block + (16 * i));
+    AESdecrypt->runcry(block + (16 * i));
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
 
@@ -40,12 +42,14 @@ TEST(TestECB, testECB3) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
   memcpy(blcmp, str, 64);
-  AesECB ECBt1(key, iv);
-  AesECB ECBt2(key, iv2);
+  AesFactory af1(key, iv);
+  AesFactory af2(key, iv2);
+  Aesmode * AESt1 = af1.createCryMaster(true, 0);
+  Aesmode * AESt2 = af2.createCryMaster(true, 0);
   for (int i = 0; i < 4; i++)
-    ECBt1.getencry(block + (16 * i));
+    AESt1->runcry(block + (16 * i));
   for (int i = 0; i < 4; i++)
-    ECBt2.getencry(blcmp + (16 * i));
+    AESt2->runcry(blcmp + (16 * i));
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
 

@@ -22,13 +22,21 @@ r_buf:随机缓冲数组
 */
 void runcrypt::enc(const u8_t *r_buf)
 {
-  multicry_master *cm = crym.get_multicry_master('e');
+  u8_t iv[multicry_master::THREAD_MAX * 20];
+  
   header.getIV(r_buf, iv);
-  cm->load_iv(iv);
-  header.getFileHeader(iv);
-  cm->run_multicry();
+  header.getFileHeader(iv); 
+  multicry_master *cm = crym.get_multicry_master(iv, 'e');
+  aesfactory.loadiv(iv);
+  iobuffer.load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), true);
+  Aesmode * mode[threads_num];
+  for(int i=0; i<threads_num; i++)
+    mode[i] = aesfactory.createCryMaster(true, GET_VAL(pakout, ctype));
+  cm->run_multicry(iobuffer, mode);
   hmachandle.writeFileHmac(pakout->out, pakout->key, FILE_IV_MARK, FILE_HMAC_MARK);
   delete cm;
+  for(int i=0; i<threads_num; i++)
+    delete mode[i];
 }
 /*
 dec:将文件解密
@@ -36,15 +44,22 @@ return:若成功解密则返回0,否则返回非零值
 */
 u8_t runcrypt::dec()
 {
+  u8_t iv[multicry_master::THREAD_MAX * 20];
   u8_t state = verify();
   if (state != 0)
     return state;
   header.getIV(pakout->fp, iv);
-  multicry_master *dm = crym.get_multicry_master('d');
-  dm->load_iv(iv);
   fseek(pakout->fp, FILE_TEXT_MARK(threads_num), SEEK_SET);
-  dm->run_multicry();
+  multicry_master *dm = crym.get_multicry_master(iv, 'd');
+  aesfactory.loadiv(iv);
+  iobuffer.load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), false);
+  Aesmode * mode[threads_num];
+  for(int i=0; i<threads_num; i++)
+    mode[i] = aesfactory.createCryMaster(false, GET_VAL(pakout, ctype));
+  dm->run_multicry(iobuffer, mode);
   delete dm;
+  for(int i=0; i<threads_num; i++)
+    delete mode[i];
   return 0;
 }
 /*
@@ -72,12 +87,12 @@ u8_t runcrypt::verify()
 ################################*/
 runcrypt::runcrypt(u8_t *data, u8_t threads_num) : threads_num(threads_num),
                                                    header(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), GET_VAL(data, htype), threads_num),
-                                                   hmachandle(GET_VAL(data, htype)), resultprint(threads_num, GET_VAL(data, no_echo)),
-                                                   crym(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), iv, GET_VAL(data, ctype), threads_num, GET_VAL(data, no_echo))
+                                                   hmachandle(GET_VAL(data, htype)), resultprint(threads_num, GET_VAL(data, no_echo)), iobuffer(threads_num, GET_VAL(data, no_echo)),
+                                                   aesfactory(GET_VAL(data, key)),
+                                                   crym(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), threads_num, GET_VAL(data, no_echo))
 {
   pakout = new pakout_t;
   memcpy(pakout->buf, GET_VAL(data, buf), 512);
-  memset(iv, 0, sizeof(iv));
 };
 /*
 exec_val:根据传入的参数包执行相应操作

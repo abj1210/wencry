@@ -62,7 +62,8 @@ int makeFullTest(const char *str, u8_t type) {
 }
 char buf[0x2000010];
 int makeBigTest(int offset, u8_t type = 0) {
-  memset(buf, '0', sizeof(buf));
+  srand(time(NULL));
+  memset(buf, 'a', sizeof(buf));
   buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
 }

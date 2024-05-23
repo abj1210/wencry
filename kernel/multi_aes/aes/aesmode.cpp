@@ -1,39 +1,5 @@
 #include "aesmode.h"
-/*
-selectCryptMode:返回相应的加密器
-key:密钥
-iv:初始向量
-type:类型(0:ECB,1:CBC,2:CTR,3:CFB,4:OFB)
-return:返回的加密器
-*/
-Aesmode *selectCryptMode(u8_t *key, const u8_t *iv, u8_t type)
-{
-  switch (type)
-  {
-  case 0:
-    return new AesECB(key, iv);
-  case 1:
-    return new AesCBC(key, iv);
-  case 2:
-    return new AesCTR(key, iv);
-  case 3:
-    return new AesCFB(key, iv);
-  case 4:
-    return new AesOFB(key, iv);
-  default:
-    printf("Unknown\n");
-    return NULL;
-  }
-}
-/*
-  resetIV:重设初始向量
-  */
-void Aesmode::resetIV(u8_t *iv)
-{
-  memcpy(this->initiv, iv, 16);
-  resetIV();
-};
-void Aesmode::resetIV() { memcpy(this->iv, this->initiv, 16); };
+
 /*
 getXor:获取异或值
 x:被异或值
@@ -44,53 +10,156 @@ void Aesmode::getXor(u8_t *x, u8_t *mask)
   for (int i = 0; i < 4; ++i)
     *(((u32_t *)x) + i) ^= *(((u32_t *)mask) + i);
 }
-void AesCBC::getencry(u8_t *block)
+
+class AesEncrypt : public Aesmode {
+protected:
+  encryaes crypt;
+public:
+  AesEncrypt(u8_t *key, const u8_t *iv): Aesmode(iv), crypt(key){};
+};
+
+class AesDecrypt : public Aesmode {
+protected:
+  decryaes crypt;
+public:
+  AesDecrypt(u8_t *key, const u8_t *iv): Aesmode(iv), crypt(key){};
+};
+
+class AesECB_Enc : public AesEncrypt
 {
-  getXor(block, iv);
-  encryhandle.runaes_128bit(block);
-  memcpy(iv, block, 16);
-}
-void AesCBC::getdecry(u8_t *block)
+public:
+  AesECB_Enc(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
+  virtual void runcry(u8_t *block) override { crypt.runaes_128bit(block); };
+};
+
+class AesECB_Dec : public AesDecrypt
 {
-  u8_t nxt_iv[16];
-  memcpy(nxt_iv, block, 16);
-  decryhandle.runaes_128bit(block);
-  getXor(block, iv);
-  memcpy(iv, nxt_iv, 16);
-}
-void AesCTR::ctrInc()
+public:
+  AesECB_Dec(u8_t *key, const u8_t *iv) : AesDecrypt(key, iv){};
+  virtual void runcry(u8_t *block) override { crypt.runaes_128bit(block); };
+};
+
+class AesCBC_Enc : public AesEncrypt
 {
-  for (int i = 15; i >= 0; i--)
-  {
-    iv[i]++;
-    if (iv[i] != 0)
-      break;
+public:
+  AesCBC_Enc(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
+  virtual void runcry(u8_t *block) override{
+    getXor(block, iv);
+    crypt.runaes_128bit(block);
+    memcpy(iv, block, 16);
   }
-}
-void AesCTR::getencry(u8_t *block)
+};
+
+class AesCBC_Dec : public AesDecrypt
 {
-  u8_t mask[16];
-  memcpy(mask, iv, 16);
-  encryhandle.runaes_128bit(mask);
-  getXor(block, mask);
-  ctrInc();
-}
-void AesCFB::getencry(u8_t *block)
+public:
+  AesCBC_Dec(u8_t *key, const u8_t *iv) : AesDecrypt(key, iv){};
+  virtual void runcry(u8_t *block) override{
+    u8_t nxt_iv[16];
+    memcpy(nxt_iv, block, 16);
+    crypt.runaes_128bit(block);
+    getXor(block, iv);
+    memcpy(iv, nxt_iv, 16);
+  }
+};
+
+class AesCTR : public AesEncrypt
 {
-  encryhandle.runaes_128bit(iv);
-  getXor(block, iv);
-  memcpy(iv, block, 16);
-}
-void AesCFB::getdecry(u8_t *block)
+  void ctrInc(){
+    for (int i = 15; i >= 0; i--)
+    {
+      iv[i]++;
+      if (iv[i] != 0)
+        break;
+    }
+  }
+public:
+  AesCTR(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
+  virtual void runcry(u8_t *block) override{
+    u8_t mask[16];
+    memcpy(mask, iv, 16);
+    crypt.runaes_128bit(mask);
+    getXor(block, mask);
+    ctrInc();
+  }
+};
+
+class AesCFB_Enc : public AesEncrypt
 {
-  u8_t nxt_iv[16];
-  memcpy(nxt_iv, block, 16);
-  encryhandle.runaes_128bit(iv);
-  getXor(block, iv);
-  memcpy(iv, nxt_iv, 16);
-}
-void AesOFB::getencry(u8_t *block)
+public:
+  AesCFB_Enc(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
+  virtual void runcry(u8_t *block) override{
+    crypt.runaes_128bit(iv);
+    getXor(block, iv);
+    memcpy(iv, block, 16);
+  }
+};
+
+class AesCFB_Dec : public AesEncrypt
 {
-  encryhandle.runaes_128bit(iv);
-  getXor(block, iv);
+public:
+  AesCFB_Dec(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
+  virtual void runcry(u8_t *block) override{
+    u8_t nxt_iv[16];
+    memcpy(nxt_iv, block, 16);
+    crypt.runaes_128bit(iv);
+    getXor(block, iv);
+    memcpy(iv, nxt_iv, 16);
+  }
+};
+
+class AesOFB : public AesEncrypt
+{
+public:
+  AesOFB(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
+  virtual void runcry(u8_t *block) override{
+    crypt.runaes_128bit(iv);
+    getXor(block, iv);
+  }
+};
+
+/*
+createEncryMaster:返回相应的加密器
+isenc:是否为加密
+type:类型(0:ECB,1:CBC,2:CTR,3:CFB,4:OFB)
+return:返回的加密器
+*/
+Aesmode * AesFactory::createCryMaster(bool isenc, u8_t type)
+{
+  if(isenc){
+    switch (type)
+    {
+    case 0:
+      return new AesECB_Enc(key, iv);
+    case 1:
+      return new AesCBC_Enc(key, iv);
+    case 2:
+      return new AesCTR(key, iv);
+    case 3:
+      return new AesCFB_Enc(key, iv);
+    case 4:
+      return new AesOFB(key, iv);
+    default:
+      printf("Unknown\n");
+      return NULL;
+    }
+  }
+  else{
+    switch (type)
+    {
+    case 0:
+      return new AesECB_Dec(key, iv);
+    case 1:
+      return new AesCBC_Dec(key, iv);
+    case 2:
+      return new AesCTR(key, iv);
+    case 3:
+      return new AesCFB_Dec(key, iv);
+    case 4:
+      return new AesOFB(key, iv);
+    default:
+      printf("Unknown\n");
+      return NULL;
+    }
+  }
 }

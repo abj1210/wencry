@@ -8,80 +8,31 @@
 class Aesmode
 {
 protected:
-  encryaes encryhandle;
-  decryaes decryhandle;
   u8_t iv[16], initiv[16];
   void getXor(u8_t *x, u8_t *mask);
 
 public:
-  Aesmode(u8_t *key) : encryhandle(key), decryhandle(key)
-  {
-    memset(initiv, 0, sizeof(initiv));
-    resetIV();
-  };
-  Aesmode(u8_t *key, const u8_t *iv) : encryhandle(key), decryhandle(key)
-  {
-    memcpy(initiv, iv, 16);
-    resetIV();
+  Aesmode(const u8_t *iv){
+    memcpy(this->initiv, iv, 16);
+    memcpy(this->iv, this->initiv, 16);
   };
   /*
-  resetIV:重设初始向量
-  */
-  void resetIV(u8_t *iv);
-  void resetIV();
-  /*
-  getencry:加密方法
+  runcry:加解密方法
   block:加密块
   */
-  virtual void getencry(u8_t *block) = 0;
-  /*
-  getencry:解密方法
-  block:加密块
-  */
-  virtual void getdecry(u8_t *block) = 0;
+  virtual void runcry(u8_t *block) = 0;
 };
-
-class AesECB : public Aesmode
-{
+/*
+Aes加密工厂类
+*/
+class AesFactory {
+  u8_t * key;
+  const u8_t *iv;
 public:
-  AesECB(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
-  virtual void getencry(u8_t *block) { encryhandle.runaes_128bit(block); };
-  virtual void getdecry(u8_t *block) { decryhandle.runaes_128bit(block); };
+  AesFactory(u8_t *key): key(key) {};
+  AesFactory(u8_t *key, const u8_t * iv): key(key), iv(iv) {};
+  void loadiv(const u8_t * iv){this->iv = iv;};
+  Aesmode * createCryMaster(bool isenc, u8_t type);
 };
-
-class AesCBC : public Aesmode
-{
-public:
-  AesCBC(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
-  virtual void getencry(u8_t *block);
-  virtual void getdecry(u8_t *block);
-};
-
-class AesCTR : public Aesmode
-{
-  void ctrInc();
-
-public:
-  AesCTR(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
-  virtual void getencry(u8_t *block);
-  virtual void getdecry(u8_t *block) { getencry(block); };
-};
-
-class AesCFB : public Aesmode
-{
-public:
-  AesCFB(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
-  virtual void getencry(u8_t *block);
-  virtual void getdecry(u8_t *block);
-};
-
-class AesOFB : public Aesmode
-{
-public:
-  AesOFB(u8_t *key, const u8_t *iv) : Aesmode(key, iv){};
-  virtual void getencry(u8_t *block);
-  virtual void getdecry(u8_t *block) { getencry(block); };
-};
-Aesmode *selectCryptMode(u8_t *key, const u8_t *iv, u8_t type);
 
 #endif
