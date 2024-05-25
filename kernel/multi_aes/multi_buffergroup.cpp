@@ -35,9 +35,10 @@ void iobuffer::final_write()
 /*################################
   多缓冲区函数
 ################################*/
-void printload(const u8_t id, const u32_t size)
+void buffergroup::printload(const u8_t id, const size_t size)
 {
-  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << size
+  double mb_size = (size/1024.0)/1024.0;
+  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << mb_size
             << "MB data.\r\n";
 }
 /*
@@ -61,9 +62,10 @@ void buffergroup::load_files(FILE *fin, FILE *fout, bool ispadding)
   for (int i = 0; i < size; ++i)
   {
     buflst[i].init(fin, fout, ispadding);
-    if (buflst[i].update_buffer(false, over))
+    size_t loadsize = buflst[i].update_buffer(false, over);
+    if (loadsize != 0)
       if (!no_echo)
-        printload(i, (iobuffer::BUF_SZ >> 16));
+        printload(i, loadsize);
   }
 }
 /*
@@ -76,11 +78,11 @@ bool buffergroup::update_lst(const u8_t id)
   if (buflst[id].fin_empty())
     return false;
   COND_WAIT
-  bool flag = (buflst[id].update_buffer(true, over) != 0);
-  if (flag && (!no_echo))
-    printload(id, (iobuffer::BUF_SZ >> 16));
+  size_t loadsize = buflst[id].update_buffer(true, over);
+  if ((loadsize != 0) && (!no_echo))
+    printload(id, loadsize);
   COND_RELEASE
-  return flag;
+  return (loadsize != 0);
 }
 /*
 judge_over:判断相应的缓冲区是否已读取结束并进行相应处理

@@ -86,6 +86,7 @@ public:
   */
   ~buffergroup() { delete[] buflst; };
   void load_files(FILE *fin, FILE *fout, bool ispadding);
+  void printload(const u8_t id, const size_t size);
   u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };
   bool update_lst(const u8_t id);
   bool judge_over(const u8_t id);

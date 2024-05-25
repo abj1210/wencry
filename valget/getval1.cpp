@@ -82,7 +82,8 @@ u8_t *get_v_mod1()
   srand(time(NULL));
   vpak_t *res = new vpak_t;
   res->no_echo = false;
-  printf("Need encrypt, verify or decrypt?(e/v/d) ");
+  version();
+  printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
   int r = scanf("%c", &res->mode);
   printf("File name:\n");
   res->fp = getInputFilep();
@@ -129,6 +130,8 @@ u8_t *get_v_mod1()
     res->out = NULL;
     res->ctype = 0;
   }
+  else if (res->mode == 'h')
+    help();
   else
     res->fp = NULL;
   return res->buf;

@@ -63,7 +63,3 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_BINARY_DIR}
                             ${PROJECT_SOURCE_DIR}/valget
                             )
-                            
-target_include_directories(${PROJECT_NAME} PRIVATE
-                            ${CMAKE_CURRENT_BINARY_DIR}/generated
-                            )
