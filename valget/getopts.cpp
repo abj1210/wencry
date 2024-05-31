@@ -178,7 +178,7 @@ bool parseOpts(char c, vpak_t *res)
         if (res->htype == 100)
         {
             res->htype = atoi(optarg);
-            printCryptMode(res->htype);
+            printHashMode(res->htype);
         }
         else
         {

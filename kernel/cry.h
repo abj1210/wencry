@@ -89,32 +89,30 @@ public:
   virtual void printres(int res);
 };
 
+/*
+参数包结构体
+*/
+typedef union
+{
+  struct
+  {
+    FILE *fp, *out;
+    u8_t *key;
+    u8_t r_buf[256];
+    char mode, ctype, htype;
+    bool no_echo;
+  };
+  u8_t buf[512];
+} pakout_t;
+
 /*整体加密类*/
 class runcrypt
 {
-  /*
-  参数包结构体
-  */
-  typedef union
-  {
-    struct
-    {
-      FILE *fp, *out;
-      u8_t *key;
-      u8_t r_buf[256];
-      char mode, ctype, htype;
-      bool no_echo;
-    };
-    u8_t buf[512];
-  } pakout_t;
-
   pakout_t *pakout;
   const u8_t threads_num;
 
   // 文件头构造器
   FileHeader header;
-  // 文件缓冲区
-  buffergroup iobuffer;
   // aes加解密工厂
   AesFactory aesfactory;
   // 并发加解密器
@@ -130,9 +128,6 @@ class runcrypt
   void over();
 
 public:
-  /*
-      构造函数:设定各部件参数
-  */
   runcrypt(u8_t *data, u8_t threads_num = THREAD_NUM);
   ~runcrypt()
   {

@@ -27,18 +27,22 @@ void runcrypt::enc(const u8_t *r_buf)
   header.getIV(r_buf, iv);
   header.getFileHeader(iv);
   // 准备缓冲区和aes加密器
-  iobuffer.load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), true);
+  buffergroup *iobuffer = buffergroup::get_instance(threads_num, GET_VAL(pakout, no_echo));
+  iobuffer->load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), true);
   Aesmode *mode[threads_num];
   aesfactory.loadiv(iv);
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(true, GET_VAL(pakout, ctype));
   // 运行加密
-  crym.run_multicry(iobuffer, mode);
+  crym.run_multicry(mode);
   // 写入hamc
   hmachandle.writeFileHmac(pakout->out, pakout->key, FILE_IV_MARK, FILE_HMAC_MARK);
   // 释放空间
   for (int i = 0; i < threads_num; i++)
+  {
+    buffergroup::del_instance();
     delete mode[i];
+  }
 }
 /*
 dec:将文件解密
@@ -56,15 +60,19 @@ u8_t runcrypt::dec()
   // 准备缓冲区和aes解密器
   aesfactory.loadiv(iv);
   fseek(pakout->fp, FILE_TEXT_MARK(threads_num), SEEK_SET);
-  iobuffer.load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), false);
+  buffergroup *iobuffer = buffergroup::get_instance(threads_num, GET_VAL(pakout, no_echo));
+  iobuffer->load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), false);
   Aesmode *mode[threads_num];
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(false, GET_VAL(pakout, ctype));
   // 运行解密
-  crym.run_multicry(iobuffer, mode);
+  crym.run_multicry(mode);
   // 释放空间
   for (int i = 0; i < threads_num; i++)
+  {
+    buffergroup::del_instance();
     delete mode[i];
+  }
   return 0;
 }
 /*
@@ -90,10 +98,8 @@ u8_t runcrypt::verify()
 /*################################
   接口函数
 ################################*/
-runcrypt::runcrypt(u8_t *data, u8_t threads_num) : threads_num(threads_num),
-                                                   header(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), GET_VAL(data, htype), threads_num),
-                                                   hmachandle(GET_VAL(data, htype)), iobuffer(threads_num, GET_VAL(data, no_echo)),
-                                                   aesfactory(GET_VAL(data, key)), crym(threads_num)
+runcrypt::runcrypt(u8_t *data, u8_t threads_num) : header(GET_VAL(data, fp), GET_VAL(data, out), GET_VAL(data, key), GET_VAL(data, ctype), GET_VAL(data, htype), threads_num),
+                                                   hmachandle(GET_VAL(data, htype)), aesfactory(GET_VAL(data, key)), crym(threads_num), threads_num(threads_num)
 {
   if (GET_VAL(data, no_echo))
     resultprint = new NullResPrint;

@@ -26,11 +26,10 @@ protected:
 
   virtual void getHash(const u8_t *input) = 0;
   virtual void getHash(const u8_t *input, u32_t final_loadsize) = 0;
-  virtual void reset() {};
+  virtual void reset() = 0;
   virtual void getres(u8_t *hashout) = 0;
 
 public:
-  Hashmaster() { reset(); };
   static const u8_t gethlen() { return 0; };
   static const u8_t getblen() { return 0; };
   void getFileHash(FILE *fp, u8_t *hashres);
@@ -60,6 +59,7 @@ class sha1hash : public Hashmaster
   void getres(u8_t *hashout);
 
 public:
+  sha1hash(){reset();};
   static const u8_t gethlen() { return 20; };
   static const u8_t getblen() { return 64; };
 };
@@ -83,6 +83,7 @@ class md5hash : public Hashmaster
   void getres(u8_t *hashout);
 
 public:
+  md5hash(){reset();};
   static const u8_t gethlen() { return 16; };
   static const u8_t getblen() { return 64; };
 };

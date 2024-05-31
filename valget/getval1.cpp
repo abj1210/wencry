@@ -48,10 +48,10 @@ static u8_t *getInputKey()
 {
   u8_t kn[128] = "";
   printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
-  int r = scanf("%*[\n]");
+  scanf("%*[\n]");
   while (scanf("%s", kn) == 0)
   {
-    r = scanf("%*[\n]");
+    scanf("%*[\n]");
     printf("Sorry, please enter 128 bits (16 bytes) key in base64 mod:\n");
   }
   u8_t *keyout = new u8_t[16];
@@ -66,7 +66,7 @@ static u8_t selectMode()
 {
   u32_t c;
   printf("Select a crypt mode(0:ECB, 1:CBC, 2:CTR, 3:CFB, 4:OFB).\n");
-  int r = scanf("%d", &c);
+  scanf("%d", &c);
   if (c > 4 || c < 0)
     c = 0;
   return (u8_t)c;
@@ -84,13 +84,13 @@ u8_t *get_v_mod1()
   res->no_echo = false;
   version();
   printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
-  int r = scanf("%c", &res->mode);
+  scanf("%c", &res->mode);
   printf("File name:\n");
   res->fp = getInputFilep();
   if (res->mode == 'e' || res->mode == 'E')
   {
     printf("Need generate a new key?(y/n) ");
-    r = scanf("%*[\n]%c", &flag);
+    scanf("%*[\n]%c", &flag);
     if (flag == 'y' || flag == 'Y')
       res->key = getRandomKey();
     else
@@ -108,12 +108,12 @@ u8_t *get_v_mod1()
   else if (res->mode == 'd' || res->mode == 'D')
   {
     printf("Need a new name for decrypted file?(y/n) ");
-    r = scanf("%*[\n]%c", &flag);
+    scanf("%*[\n]%c", &flag);
     if (flag == 'y' || flag == 'Y')
     {
       printf("Enter new name:\n");
-      r = scanf("%*[\n]");
-      r = scanf("%s", decn);
+      scanf("%*[\n]");
+      scanf("%s", decn);
       res->out = fopen(decn, "wb+");
     }
     else

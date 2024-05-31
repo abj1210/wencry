@@ -90,8 +90,7 @@ iv:初始向量数组
 void FileHeader::getIV(FILE *fp, u8_t *iv)
 {
     fseek(fp, FILE_IV_MARK, SEEK_SET);
-    u8_t sum = fread(iv, 1, 20 * num, fp);
-    fflush(stdout);
+    fread(iv, 1, 20 * num, fp);
 }
 /*
 getFileHeader:构造加密文件头

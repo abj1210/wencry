@@ -6,7 +6,7 @@
 #include <thread>
 typedef unsigned char u8_t;
 /*
-多线程加解密抽象类
+多线程加解密类
 */
 class multicry_master
 {
@@ -18,7 +18,7 @@ private:
   std::thread threads[THREAD_MAX];
 public:
   multicry_master(u8_t thread_num): THREADS_NUM(thread_num){};
-  void run_multicry(buffergroup &iobuffer, Aesmode ** mode);
+  void run_multicry(Aesmode ** mode);
 };
 
 

@@ -78,13 +78,19 @@ class buffergroup
   std::mutex filelock;
   std::condition_variable cond;
   bool over, no_echo;
+  buffergroup(u32_t size, bool no_echo);
+  ~buffergroup() { delete[] buflst; };
+
+  static buffergroup *instance;
+  static std::mutex mtx;
 
 public:
-  buffergroup(u32_t size, bool no_echo);
-  /*
-        析构函数:释放缓冲区组
-  */
-  ~buffergroup() { delete[] buflst; };
+  buffergroup(const buffergroup &) = delete;
+  buffergroup &operator=(const buffergroup &) = delete;
+
+  static buffergroup *get_instance(u32_t size = 4, bool no_echo = false);
+  static void del_instance();
+
   void load_files(FILE *fin, FILE *fout, bool ispadding);
   void printload(const u8_t id, const size_t size);
   u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };

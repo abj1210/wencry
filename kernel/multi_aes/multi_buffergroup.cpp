@@ -37,7 +37,7 @@ void iobuffer::final_write()
 ################################*/
 void buffergroup::printload(const u8_t id, const size_t size)
 {
-  double mb_size = (size/1024.0)/1024.0;
+  double mb_size = (size / 1024.0) / 1024.0;
   std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << mb_size
             << "MB data.\r\n";
 }
@@ -50,6 +50,35 @@ buffergroup::buffergroup(u32_t size, bool no_echo)
     : buflst(NULL), size(size), turn(0), over(false), no_echo(no_echo)
 {
 }
+
+buffergroup *buffergroup::instance = NULL;
+std::mutex buffergroup::mtx;
+
+buffergroup *buffergroup::get_instance(u32_t size, bool no_echo)
+{
+  if (instance == NULL)
+  {
+    std::lock_guard<std::mutex> lock(mtx);
+    if (instance == NULL)
+    {
+      instance = new buffergroup(size, no_echo);
+    }
+  }
+  return instance;
+};
+void buffergroup::del_instance()
+{
+  if (instance != NULL)
+  {
+    std::lock_guard<std::mutex> lock(mtx);
+    if (instance != NULL)
+    {
+      delete instance;
+      instance = NULL;
+    }
+  }
+};
+
 /*
 load_files:加载文件到缓冲区
 fin:输入文件地址

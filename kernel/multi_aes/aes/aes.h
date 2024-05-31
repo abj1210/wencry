@@ -77,13 +77,13 @@ class encryaes : public aeshandle
 {
 public:
   encryaes(const u8_t *initkey) : aeshandle(initkey){};
-  void runaes_128bit(u8_t *w);
+  void runaes_128bit(u8_t *w) override;
 };
 class decryaes : public aeshandle
 {
 public:
   decryaes(const u8_t *initkey) : aeshandle(initkey){};
-  void runaes_128bit(u8_t *w);
+  void runaes_128bit(u8_t *w) override;
 };
 
 #endif
