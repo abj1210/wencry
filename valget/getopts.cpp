@@ -1,5 +1,7 @@
 #include "getval.h"
 #include "base64.h"
+#include <filesystem>
+#include <iostream>
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
@@ -59,47 +61,51 @@ mode:模式
 */
 static void printCryptMode(u8_t mode)
 {
-    fprintf(stderr, "Using Crypt mode :");
+    std::string cm = "Crypt mode :";
+    std::string cry;
     switch (mode)
     {
     case 0:
-        fprintf(stderr, "ECB\n");
+        cry = "ECB";
         break;
     case 1:
-        fprintf(stderr, "CBC\n");
+        cry = "CBC";
         break;
     case 2:
-        fprintf(stderr, "CTR\n");
+        cry = "CTR";
         break;
     case 3:
-        fprintf(stderr, "CFB\n");
+        cry = "CFB";
         break;
     case 4:
-        fprintf(stderr, "OFB\n");
+        cry = "OFB";
         break;
     default:
-        fprintf(stderr, "Unknown\n");
+        cry = "Unknown";
         break;
     }
+    strlog(cm, cry);
 }
 /*
 printCryptMode:打印Hash模式
 mode:模式
 */
 static void printHashMode(u8_t mode){
-    fprintf(stderr, "Using Hash mode :");
+    std::string hm = "Hash mode :";
+    std::string hash;
     switch (mode)
     {
     case 0:
-        fprintf(stderr, "sha1\n");
+        hash = "sha1";
         break;
     case 1:
-        fprintf(stderr, "md5\n");
+        hash = "md5";
         break;
     default:
-        fprintf(stderr, "Unknown\n");
+        hash = "Unknown";
         break;
     }
+    strlog(hm, hash);
 }
 /*
 parseOpts:解析选项
@@ -110,6 +116,7 @@ return:是否解析成功
 bool parseOpts(char c, vpak_t *res)
 {
     int tnum;
+    size_t fsize = 0;
     switch (c)
     {
     case 'e':
@@ -117,7 +124,7 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'e';
         else
         {
-            fprintf(stderr, "Only one mode can be specified\n");
+            strlog( "Error :", "Only one mode can be specified");
             return false;
         }
         break;
@@ -126,7 +133,7 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'd';
         else
         {
-            fprintf(stderr, "Only one mode can be specified\n");
+            strlog( "Error :", "Only one mode can be specified");
             return false;
         }
         break;
@@ -135,29 +142,38 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'v';
         else
         {
-            fprintf(stderr, "Only one mode can be specified\n");
+            strlog( "Error :", "Only one mode can be specified");
             return false;
         }
         break;
     case 'i':
         res->fp = fopen(optarg, "rb");
         sprintf(fout, "%s.wenc", optarg);
+        try {
+            auto fileSize = std::filesystem::file_size(optarg);
+            fsize = fileSize;
+            strlog( "File size: ", std::to_string(((double)fileSize)/((double)(1024*1024)))+"MB");
+        } catch (std::filesystem::filesystem_error& e) {
+            std::cerr << "Error: " << e.what() << std::endl;
+        }
         if (res->fp == NULL)
         {
-            fprintf(stderr, "Could not open file %s\n", optarg);
+            strlog( "Error :", "Could not open file " + std::string(optarg));
             return false;
         }
+        res->size = fsize;
         break;
     case 'o':
         res->out = fopen(optarg, "wb+");
         if (res->out == NULL)
         {
-            fprintf(stderr, "Could not open file %s\n", optarg);
+            strlog( "Error :", "Could not open file " + std::string(optarg));
             return true;
         }
         break;
     case 'k':
         res->key = getArgsKey(optarg);
+        strlog("Key :", "Using specific key");
         break;
     case 'n':
         res->no_echo = true;
@@ -170,7 +186,7 @@ bool parseOpts(char c, vpak_t *res)
         }
         else
         {
-            fprintf(stderr, "Only one ctype can be specified\n");
+            strlog( "Error :", "Only one ctype can be specified");
             return false;
         }
         break;
@@ -182,7 +198,7 @@ bool parseOpts(char c, vpak_t *res)
         }
         else
         {
-            fprintf(stderr, "Only one htype can be specified\n");
+            strlog( "Error :", "Only one htype can be specified");
             return false;
         }
         break;
@@ -191,7 +207,7 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'V';
         else
         {
-            fprintf(stderr, "Only one mode can be specified\n");
+            strlog( "Error :", "Only one mode can be specified");
             return false;
         }
         break;
@@ -201,13 +217,13 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'h';
         else
         {
-            fprintf(stderr, "Only one mode can be specified\n");
+            strlog( "Error :", "Only one mode can be specified");
             return false;
         }
 
         break;
     default:
-        fprintf(stderr, "Unknown option\n");
+        strlog( "Error :", "Unknown option");
         return false;
     }
     return true;
@@ -248,7 +264,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     }
     if (res->mode == 'u')
     {
-        fprintf(stderr, "Wrong Mode %c\n", res->mode);
+        strlog( "Error :", "Wrong Mode");
         delete res;
         return NULL;
     }
@@ -256,40 +272,40 @@ u8_t *get_v_opt(int argc, char *argv[])
     {
         if (res->ctype == 100)
         {
-            fprintf(stderr, "Using ECB mode\n");
+            printCryptMode(0);
             res->ctype = 0;
         }
         else if (res->ctype < 0 || res->ctype > 4)
         {
-            fprintf(stderr, "Wrong ctype\n");
+            strlog( "Error :", "Wrong ctype");
             delete res;
             return NULL;
         }
         if (res->htype == 100)
         {
-            fprintf(stderr, "Using sha1 mode\n");
+            printHashMode(0);
             res->htype = 0;
         }
         else if (res->htype < 0 || res->htype > 1)
         {
-            fprintf(stderr, "Wrong htype\n");
+            strlog( "Error :", "Wrong htype");
             delete res;
             return NULL;
         }
         if (res->key == NULL)
         {
-            fprintf(stderr, "Using random key\n");
+            strlog("Key :", "Using random key");
             res->key = getRandomKey();
         }
         if (res->fp == NULL)
         {
-            fprintf(stderr, "No file specified\n");
+            strlog( "Error :", "No file specified");
             delete res;
             return NULL;
         }
         if (res->out == NULL)
         {
-            fprintf(stderr, "Using default output file name\n");
+            strlog( "Error :", "Using default output file name");
             res->out = fopen(fout, "wb+");
         }
         getRandomBuffer(res->r_buf);

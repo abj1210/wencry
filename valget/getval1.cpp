@@ -1,23 +1,28 @@
 #include "base64.h"
 #include "getval.h"
+#include <filesystem>
 #include <iostream>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+void strlog(std::string s1, std::string s2, char fill){
+  std::cout << std::setw(40) << std::setfill(fill)<< std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
+}
 void printkey(u8_t *key)
 {
-  u8_t outk[128];
-  hex_to_base64(key, 16, outk);
-  std::cout << "Key is:\n"
-            << outk << "\n";
+  char outk[128];
+  hex_to_base64(key, 16, (u8_t *)outk);
+  std::string skey = outk;
+  strlog("Key is:", skey);
 }
 /*
 getInputFilep:从输入中获取文件指针
 return:获取的文件指针
 */
-static FILE *getInputFilep()
+static void getInputFilep(vpak_t * pak)
 {
   char fn[128];
+  size_t size = 0;
   FILE *fp;
   while (1)
   {
@@ -25,9 +30,17 @@ static FILE *getInputFilep()
     fp = fopen(fn, "rb");
     if (fp != NULL)
       break;
-    printf("File not found.\n");
+    strlog("Error :", "File not found");
   }
-  return fp;
+  try {
+      auto fileSize = std::filesystem::file_size(fn);
+      size = fileSize;
+      strlog( "File size: ", std::to_string(((double)fileSize)/((double)(1024*1024)))+"MB");
+  } catch (std::filesystem::filesystem_error& e) {
+      std::cerr << "Error: " << e.what() << std::endl;
+  }
+  pak->fp = fp;
+  pak->size = size;
 }
 /*
 getRandomKey:获取随机密钥
@@ -86,7 +99,7 @@ u8_t *get_v_mod1()
   printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
   scanf("%c", &res->mode);
   printf("File name:\n");
-  res->fp = getInputFilep();
+  getInputFilep(res);
   if (res->mode == 'e' || res->mode == 'E')
   {
     printf("Need generate a new key?(y/n) ");

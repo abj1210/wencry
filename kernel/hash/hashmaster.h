@@ -32,8 +32,7 @@ protected:
 public:
   static const u8_t gethlen() { return 0; };
   static const u8_t getblen() { return 0; };
-  void getFileHash(FILE *fp, u8_t *hashres);
-  void getFileOffsetHash(FILE *fp, u8_t *block, u8_t *hashres);
+  void getFileHash(buffer64 * buffer, u8_t *hashres);
   void getStringHash(const u8_t *string, u32_t length, u8_t *hashres);
 };
 

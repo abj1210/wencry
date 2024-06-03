@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 
+
+set(CMAKE_C_STANDARD 17)
 IF("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
     message(STATUS "building for: debugging")
     
@@ -7,14 +9,13 @@ IF("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
     set(CXX_FORMAT_SECURITY "-Werror=format-security")
     set(CXX_STACK_PROTECTOR "-fstack-protector-all")
     set(CXX_FLAGS_DEBUG "-O0 -gp")
-    set(CMAKE_C_STANDARD 14)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -ggdb -Wall -Wextra -DNETDATA_INTERNAL_CHECKS=1 -DNETDATA_VERIFY_LOCKS=1 ${CXX_FORMAT_SIGNEDNESS} ${CXX_FORMAT_SECURITY} ${CXX_STACK_PROTECTOR} ${CXX_FLAGS_DEBUG}")
 ELSE()
     message(STATUS "building for: release")
     cmake_policy(SET CMP0069 "NEW")
     include(CheckIPOSupported)
     check_ipo_supported(RESULT ipo_supported OUTPUT error)
-    set(CMAKE_CXX_FLAGS "-std=c++14 -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -O3")
     IF(${ipo_supported})
         message(STATUS "link time optimization: supported")
         set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
@@ -28,7 +29,7 @@ ENDIF()
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
 
-project(Wencry VERSION 3.4.0 LANGUAGES CXX)
+project(Wencry VERSION 3.5.0 LANGUAGES CXX)
 
 configure_file(
   config.h.in

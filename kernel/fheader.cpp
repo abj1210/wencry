@@ -1,4 +1,5 @@
 #include "cry.h"
+#include "hashbuffer.h"
 #include <chrono>
 #include <iostream>
 using namespace std;
@@ -21,7 +22,8 @@ void hmac::getres(u8_t *key, FILE *fp)
     memcpy(key1, key, 16);
     for (int i = 0; i < block; ++i)
         h1[i] = key1[i] ^ ipad;
-    hashmaster->getFileOffsetHash(fp, h1, &h2[block]);
+    buffer64 * buf = new filebuffer64(fp, h1);
+    hashmaster->getFileHash(buf, &h2[block]);
     for (int i = 0; i < block; ++i)
         h2[i] = key1[i] ^ opad;
     hashmaster->getStringHash(h2, block + length, hmac_res);
@@ -161,30 +163,45 @@ u8_t *FileHeader::getHmac(u8_t len)
 ################################*/
 
 /*
+printtask:打印任务
+name:任务名
+*/
+void ResultPrint::printtask(std::string name){
+    strlog("Task:", name);
+}
+/*
 printinv: 打印非法
 return: 返回值
 */
 u8_t ResultPrint::printinv(const u8_t ret)
 {
-    std::cout << "Invalid values.\r\n";
+    strlog("Invalid values:", std::to_string(ret));
     return ret;
 }
+Timer * ResultPrint::createTimer(string name){
+    Timer * timer = new Timer;
+    timer->name = name;
+    timer->start = system_clock::now();
+    return timer;
+}
+
 /*
 printtime: 打印时间
 totalTime: 总时间
-threads_num: 线程数
 */
-void ResultPrint::printtime(std::chrono::microseconds totalTime)
+void ResultPrint::printTimer(Timer * timer)
 {
-    std::cout << "Time: " << double(totalTime.count()) * microseconds::period::num / microseconds::period::den
-              << "s\r\n";
+    auto end = system_clock::now();
+    auto totalTime = duration_cast<microseconds>(end - timer->start);
+    strlog(timer->name+" : ", std::to_string(double(totalTime.count()) * microseconds::period::num / microseconds::period::den)+"s");
+    delete timer;
 }
 /*
 printenc: 打印加密结果
 */
 void ResultPrint::printenc()
 {
-    std::cout << "Encrypt over! \r\n";
+    strlog("Result:", "Encrypt over!");
 }
 /*
 printres: 打印解密结果
@@ -192,16 +209,17 @@ res: 解密结果
 */
 void ResultPrint::printres(int res)
 {
+    std::string  resstr = "Result:";
     if (res <= 0)
-        std::cout << "Verify pass!\r\n";
+        strlog(resstr , "Verify pass!");
     else if (res == 1)
-        std::cout << "File too short.\r\n";
+        strlog(resstr , "File too short.");
     else if (res == 2)
-        std::cout << "Wrong key or File not complete.\r\n";
+        strlog(resstr , "Wrong key or File not complete.");
     else if (res == 3)
-        std::cout << "Aes / hash mode not match.\r\n";
+        strlog(resstr , "Aes / hash mode not match.");
     else if (res == 4)
-        std::cout << "Wrong magic number.\r\n";
+        strlog(resstr , "Wrong magic number.");
     else
-        std::cout << "Unknown res number: " << res << ".\r\n";
+        strlog(resstr , "Unknown res number: " + std::to_string(res));
 }

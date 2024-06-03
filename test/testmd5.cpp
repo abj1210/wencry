@@ -1,4 +1,5 @@
 #include "hashmaster.h"
+#include "hashbuffer.h"
 #include "testutil.h"
 #include "gtest/gtest.h"
 
@@ -24,7 +25,8 @@ TEST(Testmd5, testmd5_2) {
 TEST(Testmd5, testmd5_3) {
   FILE *fp = genfile("abcd");
   unsigned char hash[16], hashcmp[16];
-  htest->getFileHash(fp, hash);
+  buffer64 * buf = new filebuffer64(fp); 
+  htest->getFileHash(buf, hash);
   gethex("E2FC714C4727EE9395F324CD2E7F331F", hashcmp);
   EXPECT_TRUE(cmpstr(hash, hashcmp, 16));
   fclose(fp);

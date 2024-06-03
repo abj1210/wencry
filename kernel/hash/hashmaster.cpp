@@ -6,16 +6,15 @@
 
 /*
 getFileHash:返回文件哈希
-fp:文件指针
+buffer:文件缓冲区
 hashres:结果哈希地址
 */
-void Hashmaster::getFileHash(FILE *fp, u8_t *hashres)
+void Hashmaster::getFileHash(buffer64 * buffer, u8_t *hashres)
 {
   reset();
-  hashbuf = new buffer64(fp);
   while (true)
   {
-    u64_t sum = hashbuf->read_buffer64(hashblock);
+    u64_t sum = buffer->read_buffer64(hashblock);
     if (sum != 64)
     {
       getHash(hashblock, sum);
@@ -24,30 +23,6 @@ void Hashmaster::getFileHash(FILE *fp, u8_t *hashres)
     getHash(hashblock);
   }
   getres(hashres);
-  delete hashbuf;
-}
-/*
-getFileOffsetHash:返回拼接文件哈希
-fp:文件指针
-block:拼接块
-hashres:结果哈希地址
-*/
-void Hashmaster::getFileOffsetHash(FILE *fp, u8_t *block, u8_t *hashres)
-{
-  reset();
-  hashbuf = new buffer64(block, fp);
-  while (true)
-  {
-    u64_t sum = hashbuf->read_buffer64(hashblock);
-    if (sum != 64)
-    {
-      getHash(hashblock, sum);
-      break;
-    }
-    getHash(hashblock);
-  }
-  getres(hashres);
-  delete hashbuf;
 }
 /*
 getStringHash:返回字符串哈希

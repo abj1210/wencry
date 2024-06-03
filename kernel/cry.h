@@ -2,7 +2,8 @@
 #define CRY
 #include "multicry.h"
 #include "hashmaster.h"
-#include <chrono>
+#include <iostream>
+#include <iomanip>
 #include <stdio.h>
 #include <string.h>
 typedef unsigned char u8_t;
@@ -61,12 +62,19 @@ public:
   u8_t *getHmac(u8_t len);
 };
 
+struct Timer{
+  std::chrono::_V2::system_clock::time_point start;
+  std::string name;
+};
+
 /*结果打印类*/
 class AbsResultPrint
 {
 public:
+  virtual void printtask(std::string name) = 0;
   virtual u8_t printinv(const u8_t ret) = 0;
-  virtual void printtime(std::chrono::microseconds totalTime) = 0;
+  virtual Timer * createTimer(std::string name) = 0;
+  virtual void printTimer(Timer * timer) = 0;
   virtual void printenc() = 0;
   virtual void printres(int res) = 0;
 };
@@ -74,17 +82,24 @@ public:
 class NullResPrint : public AbsResultPrint
 {
 public:
+  virtual void printtask(std::string name){};
   virtual u8_t printinv(const u8_t ret) { return ret; };
-  virtual void printtime(std::chrono::microseconds totalTime) {};
+  virtual Timer * createTimer(std::string name) {return NULL; };
+  virtual void printTimer(Timer * timer){};
   virtual void printenc() {};
   virtual void printres(int res) {};
 };
 
 class ResultPrint : public AbsResultPrint
 {
+  void strlog(std::string s1, std::string s2, char fill = ' '){
+    std::cout << std::setw(40) << std::setfill(fill)<< std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
+  }
 public:
+  virtual void printtask(std::string name);
   virtual u8_t printinv(const u8_t ret);
-  virtual void printtime(std::chrono::microseconds totalTime);
+  virtual Timer * createTimer(std::string name);
+  virtual void printTimer(Timer * timer);
   virtual void printenc();
   virtual void printres(int res);
 };
@@ -99,6 +114,7 @@ typedef union
     FILE *fp, *out;
     u8_t *key;
     u8_t r_buf[256];
+    size_t size;
     char mode, ctype, htype;
     bool no_echo;
   };

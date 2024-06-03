@@ -20,7 +20,7 @@ void multiruncrypt_file(u8_t id, Aesmode &mode)
       mode.runcry(block);
   }
   return;
-}
+};
 /*
 run_multicry:进行多线程并发
 iobuffer:文件缓冲区
@@ -31,5 +31,5 @@ void multicry_master::run_multicry(Aesmode **mode)
   for (u8_t i = 0; i < THREADS_NUM; ++i)
     threads[i] = std::thread(multiruncrypt_file, i, std::ref((*mode[i])));
   for (u8_t i = 0; i < THREADS_NUM; ++i)
-    threads[i].join();
-}
+    threads[i].join(); 
+};

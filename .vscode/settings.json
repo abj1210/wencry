@@ -69,9 +69,12 @@
         "cinttypes": "cpp",
         "typeindex": "cpp",
         "variant": "cpp",
-        "*.ispc": "cpp"
+        "*.ispc": "cpp",
+        "unordered_set": "cpp",
+        "codecvt": "cpp",
+        "iomanip": "cpp"
     },
-    "cmake.sourceDirectory": "/mnt/c/Users/闻嘉迅/liucan/code/wencry",
+    "cmake.sourceDirectory": "/mnt/c/code/wencry",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.errorSquiggles": "enabled"
 }

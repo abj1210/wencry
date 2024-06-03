@@ -23,20 +23,27 @@ r_buf:随机缓冲数组
 void runcrypt::enc(const u8_t *r_buf)
 {
   // 准备初始向量
+  resultprint->printtask("Preparing encrypt");
   u8_t iv[multicry_master::THREAD_MAX * 20];
   header.getIV(r_buf, iv);
   header.getFileHeader(iv);
   // 准备缓冲区和aes加密器
   buffergroup *iobuffer = buffergroup::get_instance(threads_num, GET_VAL(pakout, no_echo));
-  iobuffer->load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), true);
+  iobuffer->load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), true, GET_VAL(pakout, size));
   Aesmode *mode[threads_num];
   aesfactory.loadiv(iv);
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(true, GET_VAL(pakout, ctype));
+  auto t = resultprint->createTimer("AES Encrypt Time");
   // 运行加密
+  resultprint->printtask("Encrypting");
   crym.run_multicry(mode);
+  resultprint->printTimer(t);
+  t = resultprint->createTimer("Hashing Time");
   // 写入hamc
+  resultprint->printtask("Calculating hmac");
   hmachandle.writeFileHmac(pakout->out, pakout->key, FILE_IV_MARK, FILE_HMAC_MARK);
+  resultprint->printTimer(t);
   // 释放空间
   for (int i = 0; i < threads_num; i++)
   {
@@ -50,23 +57,29 @@ return:若成功解密则返回0,否则返回非零值
 */
 u8_t runcrypt::dec()
 {
+  auto t = resultprint->createTimer("Verify Time");
   // 验证文件
   u8_t state = verify();
+  resultprint->printTimer(t);
   if (state != 0)
     return state;
   // 准备初始向量
+  resultprint->printtask("Preparing decrypt");
   u8_t iv[multicry_master::THREAD_MAX * 20];
   header.getIV(pakout->fp, iv);
   // 准备缓冲区和aes解密器
   aesfactory.loadiv(iv);
   fseek(pakout->fp, FILE_TEXT_MARK(threads_num), SEEK_SET);
   buffergroup *iobuffer = buffergroup::get_instance(threads_num, GET_VAL(pakout, no_echo));
-  iobuffer->load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), false);
+  iobuffer->load_files(GET_VAL(pakout, fp), GET_VAL(pakout, out), false, GET_VAL(pakout, size));
   Aesmode *mode[threads_num];
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(false, GET_VAL(pakout, ctype));
+  t = resultprint->createTimer("AES Decrypt Time");
   // 运行解密
+  resultprint->printtask("Decrypting");
   crym.run_multicry(mode);
+  resultprint->printTimer(t);
   // 释放空间
   for (int i = 0; i < threads_num; i++)
   {
@@ -81,6 +94,7 @@ return:若为0则检查通过,否则检查不通过
 */
 u8_t runcrypt::verify()
 {
+  resultprint->printtask("Verifying file");
   if (!header.checkMn())
     return 4;
   if (!header.checkType())
@@ -116,7 +130,7 @@ return:返回是否成功执行
 bool runcrypt::exec_val()
 {
   int res = 0;
-  auto start = system_clock::now();
+  auto t1 = resultprint->createTimer("Total Time");
   if (pakout->fp == NULL)
     return resultprint->printinv(0);
   if (pakout->mode == 'e' || pakout->mode == 'E')
@@ -138,9 +152,8 @@ bool runcrypt::exec_val()
   {
     return resultprint->printinv(6);
   }
-  auto end = system_clock::now();
-  auto duration = duration_cast<microseconds>(end - start);
-  resultprint->printtime(duration); // 打印时间
+  
+  resultprint->printTimer(t1); // 打印时间
   over();                           // 关闭文件
   return res == 0;
 }

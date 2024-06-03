@@ -1,4 +1,7 @@
 #include "multi_buffergroup.h"
+#include <assert.h>
+#include <iomanip>
+#include <math.h>
 /*
 update_buffer:保存缓冲区数据并更新缓冲区
 over:加载是否结束
@@ -10,6 +13,7 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
   if (write)
     fwrite(b, 1, sum, fout);
   u32_t load = fread(b, 1, sum, fin);
+  bool readover = feof(fin);
   tail = load & 0xf;
   total = load >> 4;
   now = 0;
@@ -17,10 +21,16 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
   {
     u8_t padding = 16 - tail;
     memset(b[total] + tail, padding, padding);
+    isfinal = true;
     over = true;
-    total++;
+    total++;;
     return load + padding;
   }
+  if((!ispadding) && readover && (!over)){
+    isfinal = true;
+    over = true;
+  }
+  
   return load;
 }
 /*
@@ -35,11 +45,26 @@ void iobuffer::final_write()
 /*################################
   多缓冲区函数
 ################################*/
+/*
+printload:打印装载情况
+id:装载数据的线程
+size:装载大小
+*/
 void buffergroup::printload(const u8_t id, const size_t size)
 {
-  double mb_size = (size / 1024.0) / 1024.0;
-  std::cout << "Buffer of thread id " << (const u32_t)id << " loaded " << mb_size
-            << "MB data.\r\n";
+  now_size += size;
+  double percentage = 100.0*((double)now_size / (double)(total_size));
+  std::cout << "Tid " << (const u32_t)id << " loaded ";
+  const int barWidth = 50; // 进度条的总宽度
+  std::cout << "[";
+  int pos = round(barWidth * percentage / 100.0);
+  for (int i = 0; i < barWidth; ++i) {
+      if (i < pos) std::cout << "=";
+      else if (i == pos) std::cout << ">";
+      else std::cout << " ";
+  }
+  std::cout << "] " <<std::setw(12)<< std::fixed << std::setprecision(2)<< percentage << " %\r";
+  std::cout.flush();
 }
 /*
 构造函数:初始化缓冲组的数据
@@ -66,6 +91,7 @@ buffergroup *buffergroup::get_instance(u32_t size, bool no_echo)
   }
   return instance;
 };
+
 void buffergroup::del_instance()
 {
   if (instance != NULL)
@@ -85,9 +111,12 @@ fin:输入文件地址
 fout:输出文件地址
 ispadding:是否为填充模式
 */
-void buffergroup::load_files(FILE *fin, FILE *fout, bool ispadding)
+void buffergroup::load_files(FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
 {
   buflst = new iobuffer[size];
+  cv = new std::condition_variable[size];
+  now_size = 0;
+  total_size = size == 0 ? 1 : fsize;
   for (int i = 0; i < size; ++i)
   {
     buflst[i].init(fin, fout, ispadding);
@@ -127,6 +156,8 @@ bool buffergroup::judge_over(const u8_t id)
   {
     COND_WAIT
     buflst[id].final_write();
+    if (!no_echo)
+      std::cout<<std::endl;
     COND_RELEASE
   }
   return flag;

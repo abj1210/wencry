@@ -6,8 +6,8 @@
 version:获取版本信息
 */
 void version() {
-  std::cout << "Wencry version: " << PROJECT_VERSION
-            << ". Build time: " << V_BUILD_TIME << "\r\n";
+  strlog("Wencry version: ",  PROJECT_VERSION);
+  strlog("Build time: ", V_BUILD_TIME);
 }
 /*
 help:获取帮助信息
