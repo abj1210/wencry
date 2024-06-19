@@ -2,10 +2,11 @@
 #include "hashbuffer.h"
 #include "testutil.h"
 #include "gtest/gtest.h"
-
+#define TNAME Testsha256
+#define TSNAME(tname) TNAME_##tname
 Hashmaster *htest;
 
-TEST(Testsha256, testsha256_1) {
+TEST(TNAME, TSNAME(1)) {
   char s1[] = "abcd";
   unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
   htest->getStringHash((unsigned char *)s1, 4, hash);
@@ -13,7 +14,7 @@ TEST(Testsha256, testsha256_1) {
   EXPECT_TRUE(cmpstr(hash, hashcmp, htest->gethlen()));
 }
 
-TEST(Testsha256, testsha256_2) {
+TEST(TNAME, TSNAME(2)) {
   char s1[] =
       "asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesf";
   unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
@@ -22,7 +23,7 @@ TEST(Testsha256, testsha256_2) {
   EXPECT_TRUE(cmpstr(hash, hashcmp, htest->gethlen()));
 }
 
-TEST(Testsha256, testsha256_3) {
+TEST(TNAME, TSNAME(3)) {
   FILE *fp = genfile("abcd");
   unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
   buffer64 * buf = new filebuffer64(fp); 
@@ -30,6 +31,31 @@ TEST(Testsha256, testsha256_3) {
   gethex("88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589", hashcmp);
   EXPECT_TRUE(cmpstr(hash, hashcmp, htest->gethlen()));
   fclose(fp);
+}
+
+TEST(TNAME, TSNAME(4)) {
+  char s1[] =
+      "asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesf";
+  char s2[] =
+      "asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesd";
+  unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
+  htest->getStringHash((unsigned char *)s1, strlen(s1), hash);
+  htest->getStringHash((unsigned char *)s2, strlen(s2), hashcmp);
+  EXPECT_FALSE(cmpstr(hash, hashcmp, htest->gethlen()));
+}
+TEST(TNAME, TSNAME(5)) {
+  FILE *fp1 = genfile("asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesf");
+  FILE *fp2 = genfile("asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesd");
+  unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
+  buffer64 * buf1 = new filebuffer64(fp1); 
+  htest->getFileHash(buf1, hash);
+  buffer64 * buf2 = new filebuffer64(fp2);
+  htest->getFileHash(buf2, hashcmp);
+  EXPECT_FALSE(cmpstr(hash, hashcmp, htest->gethlen()));
+  delete buf1;
+  delete buf2;
+  fclose(fp1);
+  fclose(fp2);
 }
 
 int main(int argc, char **argv) {

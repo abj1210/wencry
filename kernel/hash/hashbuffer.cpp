@@ -34,8 +34,8 @@ u32_t filebuffer64::read_buffer64(u8_t *block)
     now = 0;
   }
   u32_t load_size = (now >= total) ? tail : 64;
-  memcpy(block, b[now++], load_size);
   if (now == total)
     tail = 0;
+  memcpy(block, b[now++], load_size);
   return load_size;
 };
