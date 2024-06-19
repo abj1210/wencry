@@ -21,7 +21,7 @@ TEST(Testsmall, roundtest) {
   srand(time(NULL));
   char buf[257];
   buf[256] = '\0';
-  for (int i = 0; i < 64; i++) {
+  for (int i = 0; i < 256; i++) {
     printf("Test num : %d\n", i);
     for(int j = 0; j < 256; j++) {
       buf[j] = rand();
