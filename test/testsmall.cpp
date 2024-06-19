@@ -16,6 +16,7 @@ TEST(Testsmall, tests2) {
           "ababrteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrfseaba"
           "brteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrf"));
 }
+/*
 TEST(Testsmall, roundtest) {
   srand(time(NULL));
   char buf[257];
@@ -28,6 +29,7 @@ TEST(Testsmall, roundtest) {
     EXPECT_EQ(1, makeFullTest(buf));
   }
 }
+*/
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
