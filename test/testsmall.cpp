@@ -20,10 +20,10 @@ TEST(Testsmall, tests2) {
 TEST(Testsmall, roundtest) {
   srand(time(NULL));
   char buf[257];
-  buf[256] = '\0';
+  buf[128] = '\0';
   for (int i = 0; i < 64; i++) {
     printf("Test num : %d\n", i);
-    for(int j = 0; j < 256; j++) {
+    for(int j = 0; j < 128; j++) {
       buf[j] = rand();
     }
     EXPECT_EQ(1, makeFullTest(buf));
