@@ -5,13 +5,18 @@ char str[] =
     "ababrteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrfseaba"
     "brteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrfse";
 
-TEST(Testsmode, testsm1) { EXPECT_EQ(1, makeFullTest(str, 0x11)); }
-
-TEST(Testsmode, testsm2) { EXPECT_EQ(1, makeFullTest(str, 0x12)); }
-
-TEST(Testsmode, testsm3) { EXPECT_EQ(1, makeFullTest(str, 0x13)); }
-
-TEST(Testsmode, testsm4) { EXPECT_EQ(1, makeFullTest(str, 0x14)); }
+TEST(Testsmode, testsha1) { 
+  for(int i = 0; i < 5 ; i++) 
+    EXPECT_EQ(1, makeFullTest(str, 0x00+i));
+}
+TEST(Testsmode, testmd5) { 
+  for(int i = 0; i < 5 ; i++) 
+    EXPECT_EQ(1, makeFullTest(str, 0x10+i));
+}
+TEST(Testsmode, testsha256) { 
+  for(int i = 0; i < 5 ; i++) 
+    EXPECT_EQ(1, makeFullTest(str, 0x20+i));
+}
 
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);

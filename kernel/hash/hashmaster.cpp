@@ -9,7 +9,7 @@ getFileHash:返回文件哈希
 buffer:文件缓冲区
 hashres:结果哈希地址
 */
-void Hashmaster::getFileHash(buffer64 * buffer, u8_t *hashres)
+void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres)
 {
   reset();
   while (true)
@@ -60,6 +60,9 @@ HashFactory::HASH_TYPE HashFactory::getType(u8_t type)
   case 1:
     return MD5;
     break;
+  case 2:
+    return SHA256;
+    break;
   default:
     return Unknown;
     break;
@@ -80,48 +83,11 @@ Hashmaster *HashFactory::getHasher(HashFactory::HASH_TYPE type)
   case HASH_TYPE::MD5:
     return new md5hash();
     break;
+  case HASH_TYPE::SHA256:
+    return new sha256hash();
+    break;
   default:
     return NULL;
-    break;
-  }
-}
-/*
-getHashLength:返回相应类型的哈希长度
-type:哈希类型
-return:哈希长度
-*/
-const u8_t HashFactory::getHashLength(HashFactory::HASH_TYPE type)
-{
-  switch (type)
-  {
-  case HASH_TYPE::SHA1:
-    return sha1hash::gethlen();
-    break;
-  case HASH_TYPE::MD5:
-    return md5hash::gethlen();
-    break;
-  default:
-    return 0;
-    break;
-  }
-}
-/*
-getBlkLength:返回相应类型的哈希块长度
-type:哈希类型
-return:块长度
-*/
-const u8_t HashFactory::getBlkLength(HashFactory::HASH_TYPE type)
-{
-  switch (type)
-  {
-  case HASH_TYPE::SHA1:
-    return sha1hash::getblen();
-    break;
-  case HASH_TYPE::MD5:
-    return md5hash::getblen();
-    break;
-  default:
-    return 0;
     break;
   }
 }

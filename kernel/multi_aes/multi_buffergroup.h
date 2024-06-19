@@ -9,13 +9,13 @@ typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
 
-#define COND_WAIT                               \
+#define COND_WAIT                                \
   std::unique_lock<std::mutex> locker(filelock); \
   while (turn != id)                             \
     cv[id].wait(locker);
-#define COND_RELEASE                         \
+#define COND_RELEASE                          \
   turn = (turn == (size - 1)) ? 0 : turn + 1; \
-  cv[turn].notify_one();                          \
+  cv[turn].notify_one();                      \
   locker.unlock();
 
 /*
@@ -32,6 +32,7 @@ class iobuffer
 {
 public:
   static const u32_t BUF_SZ = 0x100000;
+  static const u32_t sum = 0x1000000;
 
 private:
   u8_t b[BUF_SZ][0x10];
@@ -68,6 +69,32 @@ public:
   void final_write();
 };
 /*
+bufferctrl:缓冲区状态控制类
+lock:互斥锁
+cv:条件变量
+state:缓冲区状态(EMPTY:缓冲区为空 UPDATING:缓冲区正在更新 READY:缓冲区更新完毕 INV:缓冲区不可用)
+*/
+class bufferctrl
+{
+  std::mutex lock;
+  std::condition_variable cv;
+
+public:
+  enum
+  {
+    EMPTY,
+    UPDATING,
+    READY,
+    INV
+  } state;
+  bufferctrl() : state(EMPTY){};
+  std::unique_lock<std::mutex> wait_ready();
+  std::unique_lock<std::mutex> wait_update();
+  void set_ready();
+  void set_update();
+  void set_inv();
+};
+/*
 buffergroup:用于多线程的缓冲区组
 buflst:缓冲区数组指针
 size:缓冲区个数
@@ -76,15 +103,21 @@ fileaccess:控制相应序号缓冲区文件读写的互斥锁序列
 class buffergroup
 {
   iobuffer *buflst;
-  const u32_t size;
+  bufferctrl *ctrl;
   u32_t turn;
   u64_t now_size, total_size;
-  std::mutex filelock;
-  std::condition_variable * cv;
-  bool over, no_echo;
-  buffergroup(u32_t size, bool no_echo);
-  ~buffergroup() { delete[] buflst; delete[] cv; };
+  u32_t size;
+  bool no_echo;
+  bool over;
+  buffergroup() : buflst(NULL), turn(0), now_size(0), over(false){};
+  ~buffergroup()
+  {
+    delete[] buflst;
+    delete[] ctrl;
+  };
   void printload(const u8_t id, const size_t size);
+  void buffer_update();
+  void final_update();
 
   static buffergroup *instance;
   static std::mutex mtx;
@@ -92,13 +125,11 @@ class buffergroup
 public:
   buffergroup(const buffergroup &) = delete;
   buffergroup &operator=(const buffergroup &) = delete;
-
-  static buffergroup *get_instance(u32_t size = 4, bool no_echo = false);
+  static buffergroup *get_instance();
   static void del_instance();
 
-  void load_files(FILE *fin, FILE *fout, bool ispadding, u64_t fsize = 0);
-  u8_t *require_buffer_entry(const u8_t id) { return buflst[id].get_entry(); };
-  bool update_lst(const u8_t id);
-  bool judge_over(const u8_t id);
+  void set_buffergroup(u32_t size, bool no_echo, FILE *fin, FILE *fout, bool ispadding, u64_t fsize);
+  u8_t *require_buffer_entry(const u8_t id);
+  void run_buffer();
 };
 #endif

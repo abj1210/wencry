@@ -25,29 +25,25 @@ class hmac
   static const u8_t ipad = 0x36, opad = 0x5c;
   HashFactory hf;
   HashFactory::HASH_TYPE type;
-  u8_t *hmac_res;
+  u8_t *hmac_res, length;
   void getres(u8_t *key, FILE *fp);
 
 public:
   /*
   构造函数:设定哈希模式
   */
-  hmac(u8_t hashtype) : type(hf.getType(hashtype))
-  {
-    hmac_res = new u8_t[hf.getHashLength(type)];
-  };
-  ~hmac() { delete[] hmac_res; };
+  hmac(u8_t hashtype) : type(hf.getType(hashtype)){};
   void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out);
   bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out);
   void writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark);
-  const u8_t get_length() { return hf.getHashLength(type); };
+  const u8_t get_length() { return length; };
 };
 /*文件头处理类*/
 class FileHeader
 {
   // 魔数
   static const u64_t Magic_Num = 0xA5C3A5C3A5C3A5C3;
-  u8_t hash[20], *key, num;
+  u8_t hash[64], *key, num;
   u8_t ctype, htype;
   FILE *fp, *out;
   HashFactory hf;

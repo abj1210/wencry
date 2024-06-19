@@ -5,8 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-void strlog(std::string s1, std::string s2, char fill){
-  std::cout << std::setw(40) << std::setfill(fill)<< std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
+void strlog(std::string s1, std::string s2, char fill)
+{
+  std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
 }
 void printkey(u8_t *key)
 {
@@ -19,7 +20,7 @@ void printkey(u8_t *key)
 getInputFilep:从输入中获取文件指针
 return:获取的文件指针
 */
-static void getInputFilep(vpak_t * pak)
+static void getInputFilep(vpak_t *pak)
 {
   char fn[128];
   size_t size = 0;
@@ -32,12 +33,15 @@ static void getInputFilep(vpak_t * pak)
       break;
     strlog("Error :", "File not found");
   }
-  try {
-      auto fileSize = std::filesystem::file_size(fn);
-      size = fileSize;
-      strlog( "File size: ", std::to_string(((double)fileSize)/((double)(1024*1024)))+"MB");
-  } catch (std::filesystem::filesystem_error& e) {
-      std::cerr << "Error: " << e.what() << std::endl;
+  try
+  {
+    auto fileSize = std::filesystem::file_size(fn);
+    size = fileSize;
+    strlog("File size: ", std::to_string(((double)fileSize) / ((double)(1024 * 1024))) + "MB");
+  }
+  catch (std::filesystem::filesystem_error &e)
+  {
+    std::cerr << "Error: " << e.what() << std::endl;
   }
   pak->fp = fp;
   pak->size = size;

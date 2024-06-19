@@ -1,11 +1,11 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2024.6.4 (最后修改)  
-版本：v3.5.0
+日期：2024.6.19 (最后修改)  
+版本：v3.6.0
 
-**默认4线程,CBC加密模式**  
-**处理速度可达40MB/s以上**  
+**默认4+1线程,CBC加密模式**  
+**处理速度可达50MB/s以上**  
 **内存占用小于80MB**   
 
 ## 加密原理
@@ -128,28 +128,55 @@
 ## 多线程  
  
 若想改变线程数量,则可改变`def.h`中的宏`THREADS_NUM`的值.  
+相关代码位于`multicry.cpp`和`multi_buffergroup.cpp`中.  
 
-**多线程原理**  
+- **多线程原理**  
 我们针对占运行时间近八成的aes加解密部分进行多线程处理,极大提高了运行效率.  
-针对多线程运行的特性,将单独的缓冲区打包成多线程缓冲区组(以下简称MBG),即代码中的`buffergroup`类.具体来说在MBG的构造函数中会预先加载各缓冲区的数据.每个线程会根据独有的id访问相应缓冲区的数据.若数据处理完毕,则会调用MBG的`update_lst`尝试进行缓冲区更新.在函数`update_lst`中, 会首先检查当前的请求id是否和MBG中的成员turn相等,其中turn的取值为0~(size-1),指示当前MBG中应插入输出文件的缓冲区索引.若为真,则可进行更新,即将旧数据插入输出文件并从输入文件获取新数据;否则休眠等待.在更新完毕后turn的取值会更新:`turn = (turn + 1) % size;`即指示下一个应插入的缓冲区,并通知所有休眠的线程.以上两个动作均被封装在宏`COND_WAIT`和`COND_RELEASE`中.    
-文件读取的最后一个缓冲区块往往是不全的,在处理完成这样的块后MBG中的`judge_over`函数会将已写完的数据写入到输出文件并使该线程退出.而若更新时读取到了空数据(即没有数据写入该缓冲区),则`update_lst`函数会返回`false`使该线程退出.     
-
-各个线程的处理流程如下:  
+针对多线程运行的特性,将单独的缓冲区打包成多线程缓冲区组(以下简称MBG),即代码中的`buffergroup`类.具体来说在MBG的构造函数中会预先加载各缓冲区的数据.每个处理线程会根据独有的id访问相应缓冲区的数据.而一个独立的缓冲区维护线程将会负责更新缓冲区的数据.  
+- **处理线程**  
+在一次加/解密过程中会运行多个处理线程,负责进行并发数据处理。每个处理线程都有一个唯一的`id`,用来从MBG中获取相应缓冲区的数据,并对获取的数据进行处理.  
+代码如下:
 ```cpp
-void multiruncrypt_file(u8_t id, multicry_master *cm) {
-  while (true) {
-    u8_t *block = cm->bg.require_buffer_entry(id);
-    if (block == NULL) {
-      if (cm->bg.judge_over(id) || (!cm->bg.update_lst(id)))
-        break;
-    } else
-      cm->process(id, block);
+void multiruncrypt_file(u8_t id, Aesmode &mode)
+{
+  buffergroup * iobuffer = buffergroup::get_instance();
+  while (true)
+  {
+    u8_t *block = iobuffer->require_buffer_entry(id);
+    if (block == NULL)
+      break;
+    mode.runcry(block);
   }
   return;
+};
+```
+- **缓冲区维护线程**  
+该线程负责维护MBG的数据,并进行更新.具体来说,该线程会轮流访问并更新相应的缓冲区,为处理线程提供新的数据.
+代码如下:
+```cpp
+void buffergroup::run_buffer()
+{
+  u8_t cnt = size;
+  while (cnt > 0)
+  {
+    if (ctrl[turn].state != bufferctrl::INV)
+    {
+      auto locker = ctrl[turn].wait_update();
+      if (ctrl[turn].state == bufferctrl::UPDATING && buflst[turn].buffer_over())
+        final_update();
+      buffer_update();
+      if (ctrl[turn].state == bufferctrl::INV)
+        cnt--;
+      locker.unlock();
+    }
+    turn = turn == (size - 1) ? 0 : turn + 1;
+  }
 }
 ```
-首先尝试获取待处理的缓冲区单元,若不为空则进行处理,否则交由MBG判断是否已经读写完毕,若为真则进行相应处理后退出,否则尝试更新该缓冲区,若成功则继续循环,否则退出.  
-
+- **线程间协作**  
+上述两种线程间的协作通过各个缓冲区对于的`bufferctrl`类实例完成,该类指示了相应缓冲区的状态,并提供了相应的条件变量来进行线程间同步.  
+具体来说,当处理线程调用`require_buffer_entry`函数时,MBG会首先检查数据是否读完,若读完则更改状态为`UPDATING`并唤醒缓冲区维护线程.随后,检查相应的缓冲区的状态.若状态为`EMPTY`或`UPDATING`则表明该缓冲区数据尚未准备好,此时该线程将被阻塞并等待缓冲区维护线程将数据准备好.  
+另一方面,在缓冲区维护线程循环访问缓冲区时,会先检查缓冲区状态,若为`INV`则跳过该缓冲区;而若为`READY`则表明缓冲区尚不需要更新,此时该线程将阻塞.当该线程被相应的处理线程唤醒后,会根据具体情况处理该缓冲区:若该缓冲区还有数据需装载,则处理后状态更改为`READY`;否则说明缓冲区已处理完毕,状态会更改为`INV`.随后唤醒相应的处理队列继续工作.  
 
 详细过程参阅相关代码.  
 
@@ -162,6 +189,7 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 **HMAC的哈希模式**  
   - 0:sha1
   - 1:md5
+  - 2:sha256
 
 ### AES加密模式
 早期版本的加密方式为确定性加密,安全性较差,易遭到选择明文攻击.此次更新引入了五种不同的AES加密模式:  
@@ -208,3 +236,4 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V3.3 新增:可选择使用md5的hmac(3.3.1 重构部分代码并添加注释,重写时间测量逻辑,增加cmake编译选项).*
 *V3.4 新增:采用多种设计模式进行代码优化(3.4.1优化部分处理过程输出 3.4.2 使用设计模式进行进一步优化).*
 *V3.5 新增:修复已知bug,更新输出界面,采用统一格式输出结果.*
+*V3.6 新增:更改多线程实现,提高效率.可选择使用sha256的hmac.*

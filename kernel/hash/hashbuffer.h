@@ -4,7 +4,8 @@
 #include <mutex>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
-class buffer64 {
+class buffer64
+{
 public:
   virtual u32_t read_buffer64(u8_t *block) = 0;
 };
@@ -17,7 +18,8 @@ now:将要被读写的单元索引
 tail:未被填满的单元中数据的长度
 load:是否被装载
 */
-class filebuffer64 : public buffer64{
+class filebuffer64 : public buffer64
+{
   static const u32_t HBUF_SZ = 0x80000;
   u8_t b[HBUF_SZ][0x40];
   u8_t extra_entry[0x40];
@@ -25,6 +27,7 @@ class filebuffer64 : public buffer64{
   u32_t total, now;
   u8_t tail;
   FILE *fp;
+
 public:
   filebuffer64(FILE *fp, u8_t *block = NULL);
   u32_t read_buffer64(u8_t *block);

@@ -16,7 +16,9 @@ fp:需验证文件指针
 void hmac::getres(u8_t *key, FILE *fp)
 {
     Hashmaster *hashmaster = hf.getHasher(type);
-    const u8_t block = hf.getBlkLength(type), length = hf.getHashLength(type);
+    const u8_t block = hashmaster->getblen();
+    length = hashmaster->gethlen();
+    hmac_res = new u8_t[length];
     u8_t key1[block], h1[block], h2[block + length];
     memset(key1, 0, sizeof(key1));
     memcpy(key1, key, 16);
@@ -37,7 +39,8 @@ hmac_out:输出地址
 void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out)
 {
     getres(key, fp);
-    memcpy(hmac_out, hmac_res, hf.getHashLength(type));
+    memcpy(hmac_out, hmac_res, length);
+    delete[] hmac_res;
 }
 /*
 cmphmac:校验HMAC值
@@ -49,9 +52,12 @@ return:校验是否成功
 bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out)
 {
     getres(key, fp);
-    for (int i = 0; i < hf.getHashLength(type); ++i)
-        if (hmac_out[i] != hmac_res[i])
+    for (int i = 0; i < length; ++i)
+        if (hmac_out[i] != hmac_res[i]){
+            delete[] hmac_res;
             return false;
+        }
+    delete[] hmac_res;
     return true;
 }
 /*
@@ -65,7 +71,8 @@ void hmac::writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark)
     fseek(fp, hashMark, SEEK_SET);
     getres(key, fp);
     fseek(fp, writeMark, SEEK_SET);
-    fwrite(hmac_res, 1, get_length(), fp);
+    fwrite(hmac_res, 1, length, fp);
+    delete[] hmac_res;
 }
 
 /*################################

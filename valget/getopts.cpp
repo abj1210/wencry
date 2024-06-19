@@ -90,7 +90,8 @@ static void printCryptMode(u8_t mode)
 printCryptMode:打印Hash模式
 mode:模式
 */
-static void printHashMode(u8_t mode){
+static void printHashMode(u8_t mode)
+{
     std::string hm = "Hash mode :";
     std::string hash;
     switch (mode)
@@ -100,6 +101,9 @@ static void printHashMode(u8_t mode){
         break;
     case 1:
         hash = "md5";
+        break;
+    case 2:
+        hash = "sha256";
         break;
     default:
         hash = "Unknown";
@@ -124,7 +128,7 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'e';
         else
         {
-            strlog( "Error :", "Only one mode can be specified");
+            strlog("Error :", "Only one mode can be specified");
             return false;
         }
         break;
@@ -133,7 +137,7 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'd';
         else
         {
-            strlog( "Error :", "Only one mode can be specified");
+            strlog("Error :", "Only one mode can be specified");
             return false;
         }
         break;
@@ -142,23 +146,26 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'v';
         else
         {
-            strlog( "Error :", "Only one mode can be specified");
+            strlog("Error :", "Only one mode can be specified");
             return false;
         }
         break;
     case 'i':
         res->fp = fopen(optarg, "rb");
         sprintf(fout, "%s.wenc", optarg);
-        try {
+        try
+        {
             auto fileSize = std::filesystem::file_size(optarg);
             fsize = fileSize;
-            strlog( "File size: ", std::to_string(((double)fileSize)/((double)(1024*1024)))+"MB");
-        } catch (std::filesystem::filesystem_error& e) {
+            strlog("File size: ", std::to_string(((double)fileSize) / ((double)(1024 * 1024))) + "MB");
+        }
+        catch (std::filesystem::filesystem_error &e)
+        {
             std::cerr << "Error: " << e.what() << std::endl;
         }
         if (res->fp == NULL)
         {
-            strlog( "Error :", "Could not open file " + std::string(optarg));
+            strlog("Error :", "Could not open file " + std::string(optarg));
             return false;
         }
         res->size = fsize;
@@ -167,7 +174,7 @@ bool parseOpts(char c, vpak_t *res)
         res->out = fopen(optarg, "wb+");
         if (res->out == NULL)
         {
-            strlog( "Error :", "Could not open file " + std::string(optarg));
+            strlog("Error :", "Could not open file " + std::string(optarg));
             return true;
         }
         break;
@@ -186,7 +193,7 @@ bool parseOpts(char c, vpak_t *res)
         }
         else
         {
-            strlog( "Error :", "Only one ctype can be specified");
+            strlog("Error :", "Only one ctype can be specified");
             return false;
         }
         break;
@@ -198,7 +205,7 @@ bool parseOpts(char c, vpak_t *res)
         }
         else
         {
-            strlog( "Error :", "Only one htype can be specified");
+            strlog("Error :", "Only one htype can be specified");
             return false;
         }
         break;
@@ -207,7 +214,7 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'V';
         else
         {
-            strlog( "Error :", "Only one mode can be specified");
+            strlog("Error :", "Only one mode can be specified");
             return false;
         }
         break;
@@ -217,13 +224,13 @@ bool parseOpts(char c, vpak_t *res)
             res->mode = 'h';
         else
         {
-            strlog( "Error :", "Only one mode can be specified");
+            strlog("Error :", "Only one mode can be specified");
             return false;
         }
 
         break;
     default:
-        strlog( "Error :", "Unknown option");
+        strlog("Error :", "Unknown option");
         return false;
     }
     return true;
@@ -264,7 +271,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     }
     if (res->mode == 'u')
     {
-        strlog( "Error :", "Wrong Mode");
+        strlog("Error :", "Wrong Mode");
         delete res;
         return NULL;
     }
@@ -277,7 +284,7 @@ u8_t *get_v_opt(int argc, char *argv[])
         }
         else if (res->ctype < 0 || res->ctype > 4)
         {
-            strlog( "Error :", "Wrong ctype");
+            strlog("Error :", "Wrong ctype");
             delete res;
             return NULL;
         }
@@ -286,9 +293,9 @@ u8_t *get_v_opt(int argc, char *argv[])
             printHashMode(0);
             res->htype = 0;
         }
-        else if (res->htype < 0 || res->htype > 1)
+        else if (res->htype < 0 || res->htype > 2)
         {
-            strlog( "Error :", "Wrong htype");
+            strlog("Error :", "Wrong htype");
             delete res;
             return NULL;
         }
@@ -299,13 +306,13 @@ u8_t *get_v_opt(int argc, char *argv[])
         }
         if (res->fp == NULL)
         {
-            strlog( "Error :", "No file specified");
+            strlog("Error :", "No file specified");
             delete res;
             return NULL;
         }
         if (res->out == NULL)
         {
-            strlog( "Error :", "Using default output file name");
+            strlog("Note :", "Using default output file name");
             res->out = fopen(fout, "wb+");
         }
         getRandomBuffer(res->r_buf);

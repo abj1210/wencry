@@ -9,7 +9,6 @@ return:重新读入的字节数
 */
 u32_t iobuffer::update_buffer(bool write, bool &over)
 {
-  u32_t sum = BUF_SZ << 4;
   if (write)
     fwrite(b, 1, sum, fout);
   u32_t load = fread(b, 1, sum, fin);
@@ -23,14 +22,14 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
     memset(b[total] + tail, padding, padding);
     isfinal = true;
     over = true;
-    total++;;
+    total++;
     return load + padding;
   }
-  if((!ispadding) && readover && (!over)){
+  if ((!ispadding) && readover && (!over))
+  {
     isfinal = true;
     over = true;
   }
-  
   return load;
 }
 /*
@@ -41,7 +40,53 @@ void iobuffer::final_write()
   u8_t padding = ispadding ? 0 : b[now - 1][15];
   fwrite(b, 1, (now << 4) - padding, fout);
 }
-
+/*
+wait_ready:等待装载就绪
+return:生成的互斥锁
+*/
+std::unique_lock<std::mutex> bufferctrl::wait_ready()
+{
+  std::unique_lock<std::mutex> locker(lock);
+  while (state != READY && state != INV)
+    cv.wait(locker);
+  return locker;
+}
+/*
+wait_update:等待可以装载
+return:生成的互斥锁
+*/
+std::unique_lock<std::mutex> bufferctrl::wait_update()
+{
+  std::unique_lock<std::mutex> locker(lock);
+  while (state != UPDATING && state != EMPTY)
+    cv.wait(locker);
+  return locker;
+}
+/*
+set_ready:设置就绪状态
+*/
+void bufferctrl::set_ready()
+{
+  state = READY;
+  cv.notify_all();
+}
+/*
+set_update:设置可装载状态
+*/
+void bufferctrl::set_update()
+{
+  if (state == READY)
+    state = UPDATING;
+  cv.notify_all();
+}
+/*
+设置无效状态
+*/
+void bufferctrl::set_inv()
+{
+  state = INV;
+  cv.notify_all();
+}
 /*################################
   多缓冲区函数
 ################################*/
@@ -53,45 +98,53 @@ size:装载大小
 void buffergroup::printload(const u8_t id, const size_t size)
 {
   now_size += size;
-  double percentage = 100.0*((double)now_size / (double)(total_size));
+  double percentage = 100.0 * ((double)now_size / (double)(total_size));
   std::cout << "Tid " << (const u32_t)id << " loaded ";
   const int barWidth = 50; // 进度条的总宽度
   std::cout << "[";
   int pos = round(barWidth * percentage / 100.0);
-  for (int i = 0; i < barWidth; ++i) {
-      if (i < pos) std::cout << "=";
-      else if (i == pos) std::cout << ">";
-      else std::cout << " ";
+  for (int i = 0; i < barWidth; ++i)
+  {
+    if (i < pos)
+      std::cout << "=";
+    else if (i == pos)
+      std::cout << ">";
+    else
+      std::cout << " ";
   }
-  std::cout << "] " <<std::setw(12)<< std::fixed << std::setprecision(2)<< percentage << " %\r";
+  std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
   std::cout.flush();
-}
-/*
-构造函数:初始化缓冲组的数据
-size:缓冲区数量
-no_echo:是否屏蔽输出
-*/
-buffergroup::buffergroup(u32_t size, bool no_echo)
-    : buflst(NULL), size(size), turn(0), over(false), no_echo(no_echo)
-{
 }
 
 buffergroup *buffergroup::instance = NULL;
 std::mutex buffergroup::mtx;
 
-buffergroup *buffergroup::get_instance(u32_t size, bool no_echo)
+void buffergroup::set_buffergroup(u32_t size, bool no_echo, FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
+{
+  this->size = size;
+  this->no_echo = no_echo;
+  this->total_size = fsize == 0 ? 1 : fsize;
+  this->buflst = new iobuffer[size];
+  this->ctrl = new bufferctrl[size];
+  for (int i = 0; i < size; ++i)
+    buflst[i].init(fin, fout, ispadding);
+};
+/*
+get_instance:获取实例
+*/
+buffergroup *buffergroup::get_instance()
 {
   if (instance == NULL)
   {
     std::lock_guard<std::mutex> lock(mtx);
     if (instance == NULL)
-    {
-      instance = new buffergroup(size, no_echo);
-    }
+      instance = new buffergroup();
   }
   return instance;
 };
-
+/*
+del_instance:删除实例
+*/
 void buffergroup::del_instance()
 {
   if (instance != NULL)
@@ -104,61 +157,58 @@ void buffergroup::del_instance()
     }
   }
 };
-
 /*
-load_files:加载文件到缓冲区
-fin:输入文件地址
-fout:输出文件地址
-ispadding:是否为填充模式
+require_buffer_entry:获取下一个缓冲区表项
+id:缓冲区标号
+return:表项地址，若缓冲区已经读取完毕返回NULL
 */
-void buffergroup::load_files(FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
+u8_t *buffergroup::require_buffer_entry(const u8_t id)
 {
-  buflst = new iobuffer[size];
-  cv = new std::condition_variable[size];
-  now_size = 0;
-  total_size = size == 0 ? 1 : fsize;
-  for (int i = 0; i < size; ++i)
+  u8_t *result = buflst[id].get_entry();
+  if (result == NULL)
   {
-    buflst[i].init(fin, fout, ispadding);
-    size_t loadsize = buflst[i].update_buffer(false, over);
-    if (loadsize != 0)
-      if (!no_echo)
-        printload(i, loadsize);
+    ctrl[id].set_update();
+    ctrl[id].wait_ready().unlock();
+    if (ctrl[id].state == bufferctrl::READY)
+      result = buflst[id].get_entry();
   }
+  return result;
 }
-/*
-update_lst:更新相应相应的缓冲区
-id:要更新的缓冲区索引
-return:是否成功更新
-*/
-bool buffergroup::update_lst(const u8_t id)
+void buffergroup::buffer_update()
 {
-  if (buflst[id].fin_empty())
-    return false;
-  COND_WAIT
-  size_t loadsize = buflst[id].update_buffer(true, over);
+  size_t loadsize = buflst[turn].update_buffer((ctrl[turn].state) == (bufferctrl::UPDATING), over);
   if ((loadsize != 0) && (!no_echo))
-    printload(id, loadsize);
-  COND_RELEASE
-  return (loadsize != 0);
+    printload(turn, loadsize);
+  if (loadsize == 0)
+    ctrl[turn].set_inv();
+  else
+    ctrl[turn].set_ready();
+}
+void buffergroup::final_update()
+{
+  buflst[turn].final_write();
+  ctrl[turn].set_inv();
+  if (!no_echo)
+    std::cout << std::endl;
 }
 /*
-judge_over:判断相应的缓冲区是否已读取结束并进行相应处理
-id:待判断缓冲区的索引
-return:文件是否读取完毕
+run_buffer:缓冲区组自动装载函数
 */
-bool buffergroup::judge_over(const u8_t id)
+void buffergroup::run_buffer()
 {
-  if (buflst[id].fin_empty())
-    return false;
-  bool flag = buflst[id].buffer_over();
-  if (flag)
+  u8_t cnt = size;
+  while (cnt > 0)
   {
-    COND_WAIT
-    buflst[id].final_write();
-    if (!no_echo)
-      std::cout<<std::endl;
-    COND_RELEASE
+    if (ctrl[turn].state != bufferctrl::INV)
+    {
+      auto locker = ctrl[turn].wait_update();
+      if (ctrl[turn].state == bufferctrl::UPDATING && buflst[turn].buffer_over())
+        final_update();
+      buffer_update();
+      if (ctrl[turn].state == bufferctrl::INV)
+        cnt--;
+      locker.unlock();
+    }
+    turn = turn == (size - 1) ? 0 : turn + 1;
   }
-  return flag;
 }

@@ -16,10 +16,10 @@ public:
 
 private:
   std::thread threads[THREAD_MAX];
-public:
-  multicry_master(u8_t thread_num): THREADS_NUM(thread_num){};
-  void run_multicry(Aesmode ** mode);
-};
 
+public:
+  multicry_master(u8_t thread_num) : THREADS_NUM(thread_num){};
+  void run_multicry(Aesmode **mode);
+};
 
 #endif
