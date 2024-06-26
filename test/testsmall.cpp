@@ -17,15 +17,12 @@ TEST(Testsmall, tests2) {
           "brteyuioiuetwreyuioyjfhtdfdfsdfsdfdsfgfhtfhtfhfyhfthdrhdgsrf"));
 }
 
-TEST(Testsmall, roundtest) {
+TEST(Testsmall, randomtest) {
   srand(time(NULL));
   char buf[257];
   buf[128] = '\0';
-  for (int i = 0; i < 64; i++) {
-    printf("Test num : %d\n", i);
-    for(int j = 0; j < 128; j++) {
-      buf[j] = rand();
-    }
+  for(int j = 0; j < 128; j++) {
+    buf[j] = rand();
     EXPECT_EQ(1, makeFullTest(buf));
   }
 }
