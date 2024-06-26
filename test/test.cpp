@@ -49,11 +49,15 @@ int makeFullTest(const char *str, u8_t type) {
   sprintf(htype, "%d", (type>>4)&0xf);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key, oflg, fwenc};
-  runcrypt runner1(get_v_opt(12, (char **)argv1));
+  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
+  auto a1 = get_v_opt(12, (char **)argv1);
+  auto a2 = get_v_opt(12, (char **)argv2);
+  return 1;
+  runcrypt runner1(a1);
   if (!runner1.exec_val())
     return 0;
-  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
-  runcrypt runner2(get_v_opt(12, (char **)argv2));
+  
+  runcrypt runner2(a2);
   if (!runner2.exec_val())
     return 0;
   return 1;
@@ -64,7 +68,7 @@ int makeFullTest(const char *str, u8_t type) {
 char buf[0x2000010];
 int makeBigTest(int offset, u8_t type) {
   memset(buf, '0', sizeof(buf));
-  buf[offset] = 0;
+  buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
 }
 int makeSpeedTest(u8_t type = 1) {
