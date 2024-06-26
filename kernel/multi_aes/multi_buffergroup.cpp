@@ -210,7 +210,8 @@ void buffergroup::run_buffer()
       auto locker = ctrl[turn].wait_update();
       if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
         final_update();
-      buffer_update();
+      else 
+        buffer_update();
       if (ctrl[turn].cmpstate(INV))
         cnt--;
       locker.unlock();
