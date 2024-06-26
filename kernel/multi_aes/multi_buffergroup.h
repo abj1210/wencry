@@ -92,8 +92,8 @@ private:
 public:
   bufferctrl() : state(EMPTY){};
   bool cmpstate(const enum bufstate_t state) const { return this->state == state; };
-  std::unique_lock<std::mutex> wait_ready();
-  std::unique_lock<std::mutex> wait_update();
+  void wait_ready();
+  void wait_update();
   void set_ready();
   void set_update();
   void set_inv();

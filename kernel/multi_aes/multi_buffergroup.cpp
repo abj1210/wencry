@@ -42,50 +42,55 @@ void iobuffer::final_write()
 }
 /*
 wait_ready:等待装载就绪
-return:生成的互斥锁
 */
-std::unique_lock<std::mutex> bufferctrl::wait_ready()
+void bufferctrl::wait_ready()
 {
   std::unique_lock<std::mutex> locker(lock);
   while (state != READY && state != INV)
     cv.wait(locker);
-  return locker;
+  locker.unlock();
 }
 /*
 wait_update:等待可以装载
-return:生成的互斥锁
 */
-std::unique_lock<std::mutex> bufferctrl::wait_update()
+void bufferctrl::wait_update()
 {
   std::unique_lock<std::mutex> locker(lock);
   while (state != UPDATING && state != EMPTY)
     cv.wait(locker);
-  return locker;
+  locker.unlock();
 }
 /*
 set_ready:设置就绪状态
 */
 void bufferctrl::set_ready()
 {
+  std::unique_lock<std::mutex> locker(lock);
   state = READY;
   cv.notify_all();
+  locker.unlock();
 }
 /*
 set_update:设置可装载状态
 */
 void bufferctrl::set_update()
 {
-  if (state == READY)
+  if (state == READY){
+    std::unique_lock<std::mutex> locker(lock);
     state = UPDATING;
-  cv.notify_all();
+    cv.notify_all();
+    locker.unlock();
+  }
 }
 /*
 设置无效状态
 */
 void bufferctrl::set_inv()
 {
+  std::unique_lock<std::mutex> locker(lock);
   state = INV;
   cv.notify_all();
+  locker.unlock();
 }
 /*################################
   多缓冲区函数
@@ -168,7 +173,7 @@ u8_t *buffergroup::require_buffer_entry(const u8_t id)
   if (result == NULL)
   {
     ctrl[id].set_update();
-    ctrl[id].wait_ready().unlock();
+    ctrl[id].wait_ready();
     if (ctrl[turn].cmpstate(READY) == 0)
       result = buflst[id].get_entry();
   }
@@ -207,14 +212,13 @@ void buffergroup::run_buffer()
   {
     if (!ctrl[turn].cmpstate(INV))
     {
-      auto locker = ctrl[turn].wait_update();
+      ctrl[turn].wait_update();
       if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
         final_update();
       else 
         buffer_update();
       if (ctrl[turn].cmpstate(INV))
         cnt--;
-      locker.unlock();
     }
     turn = turn == (size - 1) ? 0 : turn + 1;
   }
