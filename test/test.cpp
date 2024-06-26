@@ -48,8 +48,8 @@ int makeFullTest(const char *str, u8_t type) {
   sprintf(ctype, "%d", type&0xf);
   sprintf(htype, "%d", (type>>4)&0xf);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
-  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key};
-  runcrypt runner1(get_v_opt(10, (char **)argv1));
+  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key, oflg, fwenc};
+  runcrypt runner1(get_v_opt(12, (char **)argv1));
   if (!runner1.exec_val())
     return 0;
   char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
@@ -62,8 +62,7 @@ int makeFullTest(const char *str, u8_t type) {
   return cmp_file(f1, f2);
 }
 char buf[0x2000010];
-int makeBigTest(int offset, u8_t type = 0) {
-  srand(time(NULL));
+int makeBigTest(int offset, u8_t type) {
   memset(buf, 'a', sizeof(buf));
   buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
