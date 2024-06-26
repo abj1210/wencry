@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #define BUFFER_SIZE 0x10000
+char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
 int cmp_file(FILE *x, FILE *y) {
-  char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
   int read1, read2;
   int flag = 0;
   int cnt = 0;
