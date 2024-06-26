@@ -83,15 +83,15 @@ state:缓冲区状态(EMPTY:缓冲区为空 UPDATING:缓冲区正在更新 READY
 */
 class bufferctrl
 {
-public:
-private:
+  static u8_t live_num;
   enum bufstate_t state;
   std::mutex lock;
   std::condition_variable cv;
 
 public:
-  bufferctrl() : state(EMPTY){};
+  bufferctrl() : state(EMPTY){live_num++;};
   bool cmpstate(const enum bufstate_t state) const { return this->state == state; };
+  static bool haslive(){return live_num != 0;};
   void wait_ready();
   void wait_update();
   void set_ready();

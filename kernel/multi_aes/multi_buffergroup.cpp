@@ -40,6 +40,7 @@ void iobuffer::final_write()
   u8_t padding = ispadding ? 0 : b[now - 1][15];
   fwrite(b, 1, (now << 4) - padding, fout);
 }
+u8_t bufferctrl::live_num = 0;
 /*
 wait_ready:等待装载就绪
 */
@@ -75,12 +76,12 @@ set_update:设置可装载状态
 */
 void bufferctrl::set_update()
 {
+  std::unique_lock<std::mutex> locker(lock);
   if (state == READY){
-    std::unique_lock<std::mutex> locker(lock);
     state = UPDATING;
     cv.notify_all();
-    locker.unlock();
   }
+  locker.unlock();
 }
 /*
 设置无效状态
@@ -89,6 +90,7 @@ void bufferctrl::set_inv()
 {
   std::unique_lock<std::mutex> locker(lock);
   state = INV;
+  live_num --;
   cv.notify_all();
   locker.unlock();
 }
@@ -174,7 +176,7 @@ u8_t *buffergroup::require_buffer_entry(const u8_t id)
   {
     ctrl[id].set_update();
     ctrl[id].wait_ready();
-    if (ctrl[turn].cmpstate(READY) == 0)
+    if (ctrl[id].cmpstate(READY))
       result = buflst[id].get_entry();
   }
   return result;
@@ -207,8 +209,7 @@ run_buffer:缓冲区组自动装载函数
 */
 void buffergroup::run_buffer()
 {
-  u8_t cnt = size;
-  while (cnt > 0)
+  while (bufferctrl::haslive())
   {
     if (!ctrl[turn].cmpstate(INV))
     {
@@ -217,9 +218,7 @@ void buffergroup::run_buffer()
         final_update();
       else 
         buffer_update();
-      if (ctrl[turn].cmpstate(INV))
-        cnt--;
     }
-    turn = turn == (size - 1) ? 0 : turn + 1;
+    turn = (turn + 1) % size;
   }
 }
