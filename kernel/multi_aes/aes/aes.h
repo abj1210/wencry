@@ -2,10 +2,10 @@
 #define AES
 // 将x循环左移i位
 
-#define lrot(x, i) (((x) << (i)) | ((x) >> (32 - i)))
+#define lrot(x, i) (((x) << (i)) | ((x) >> (32 - (i))))
 // 将x循环右移i位
 
-#define rrot(x, i) (((x) >> (i)) | ((x) << (32 - i)))
+#define rrot(x, i) (((x) >> (i)) | ((x) << (32 - (i))))
 // 对byteint每字节赋值
 
 #define setbytes(t, b0, b1, b2, b3) \
