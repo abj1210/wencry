@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #define BUFFER_SIZE 0x10000
-char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
 int cmp_file(FILE *x, FILE *y) {
+  char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
   int read1, read2;
   int flag = 0;
   int cnt = 0;
@@ -19,7 +19,7 @@ int cmp_file(FILE *x, FILE *y) {
       printf("A%d-%d:%s\nB%d-%d:%s\n", cnt, read1, buffer1, cnt, read2, buffer2);
     }
     cnt++;
-    if ((!flag) || feof(x))
+    if ((!flag) || read1 != BUFFER_SIZE)
       break;
   }
   fclose(x);
@@ -48,26 +48,22 @@ int makeFullTest(const char *str, u8_t type) {
   sprintf(ctype, "%d", type&0xf);
   sprintf(htype, "%d", (type>>4)&0xf);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
-  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key, oflg, fwenc};
-  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
-  auto a1 = get_v_opt(12, (char **)argv1);
-  auto a2 = get_v_opt(12, (char **)argv2);
-  return 1;
-  runcrypt runner1(a1);
+  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key};
+  runcrypt runner1(get_v_opt(10, (char **)argv1));
   if (!runner1.exec_val())
     return 0;
-  
-  runcrypt runner2(a2);
+  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
+  runcrypt runner2(get_v_opt(12, (char **)argv2));
   if (!runner2.exec_val())
     return 0;
-  return 1;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
   return cmp_file(f1, f2);
 }
 char buf[0x2000010];
-int makeBigTest(int offset, u8_t type) {
-  memset(buf, '0', sizeof(buf));
+int makeBigTest(int offset, u8_t type = 0) {
+  srand(time(NULL));
+  memset(buf, 'a', sizeof(buf));
   buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
 }
