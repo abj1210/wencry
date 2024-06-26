@@ -260,7 +260,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     res->key = NULL;
     while (true)
     {
-        char c = getopt_long(argc, argv, shortOpts, longOpts, &option_index);
+        int c = getopt_long(argc, argv, shortOpts, longOpts, &option_index);
         if (c == -1)
             break;
         if (!parseOpts(c, res))
