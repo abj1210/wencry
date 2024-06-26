@@ -21,10 +21,9 @@ TEST(Testsmall, randomtest) {
   srand(time(NULL));
   char buf[257];
   buf[128] = '\0';
-  for(int j = 0; j < 128; j++) {
+  for(int j = 0; j < 128; j++) 
     buf[j] = rand();
-    EXPECT_EQ(1, makeFullTest(buf));
-  }
+  EXPECT_EQ(1, makeFullTest(buf));
 }
 
 int main(int argc, char **argv) {
