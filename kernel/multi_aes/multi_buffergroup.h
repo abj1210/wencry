@@ -68,6 +68,13 @@ public:
   bool fin_empty() const { return (total == 0) && (tail == 0); };
   void final_write();
 };
+enum bufstate_t
+{
+  EMPTY,
+  UPDATING,
+  READY,
+  INV
+};
 /*
 bufferctrl:缓冲区状态控制类
 lock:互斥锁
@@ -76,18 +83,15 @@ state:缓冲区状态(EMPTY:缓冲区为空 UPDATING:缓冲区正在更新 READY
 */
 class bufferctrl
 {
+public:
+private:
+  enum bufstate_t state;
   std::mutex lock;
   std::condition_variable cv;
 
 public:
-  enum
-  {
-    EMPTY,
-    UPDATING,
-    READY,
-    INV
-  } state;
   bufferctrl() : state(EMPTY){};
+  bool cmpstate(const enum bufstate_t state) const { return this->state == state; };
   std::unique_lock<std::mutex> wait_ready();
   std::unique_lock<std::mutex> wait_update();
   void set_ready();

@@ -77,7 +77,7 @@ inline void encryaes_rowshift(state_t &w)
   for (int i = 1; i < 4; ++i)
   {
     u32_t t = w.g[i];
-    w.g[i] = rrot(t, 8 * i);
+    w.g[i] = rrot(t, i << 3);
   }
 }
 /*
@@ -140,7 +140,7 @@ inline void decryaes_rowshift(state_t &w)
   for (int i = 1; i < 4; ++i)
   {
     u32_t t = w.g[i];
-    w.g[i] = lrot(t, 8 * i);
+    w.g[i] = lrot(t, i << 3);
   }
 }
 /*

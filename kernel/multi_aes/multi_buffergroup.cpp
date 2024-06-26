@@ -169,14 +169,17 @@ u8_t *buffergroup::require_buffer_entry(const u8_t id)
   {
     ctrl[id].set_update();
     ctrl[id].wait_ready().unlock();
-    if (ctrl[id].state == bufferctrl::READY)
+    if (ctrl[turn].cmpstate(READY) == 0)
       result = buflst[id].get_entry();
   }
   return result;
 }
+/*
+buffer_update:缓冲区轮流装载
+*/
 void buffergroup::buffer_update()
 {
-  size_t loadsize = buflst[turn].update_buffer((ctrl[turn].state) == (bufferctrl::UPDATING), over);
+  size_t loadsize = buflst[turn].update_buffer(ctrl[turn].cmpstate(UPDATING), over);
   if ((loadsize != 0) && (!no_echo))
     printload(turn, loadsize);
   if (loadsize == 0)
@@ -184,6 +187,9 @@ void buffergroup::buffer_update()
   else
     ctrl[turn].set_ready();
 }
+/*
+final_update:缓冲区最终装载
+*/
 void buffergroup::final_update()
 {
   buflst[turn].final_write();
@@ -199,13 +205,13 @@ void buffergroup::run_buffer()
   u8_t cnt = size;
   while (cnt > 0)
   {
-    if (ctrl[turn].state != bufferctrl::INV)
+    if (!ctrl[turn].cmpstate(INV))
     {
       auto locker = ctrl[turn].wait_update();
-      if (ctrl[turn].state == bufferctrl::UPDATING && buflst[turn].buffer_over())
+      if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
         final_update();
       buffer_update();
-      if (ctrl[turn].state == bufferctrl::INV)
+      if (ctrl[turn].cmpstate(INV))
         cnt--;
       locker.unlock();
     }

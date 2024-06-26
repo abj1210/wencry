@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2024.6.19 (最后修改)  
-版本：v3.6.1
+日期：2024.6.27 (最后修改)  
+版本：v3.6.2
 
 **默认4+1线程,CBC加密模式**  
 **处理速度可达50MB/s以上**  
@@ -139,15 +139,13 @@
 ```cpp
 void multiruncrypt_file(u8_t id, Aesmode &mode)
 {
-  buffergroup * iobuffer = buffergroup::get_instance();
-  while (true)
+  buffergroup *iobuffer = buffergroup::get_instance();
+  u8_t *block = iobuffer->require_buffer_entry(id);
+  while (block != NULL)
   {
-    u8_t *block = iobuffer->require_buffer_entry(id);
-    if (block == NULL)
-      break;
     mode.runcry(block);
+    block = iobuffer->require_buffer_entry(id);
   }
-  return;
 };
 ```
 - **缓冲区维护线程**  
@@ -159,18 +157,17 @@ void buffergroup::run_buffer()
   u8_t cnt = size;
   while (cnt > 0)
   {
-    if (ctrl[turn].state != bufferctrl::INV)
+    if (!ctrl[turn].cmpstate(INV))
     {
       auto locker = ctrl[turn].wait_update();
-      if (ctrl[turn].state == bufferctrl::UPDATING && buflst[turn].buffer_over())
+      if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
         final_update();
       buffer_update();
-      if (ctrl[turn].state == bufferctrl::INV)
+      if (ctrl[turn].cmpstate(INV))
         cnt--;
       locker.unlock();
     }
     turn = turn == (size - 1) ? 0 : turn + 1;
-  }
 }
 ```
 - **线程间协作**  
@@ -236,4 +233,4 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V3.3 新增:可选择使用md5的hmac(3.3.1 重构部分代码并添加注释,重写时间测量逻辑,增加cmake编译选项).*
 *V3.4 新增:采用多种设计模式进行代码优化(3.4.1优化部分处理过程输出 3.4.2 使用设计模式进行进一步优化).*
 *V3.5 新增:修复已知bug,更新输出界面,采用统一格式输出结果.*
-*V3.6 新增:更改多线程实现,提高效率.可选择使用sha256的hmac(v3.6.1修复部分bug).*
+*V3.6 新增:更改多线程实现,提高效率.可选择使用sha256的hmac(v3.6.1修复部分bug, v3.6.2改变部分函数实现).*

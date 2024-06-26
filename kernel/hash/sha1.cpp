@@ -1,5 +1,10 @@
 #include "hashmaster.h"
 #include <string.h>
+#define HASH_A(h1, h2, h3) ((h1 & h2) | ((~h1) & h3))
+
+#define HASH_B(h1, h2, h3) (h1 ^ h2 ^ h3)
+
+#define HASH_C(h1, h2, h3) ((h1 & h2) | (h1 & h3) | (h2 & h3))
 /*
 getwdata:根据每个输入单元生成sha1中w数组的值
 */
@@ -32,15 +37,13 @@ void sha1hash::getHash(const u8_t *input)
   for (u32_t i = 0; i < 80; ++i)
   {
     if (i < 20)
-      f = ((temph[1] & temph[2]) | ((~temph[1]) & temph[3])) + 0x5A827999;
+      f = HASH_A(temph[1], temph[2], temph[3]) + 0x5A827999;
     else if (i < 40)
-      f = (temph[1] ^ temph[2] ^ temph[3]) + 0x6ED9EBA1;
+      f = HASH_B(temph[1], temph[2], temph[3]) + 0x6ED9EBA1;
     else if (i < 60)
-      f = ((temph[1] & temph[2]) | (temph[1] & temph[3]) |
-           (temph[2] & temph[3])) +
-          0x8F1BBCDC;
+      f = HASH_C(temph[1], temph[2], temph[3]) + 0x8F1BBCDC;
     else
-      f = (temph[1] ^ temph[2] ^ temph[3]) + 0xCA62C1D6;
+      f = HASH_B(temph[1], temph[2], temph[3]) + 0xCA62C1D6;
     temp = lrot(temph[0], 5) + f + temph[4] + w[i];
     temph[4] = temph[3];
     temph[3] = temph[2];

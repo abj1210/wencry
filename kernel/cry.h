@@ -58,7 +58,8 @@ public:
   u8_t *getHmac(u8_t len);
 };
 
-struct Timer{
+struct Timer
+{
   std::chrono::_V2::system_clock::time_point start;
   std::string name;
 };
@@ -69,8 +70,8 @@ class AbsResultPrint
 public:
   virtual void printtask(std::string name) = 0;
   virtual u8_t printinv(const u8_t ret) = 0;
-  virtual Timer * createTimer(std::string name) = 0;
-  virtual void printTimer(Timer * timer) = 0;
+  virtual Timer *createTimer(std::string name) = 0;
+  virtual void printTimer(Timer *timer) = 0;
   virtual void printenc() = 0;
   virtual void printres(int res) = 0;
 };
@@ -78,24 +79,26 @@ public:
 class NullResPrint : public AbsResultPrint
 {
 public:
-  virtual void printtask(std::string name){};
+  virtual void printtask(std::string name) {};
   virtual u8_t printinv(const u8_t ret) { return ret; };
-  virtual Timer * createTimer(std::string name) {return NULL; };
-  virtual void printTimer(Timer * timer){};
+  virtual Timer *createTimer(std::string name) { return NULL; };
+  virtual void printTimer(Timer *timer) {};
   virtual void printenc() {};
   virtual void printres(int res) {};
 };
 
 class ResultPrint : public AbsResultPrint
 {
-  void strlog(std::string s1, std::string s2, char fill = ' '){
-    std::cout << std::setw(40) << std::setfill(fill)<< std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
+  void strlog(std::string s1, std::string s2, char fill = ' ')
+  {
+    std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
   }
+
 public:
   virtual void printtask(std::string name);
   virtual u8_t printinv(const u8_t ret);
-  virtual Timer * createTimer(std::string name);
-  virtual void printTimer(Timer * timer);
+  virtual Timer *createTimer(std::string name);
+  virtual void printTimer(Timer *timer);
   virtual void printenc();
   virtual void printres(int res);
 };
@@ -134,10 +137,16 @@ class runcrypt
   // 结果打印器
   AbsResultPrint *resultprint;
 
-  void enc(const u8_t *r_buf);
+  u8_t *prepare_IV(const u8_t *r_buf);
+  u8_t *prepare_IV();
+  Aesmode **prepare_AESE(u8_t *iv);
+  Aesmode **prepare_AESD(u8_t *iv);
+  void release(u8_t *iv, Aesmode **mode);
   u8_t verify();
-  u8_t dec();
   void over();
+
+  void enc(const u8_t *r_buf);
+  u8_t dec();
 
 public:
   runcrypt(u8_t *data, u8_t threads_num = THREAD_NUM);
