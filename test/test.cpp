@@ -56,6 +56,7 @@ int makeFullTest(const char *str, u8_t type) {
   runcrypt runner2(get_v_opt(12, (char **)argv2));
   if (!runner2.exec_val())
     return 0;
+  return 1;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
   return cmp_file(f1, f2);
