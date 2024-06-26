@@ -58,6 +58,7 @@ int makeFullTest(const char *str, u8_t type) {
     return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
+  remove("test.txt");
   return cmp_file(f1, f2);
 }
 char buf[0x2000010];
