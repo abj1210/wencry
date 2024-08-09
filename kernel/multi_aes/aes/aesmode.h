@@ -4,7 +4,11 @@
 #include "aes.h"
 #include <string.h>
 #include <stdio.h>
-
+/*
+Aesmode:带模式Aes加解密单元
+iv:迭代用初始向量
+initiv:最初初始向量
+*/
 class Aesmode
 {
 protected:

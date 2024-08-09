@@ -3,6 +3,43 @@
 
 #include <stdio.h>
 #include <string.h>
+
+bool exec(int argc, char *argv[]) {
+  //初始化
+  unsigned char *vals = NULL;
+  //获取参数
+  if (argc == 1)
+    vals = get_v_mod1();
+  else {
+    vals = get_v_opt(argc, argv);
+    if(vals == NULL)
+      return false;
+    if(((vpak_t *)vals)->mode == 'V'){
+      version();
+      return true;
+    }
+    else if(((vpak_t *)vals)->mode == 'h'){
+      help();
+      return true;
+    }
+  }
+  Settings settings;
+  settings.set_ctype(((vpak_t *)vals)->ctype);
+  settings.set_htype(((vpak_t *)vals)->htype);
+  settings.set_no_echo(((vpak_t *)vals)->no_echo);
+  bool flag;
+  //执行任务
+  runcrypt runner(((vpak_t *)vals)->fp, ((vpak_t *)vals)->out, ((vpak_t *)vals)->key, settings);
+  if(((vpak_t *)vals)->mode == 'e' || ((vpak_t *)vals)->mode == 'E')
+    flag = runner.execute_encrypt(((vpak_t *)vals)->size, ((vpak_t *)vals)->r_buf);
+  else if(((vpak_t *)vals)->mode == 'd' || ((vpak_t *)vals)->mode == 'D')
+    flag = runner.execute_decrypt(((vpak_t *)vals)->size);
+  else if(((vpak_t *)vals)->mode == 'v')
+    flag = runner.execute_verify();
+  else 
+    return false;
+  return flag;
+}
 #define BUFFER_SIZE 0x10000
 int cmp_file(FILE *x, FILE *y) {
   char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
@@ -49,12 +86,10 @@ int makeFullTest(const char *str, u8_t type) {
   sprintf(htype, "%d", (type>>4)&0xf);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key};
-  runcrypt runner1(get_v_opt(10, (char **)argv1));
-  if (!runner1.exec_val())
+  if (!exec(10, (char **)argv1))
     return 0;
   char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
-  runcrypt runner2(get_v_opt(12, (char **)argv2));
-  if (!runner2.exec_val())
+  if (!exec(12, (char **)argv2))
     return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
@@ -78,8 +113,7 @@ int makeSpeedTest(u8_t type = 1) {
   char ctype[100];
   sprintf(ctype, "%d", type);
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
-  runcrypt runner(get_v_opt(8, (char **)argv1));
-  if (!runner.exec_val())
+  if (!exec(8, (char **)argv1))
     return 0;
   else
     return 1;

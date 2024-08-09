@@ -115,9 +115,7 @@ void FileHeader::getFileHeader(u8_t *iv)
     fwrite(&htype, 1, 1, out);
     fwrite(padding, 1, PADDING, out);
     for (int i = 0; i < num; ++i)
-    {
         fwrite(iv + (20 * i), 1, 20, out);
-    }
 }
 /*
 checkType:检查加密和哈希模式
@@ -145,9 +143,7 @@ bool FileHeader::checkMn()
     u64_t mn = 0;
     int sum = fread(&mn, 1, 8, fp);
     if (sum != 8)
-    {
         return false;
-    }
     return (mn == Magic_Num);
 }
 /*
@@ -159,9 +155,7 @@ u8_t *FileHeader::getHmac(u8_t len)
     fseek(fp, FILE_HMAC_MARK, SEEK_SET);
     int sum = fread(hash, 1, len, fp);
     if (sum != len)
-    {
         return NULL;
-    }
     return hash;
 }
 

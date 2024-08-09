@@ -125,7 +125,9 @@ void buffergroup::printload(const u8_t id, const size_t size)
 
 buffergroup *buffergroup::instance = NULL;
 std::mutex buffergroup::mtx;
-
+/*
+set_buffergroup:设置缓冲区组选项
+*/
 void buffergroup::set_buffergroup(u32_t size, bool no_echo, FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
 {
   this->size = size;

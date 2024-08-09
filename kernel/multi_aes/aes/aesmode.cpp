@@ -161,7 +161,6 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
     case 4:
       return new AesOFB(key, iv);
     default:
-      printf("Unknown\n");
       return NULL;
     }
   }
@@ -180,7 +179,6 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
     case 4:
       return new AesOFB(key, iv);
     default:
-      printf("Unknown\n");
       return NULL;
     }
   }

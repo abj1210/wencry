@@ -22,8 +22,20 @@ int main(int argc, char *argv[]) {
       return 0;
     }
   }
+  Settings settings;
+  settings.set_ctype(((vpak_t *)vals)->ctype);
+  settings.set_htype(((vpak_t *)vals)->htype);
+  settings.set_no_echo(((vpak_t *)vals)->no_echo);
+  bool flag;
   //执行任务
-  runcrypt runner(vals);
-  bool flag = runner.exec_val();
+  runcrypt runner(((vpak_t *)vals)->fp, ((vpak_t *)vals)->out, ((vpak_t *)vals)->key, settings);
+  if(((vpak_t *)vals)->mode == 'e' || ((vpak_t *)vals)->mode == 'E')
+    flag = runner.execute_encrypt(((vpak_t *)vals)->size, ((vpak_t *)vals)->r_buf);
+  else if(((vpak_t *)vals)->mode == 'd' || ((vpak_t *)vals)->mode == 'D')
+    flag = runner.execute_decrypt(((vpak_t *)vals)->size);
+  else if(((vpak_t *)vals)->mode == 'v')
+    flag = runner.execute_verify();
+  else 
+    return -2;
   return flag ? 0 : -1;
 }
