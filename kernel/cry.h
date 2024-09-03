@@ -23,6 +23,7 @@ class Settings
 
 public:
   Settings() : ctype(1), htype(0), no_echo(false) {};
+  Settings(char ctype, char htype, bool no_echo) ;
   /*set_ctype:设置加密模式
   - 0:电子密码本ECB  
   - 1:密码块链CBC  
@@ -30,13 +31,13 @@ public:
   - 3:密文反馈CFB  
   - 4:输出反馈OFB  
   */
-  void set_ctype(char c) { ctype = c; };
+  void set_ctype(char c);
   /*set_htype:设置哈希模式
   - 0:sha1
   - 1:md5
   - 2:sha256
   */
-  void set_htype(char h) { htype = h; };
+  void set_htype(char h);
   /*set_no_echo:设置回显模式*/
   void set_no_echo(bool no_echo) { no_echo = no_echo; };
   char get_ctype() const { return ctype; };

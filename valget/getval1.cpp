@@ -18,9 +18,9 @@ void printkey(u8_t *key)
 }
 /*
 getInputFilep:从输入中获取文件指针
-return:获取的文件指针
+return:获取的文件名
 */
-static void getInputFilep(vpak_t *pak)
+static std::string getInputFilep(vpak_t *pak)
 {
   char fn[128];
   size_t size = 0;
@@ -33,11 +33,13 @@ static void getInputFilep(vpak_t *pak)
       break;
     strlog("Error :", "File not found");
   }
+  std::filesystem::path filePath(fn);
+  std::string fileName = filePath.filename().string();
   try
   {
     auto fileSize = std::filesystem::file_size(fn);
     size = fileSize;
-    strlog("File size: ", std::to_string(((double)fileSize) / ((double)(1024 * 1024))) + "MB");
+    strlog(fileName + " file size: ", std::to_string(((double)fileSize) / ((double)(1024 * 1024))) + "MB");
   }
   catch (std::filesystem::filesystem_error &e)
   {
@@ -45,6 +47,7 @@ static void getInputFilep(vpak_t *pak)
   }
   pak->fp = fp;
   pak->size = size;
+  return fileName;
 }
 /*
 getRandomKey:获取随机密钥
@@ -103,7 +106,7 @@ u8_t *get_v_mod1()
   printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
   scanf("%c", &res->mode);
   printf("File name:\n");
-  getInputFilep(res);
+  std::string fname = getInputFilep(res);
   if (res->mode == 'e' || res->mode == 'E')
   {
     printf("Need generate a new key?(y/n) ");
@@ -112,7 +115,8 @@ u8_t *get_v_mod1()
       res->key = getRandomKey();
     else
       res->key = getInputKey();
-    sprintf(outn, "%s.wenc", fn);
+    sprintf(outn, "%s.wenc", fname.c_str());
+    strlog("Output File: ", outn);
     res->out = fopen(outn, "wb+");
     printkey(res->key);
     res->ctype = selectMode();
@@ -132,11 +136,13 @@ u8_t *get_v_mod1()
       scanf("%*[\n]");
       scanf("%s", decn);
       res->out = fopen(decn, "wb+");
+      strlog("Output File: ", decn);
     }
     else
     {
-      sprintf(outn, "%s.wdec", fn);
+      sprintf(outn, "%s.wdec", fname.c_str());
       res->out = fopen(outn, "wb+");
+      strlog("Output File: ", outn);
     }
     res->key = getInputKey();
     res->ctype = selectMode();
@@ -145,7 +151,7 @@ u8_t *get_v_mod1()
   {
     res->key = getInputKey();
     res->out = NULL;
-    res->ctype = 0;
+    res->ctype = selectMode();
   }
   else if (res->mode == 'h')
     help();

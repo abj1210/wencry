@@ -9,6 +9,7 @@
 
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
+
 /*计算HMAC类*/
 class hmac
 {

@@ -200,10 +200,7 @@ void ResultPrint::printTimer(Timer * timer)
 /*
 printenc: 打印加密结果
 */
-void ResultPrint::printenc()
-{
-    strlog("Result:", "Encrypt over!");
-}
+void ResultPrint::printenc(){strlog("Result:", "Encrypt over!");}
 /*
 printres: 打印解密结果
 res: 解密结果

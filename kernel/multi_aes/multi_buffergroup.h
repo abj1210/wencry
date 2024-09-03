@@ -39,7 +39,10 @@ private:
 
 public:
   /*
-  初始化
+  init:初始化
+  fin:读取文件的地址
+  fout:写入文件的地址
+  ispadding:是否需要填充
   */
   void init(FILE *fin, FILE *fout, bool ispadding)
   {

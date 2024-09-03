@@ -2,6 +2,18 @@
 #include <assert.h>
 #include <iomanip>
 #include <math.h>
+
+/*################################
+  初始化
+################################*/
+
+u8_t bufferctrl::live_num = 0;
+buffergroup *buffergroup::instance = NULL;
+std::mutex buffergroup::mtx;
+
+/*################################
+  单缓冲区函数
+################################*/
 /*
 update_buffer:保存缓冲区数据并更新缓冲区
 over:加载是否结束
@@ -19,10 +31,9 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
   if (ispadding && (load != sum) && (!over))
   {
     u8_t padding = 16 - tail;
-    memset(b[total] + tail, padding, padding);
+    memset(b[total++] + tail, padding, padding);
     isfinal = true;
     over = true;
-    total++;
     return load + padding;
   }
   if ((!ispadding) && readover && (!over))
@@ -40,7 +51,9 @@ void iobuffer::final_write()
   u8_t padding = ispadding ? 0 : b[now - 1][15];
   fwrite(b, 1, (now << 4) - padding, fout);
 }
-u8_t bufferctrl::live_num = 0;
+/*################################
+  缓冲区控制函数
+################################*/
 /*
 wait_ready:等待装载就绪
 */
@@ -77,7 +90,8 @@ set_update:设置可装载状态
 void bufferctrl::set_update()
 {
   std::unique_lock<std::mutex> locker(lock);
-  if (state == READY){
+  if (state == READY)
+  {
     state = UPDATING;
     cv.notify_all();
   }
@@ -90,7 +104,7 @@ void bufferctrl::set_inv()
 {
   std::unique_lock<std::mutex> locker(lock);
   state = INV;
-  live_num --;
+  live_num--;
   cv.notify_all();
   locker.unlock();
 }
@@ -122,9 +136,6 @@ void buffergroup::printload(const u8_t id, const size_t size)
   std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
   std::cout.flush();
 }
-
-buffergroup *buffergroup::instance = NULL;
-std::mutex buffergroup::mtx;
 /*
 set_buffergroup:设置缓冲区组选项
 */
@@ -218,7 +229,7 @@ void buffergroup::run_buffer()
       ctrl[turn].wait_update();
       if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
         final_update();
-      else 
+      else
         buffer_update();
     }
     turn = (turn + 1) % size;

@@ -29,7 +29,7 @@ ENDIF()
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
 
-project(Wencry VERSION 3.6.3 LANGUAGES CXX)
+project(Wencry VERSION 3.6.4 LANGUAGES CXX)
 
 configure_file(
   config.h.in

@@ -9,6 +9,41 @@ Settings default_settings;
 /*################################
   辅助函数
 ################################*/
+/*设置选项类*/
+Settings::Settings(char ctype, char htype, bool no_echo) : ctype(ctype), htype(htype), no_echo(no_echo)
+{
+  if (ctype < 0 || ctype > 4)
+  {
+    fprintf(stderr, "Invalid crypt type: %d\n", ctype);
+    exit(1);
+  }
+  if (htype < 0 || htype > 2)
+  {
+    fprintf(stderr, "Invalid hash type: %d\n", htype);
+    exit(1);
+  }
+}
+void Settings::set_ctype(char c)
+{
+  if (ctype < 0 || ctype > 4)
+  {
+    fprintf(stderr, "Invalid crypt type: %d\n", ctype);
+    exit(1);
+  }
+  else
+    ctype = c;
+};
+void Settings::set_htype(char h)
+{
+  if (htype < 0 || htype > 2)
+  {
+    fprintf(stderr, "Invalid hash type: %d\n", htype);
+    exit(1);
+  }
+  else
+    htype = h;
+};
+
 /*
 prepare_IV:准备初始向量
 r_buf:随机缓冲数组
