@@ -26,12 +26,14 @@ typedef union
 } vpak_t;
 
 void printkey(u8_t *key);
+std::string get_ctypelist();
+std::string get_htypelist();
 
 void strlog(std::string s1, std::string s2, char fill = ' ');
 u8_t *getRandomKey();
 u8_t *get_v_mod1();
 u8_t *get_v_opt(int argc, char *argv[]);
 void version();
+std::string verstring();
 void help();
-
 #endif

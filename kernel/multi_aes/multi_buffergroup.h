@@ -120,11 +120,17 @@ class buffergroup
   u32_t size;
   bool no_echo;
   bool over;
-  buffergroup() : buflst(NULL), turn(0), now_size(0), over(false){};
+  buffergroup() : buflst(NULL), turn(0), now_size(0), over(false) {};
   ~buffergroup()
   {
     delete[] buflst;
     delete[] ctrl;
+  };
+  void turn_iter()
+  {
+    do
+      turn = (turn + 1) % size;
+    while (ctrl[turn].cmpstate(INV));
   };
   void printload(const u8_t id, const size_t size);
   void buffer_update();
@@ -132,7 +138,9 @@ class buffergroup
 
   static buffergroup *instance;
   static std::mutex mtx;
+
 public:
+  int percentage = -1;
   buffergroup(const buffergroup &) = delete;
   buffergroup &operator=(const buffergroup &) = delete;
   static buffergroup *get_instance();

@@ -1,4 +1,6 @@
 #include "base64.h"
+#include <ctype.h>
+#include <string>
 /*
 hex_to_base64:将十六进制串base64编码
 hex_in:输入的十六进制串
@@ -69,4 +71,36 @@ bool base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out)
     hex_out[idx++] = (h_in >> 8) & 0xff;
   }
   return true;
+}
+
+// Base64 字符集
+const std::string base64_chars =
+"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+"abcdefghijklmnopqrstuvwxyz"
+"0123456789+/";
+
+// 判断字符是否是合法的 Base64 字符
+bool is_base64(unsigned char c) {
+    return std::isalnum(c) || c == '+' || c == '/';
+}
+
+bool is_valid_b64(const u8_t* base64_in, int len) {
+    int tail = 0;
+    if (len % 4 != 0) return false;
+    else if ((len / 4) * 3 - 2 != 16) return false;
+
+    // 2. 检查每个字符是否是合法的 Base64 字符或填充字符 '='
+    for (int i = 0; i < len; ++i) {
+        if (base64_in[i] != '=' && !is_base64(base64_in[i]))
+            return false;
+        else if (base64_in[i] == '=') {
+            tail++;
+            if (tail >= 3)
+                return false;
+        }
+        else if (tail != 0)
+            return false;
+    }
+    return true;
+
 }

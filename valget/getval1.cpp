@@ -1,7 +1,9 @@
 #include "base64.h"
 #include "getval.h"
 #include <filesystem>
+
 #include <iostream>
+#include <iomanip>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
@@ -55,6 +57,7 @@ return:返回的密钥
 */
 u8_t *getRandomKey()
 {
+  srand(time(NULL));
   u8_t *keyout = new u8_t[16];
   for (int i = 0; i < 16; ++i)
     keyout[i] = rand();
@@ -68,28 +71,41 @@ static u8_t *getInputKey()
 {
   u8_t kn[128] = "";
   printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
-  scanf("%*[\n]");
-  while (scanf("%s", kn) == 0)
+  scanf("%s", kn);
+  while (!is_valid_b64(kn, strlen((char *)kn)))
   {
-    scanf("%*[\n]");
     printf("Sorry, please enter 128 bits (16 bytes) key in base64 mod:\n");
+    scanf("%s", kn);
   }
   u8_t *keyout = new u8_t[16];
   base64_to_hex(kn, 24, keyout);
   return keyout;
 }
 /*
-selectMode:选择加解密模式
+selectCMode:选择加解密模式
 return:选择的模式
 */
-static u8_t selectMode()
+static u8_t selectCMode()
 {
   u32_t c;
-  printf("Select a crypt mode(0:ECB, 1:CBC, 2:CTR, 3:CFB, 4:OFB).\n");
+  printf("Select a crypt mode(%s).\n", get_ctypelist().c_str());
   scanf("%d", &c);
   if (c > 4 || c < 0)
     c = 0;
   return (u8_t)c;
+}
+/*
+selectHMode:选择哈希模式
+return:选择的模式
+*/
+static u8_t selectHMode()
+{
+  u32_t h;
+  printf("Select a hash mode(%s).\n", get_htypelist().c_str());
+  scanf("%d", &h);
+  if (h > 2 || h < 0)
+    h = 0;
+  return (u8_t)h;
 }
 /*
 接口函数
@@ -99,7 +115,6 @@ return:返回的参数包
 u8_t *get_v_mod1()
 {
   char flag, fn[] = "out", outn[138], decn[128];
-  srand(time(NULL));
   vpak_t *res = new vpak_t;
   res->no_echo = false;
   version();
@@ -119,7 +134,8 @@ u8_t *get_v_mod1()
     strlog("Output File: ", outn);
     res->out = fopen(outn, "wb+");
     printkey(res->key);
-    res->ctype = selectMode();
+    res->ctype = selectCMode();
+    res->htype = selectHMode();
     if (res->ctype != 0)
     {
       printf("Please input some random characters.\n");
@@ -145,13 +161,15 @@ u8_t *get_v_mod1()
       strlog("Output File: ", outn);
     }
     res->key = getInputKey();
-    res->ctype = selectMode();
+    res->ctype = selectCMode();
+    res->htype = selectHMode();
   }
   else if (res->mode == 'v')
   {
     res->key = getInputKey();
     res->out = NULL;
-    res->ctype = selectMode();
+    res->ctype = selectCMode();
+    res->htype = selectHMode();
   }
   else if (res->mode == 'h')
     help();

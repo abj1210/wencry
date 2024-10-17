@@ -118,8 +118,10 @@ size:装载大小
 */
 void buffergroup::printload(const u8_t id, const size_t size)
 {
+
   now_size += size;
   double percentage = 100.0 * ((double)now_size / (double)(total_size));
+#ifndef GUI_ON
   std::cout << "Tid " << (const u32_t)id << " loaded ";
   const int barWidth = 50; // 进度条的总宽度
   std::cout << "[";
@@ -135,12 +137,16 @@ void buffergroup::printload(const u8_t id, const size_t size)
   }
   std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
   std::cout.flush();
+#else
+  this->percentage = percentage;
+#endif
 }
 /*
 set_buffergroup:设置缓冲区组选项
 */
 void buffergroup::set_buffergroup(u32_t size, bool no_echo, FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
 {
+  this->percentage = 0;
   this->size = size;
   this->no_echo = no_echo;
   this->total_size = fsize == 0 ? 1 : fsize;
@@ -215,23 +221,23 @@ void buffergroup::final_update()
   buflst[turn].final_write();
   ctrl[turn].set_inv();
   if (!no_echo)
-    std::cout << std::endl;
+    std::cout << "\r\n";
 }
 /*
 run_buffer:缓冲区组自动装载函数
 */
 void buffergroup::run_buffer()
 {
-  while (bufferctrl::haslive())
+  while(true)
   {
-    if (!ctrl[turn].cmpstate(INV))
-    {
-      ctrl[turn].wait_update();
-      if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
-        final_update();
-      else
-        buffer_update();
-    }
-    turn = (turn + 1) % size;
+    ctrl[turn].wait_update();
+    if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
+      final_update();
+    else
+      buffer_update();
+    if(bufferctrl::haslive())
+      turn_iter();
+    else 
+      break;
   }
 }

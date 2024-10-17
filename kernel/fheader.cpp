@@ -1,6 +1,7 @@
 #include "cry.h"
 #include "hashbuffer.h"
 #include <chrono>
+#include <string>
 #include <iostream>
 using namespace std;
 using namespace chrono;
@@ -9,26 +10,44 @@ using namespace chrono;
 ################################*/
 
 /*
+构造函数:设定哈希模式
+*/
+hmac::hmac(u8_t hashtype, bool no_echo) : type(hf.getType(hashtype)), no_echo(no_echo) {};
+
+const u8_t hmac::get_length() { return length; };
+
+int hmac::get_percentage(){
+    if(buf != NULL)
+        percentage = buf->percentage;
+    return percentage;
+};
+
+/*
 getres:计算HMAC值
 key:密钥序列
 fp:需验证文件指针
 */
-void hmac::getres(u8_t *key, FILE *fp)
+void hmac::getres(u8_t *key, FILE *fp, size_t fsize)
 {
     Hashmaster *hashmaster = hf.getHasher(type);
     const u8_t block = hashmaster->getblen();
     length = hashmaster->gethlen();
     hmac_res = new u8_t[length];
-    u8_t key1[block], h1[block], h2[block + length];
-    memset(key1, 0, sizeof(key1));
+    u8_t *key1 = new u8_t[block], *h1 = new u8_t[block], *h2 = new u8_t[block + length];
+    memset(key1, 0, sizeof(u8_t) * block);
     memcpy(key1, key, 16);
     for (int i = 0; i < block; ++i)
         h1[i] = key1[i] ^ ipad;
-    buffer64 * buf = new filebuffer64(fp, h1);
+    buf = new filebuffer64(fp, no_echo, fsize, h1);
     hashmaster->getFileHash(buf, &h2[block]);
     for (int i = 0; i < block; ++i)
         h2[i] = key1[i] ^ opad;
     hashmaster->getStringHash(h2, block + length, hmac_res);
+    if(!no_echo)
+        std::cout << "\r\n";
+    delete[] key1, h1, h2;
+    delete buf;
+    buf = NULL;
 }
 /*
 gethmac:获取HMAC值
@@ -36,9 +55,9 @@ key:密钥序列
 fp:需验证文件指针
 hmac_out:输出地址
 */
-void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out)
+void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize)
 {
-    getres(key, fp);
+    getres(key, fp, fsize);
     memcpy(hmac_out, hmac_res, length);
     delete[] hmac_res;
 }
@@ -49,11 +68,12 @@ fp:需验证文件指针
 hmac_out:待校验的HMAC值
 return:校验是否成功
 */
-bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out)
+bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
 {
-    getres(key, fp);
+    getres(key, fp, fsize);
     for (int i = 0; i < length; ++i)
-        if (hmac_out[i] != hmac_res[i]){
+        if (hmac_out[i] != hmac_res[i])
+        {
             delete[] hmac_res;
             return false;
         }
@@ -66,10 +86,10 @@ fp:文件指针
 hashMark:开始hash的地址
 writeMark:写入Hmac的地址
 */
-void hmac::writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark)
+void hmac::writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize)
 {
     fseek(fp, hashMark, SEEK_SET);
-    getres(key, fp);
+    getres(key, fp, fsize);
     fseek(fp, writeMark, SEEK_SET);
     fwrite(hmac_res, 1, length, fp);
     delete[] hmac_res;
@@ -167,7 +187,8 @@ u8_t *FileHeader::getHmac(u8_t len)
 printtask:打印任务
 name:任务名
 */
-void ResultPrint::printtask(std::string name){
+void ResultPrint::printtask(std::string name)
+{
     strlog("Task:", name);
 }
 /*
@@ -179,8 +200,9 @@ u8_t ResultPrint::printinv(const u8_t ret)
     strlog("Invalid values:", std::to_string(ret));
     return ret;
 }
-Timer * ResultPrint::createTimer(string name){
-    Timer * timer = new Timer;
+Timer *ResultPrint::createTimer(string name)
+{
+    Timer *timer = new Timer;
     timer->name = name;
     timer->start = system_clock::now();
     return timer;
@@ -190,34 +212,34 @@ Timer * ResultPrint::createTimer(string name){
 printtime: 打印时间
 totalTime: 总时间
 */
-void ResultPrint::printTimer(Timer * timer)
+void ResultPrint::printTimer(Timer *timer)
 {
     auto end = system_clock::now();
     auto totalTime = duration_cast<microseconds>(end - timer->start);
-    strlog(timer->name+" : ", std::to_string(double(totalTime.count()) * microseconds::period::num / microseconds::period::den)+"s");
+    strlog(timer->name + " : ", std::to_string(double(totalTime.count()) * microseconds::period::num / microseconds::period::den) + "s");
     delete timer;
 }
 /*
 printenc: 打印加密结果
 */
-void ResultPrint::printenc(){strlog("Result:", "Encrypt over!");}
+void ResultPrint::printenc() { strlog("Result:", "Encrypt over!"); }
 /*
 printres: 打印解密结果
 res: 解密结果
 */
 void ResultPrint::printres(int res)
 {
-    std::string  resstr = "Result:";
+    std::string resstr = "Result:";
     if (res <= 0)
-        strlog(resstr , "Verify pass!");
+        strlog(resstr, "Verify pass!");
     else if (res == 1)
-        strlog(resstr , "File too short.");
+        strlog(resstr, "File too short.");
     else if (res == 2)
-        strlog(resstr , "Wrong key or File not complete.");
+        strlog(resstr, "Wrong key or File not complete.");
     else if (res == 3)
-        strlog(resstr , "Aes / hash mode not match.");
+        strlog(resstr, "Aes / hash mode not match.");
     else if (res == 4)
-        strlog(resstr , "Wrong magic number.");
+        strlog(resstr, "Wrong magic number.");
     else
-        strlog(resstr , "Unknown res number: " + std::to_string(res));
+        strlog(resstr, "Unknown res number: " + std::to_string(res));
 }

@@ -1,5 +1,10 @@
 project(Multiaes)
 
+option(GUI_OPT "Whether or not to build GUI" OFF)
+if (GUI_OPT)
+    add_definitions(-DGUI_ON)
+endif ()
+
 add_subdirectory(aes)
 
 add_library(${PROJECT_NAME} multicry.cpp multi_buffergroup.cpp)

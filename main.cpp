@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
   else if (((vpak_t *)vals)->mode == 'd' || ((vpak_t *)vals)->mode == 'D')
     flag = runner.execute_decrypt(((vpak_t *)vals)->size);
   else if (((vpak_t *)vals)->mode == 'v')
-    flag = runner.execute_verify();
+    flag = runner.execute_verify(((vpak_t *)vals)->size);
   else
     return -2;
   return flag ? 0 : -1;

@@ -2,11 +2,14 @@
 #include "base64.h"
 #include <filesystem>
 #include <iostream>
-#include <unistd.h>
-#include <getopt.h>
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifdef OPT_ON
+
+#include <unistd.h>
+#include <getopt.h>
 
 /*################################
   全局变量
@@ -175,12 +178,20 @@ bool parseOpts(char c, vpak_t *res)
         if (res->out == NULL)
         {
             strlog("Error :", "Could not open file " + std::string(optarg));
-            return true;
+            return false;
         }
         break;
     case 'k':
-        res->key = getArgsKey(optarg);
-        strlog("Key :", "Using specific key");
+        if (is_valid_b64((unsigned char *)optarg, strlen(optarg)))
+        {
+            res->key = getArgsKey(optarg);
+            strlog("Key :", "Using specific key");
+        }
+        else
+        {
+            strlog("Error :", "Invalid base64 key");
+            return false;
+        }
         break;
     case 'n':
         res->no_echo = true;
@@ -320,3 +331,13 @@ u8_t *get_v_opt(int argc, char *argv[])
     }
     return res->buf;
 }
+
+#else
+
+u8_t *get_v_opt(int argc, char *argv[])
+{
+    strlog("Note :", "CMDLine option is not supported");
+    return get_v_mod1();
+}
+
+#endif

@@ -6,33 +6,41 @@
 #include <iomanip>
 #include <stdio.h>
 #include <string.h>
+#include <chrono>
 
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
 
-/*计算HMAC类*/
+/*
+计算HMAC类
+*/
+
 class hmac
 {
   static const u8_t ipad = 0x36, opad = 0x5c;
   HashFactory hf;
   HashFactory::HASH_TYPE type;
   u8_t *hmac_res, length;
-  void getres(u8_t *key, FILE *fp);
+  buffer64 *buf = NULL;
+  int percentage=0;
+  bool no_echo;
+  void getres(u8_t *key, FILE *fp, size_t fsize);
 
 public:
-  /*
-  构造函数:设定哈希模式
-  */
-  hmac(u8_t hashtype) : type(hf.getType(hashtype)) {};
-  void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out);
-  bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out);
-  void writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark);
-  const u8_t get_length() { return length; };
+  hmac(u8_t hashtype, bool no_echo = false);
+  void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
+  bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
+  void writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize = 0);
+  const u8_t get_length();
+  int get_percentage();
 };
-/*文件头处理类*/
+
+/*
+文件头处理类
+*/
+
 class FileHeader
 {
-  // 魔数
   static const u64_t Magic_Num = 0xA5C3A5C3A5C3A5C3;
   u8_t hash[64], *key, num;
   u8_t ctype, htype;
@@ -48,14 +56,21 @@ public:
   bool checkMn();
   u8_t *getHmac(u8_t len);
 };
-/*计时器类*/
+
+/*
+计时器类
+*/
+
 struct Timer
 {
-  std::chrono::_V2::system_clock::time_point start;
+  std::chrono::system_clock::time_point start;
   std::string name;
 };
 
-/*结果打印类*/
+/*
+结果打印类
+*/
+
 class AbsResultPrint
 {
 public:
@@ -82,7 +97,7 @@ class ResultPrint : public AbsResultPrint
 {
   void strlog(std::string s1, std::string s2, char fill = ' ')
   {
-    std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
+    std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << "\r\n";
   }
 
 public:

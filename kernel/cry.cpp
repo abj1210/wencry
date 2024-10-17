@@ -3,13 +3,19 @@
 #include <iostream>
 using namespace std;
 using namespace chrono;
+
+/*################################
+  宏定义和全局变量
+################################*/
 #define TIMER_START(timer) auto t_##timer = resultprint->createTimer(#timer);
 #define TIMER_END(timer) resultprint->printTimer(t_##timer);
 Settings default_settings;
 /*################################
   辅助函数
 ################################*/
-/*设置选项类*/
+/*
+设置选项类
+*/
 Settings::Settings(char ctype, char htype, bool no_echo) : ctype(ctype), htype(htype), no_echo(no_echo)
 {
   if (ctype < 0 || ctype > 4)
@@ -114,7 +120,7 @@ void runcrypt::over()
 verify:验证密钥和文件
 return:若为0则检查通过,否则检查不通过
 */
-u8_t runcrypt::verify()
+u8_t runcrypt::verify(size_t fsize)
 {
   resultprint->printtask("Verifying file");
   if (!header.checkMn())
@@ -125,7 +131,7 @@ u8_t runcrypt::verify()
   if (hash == NULL)
     return 1;
   fseek(fin, FILE_IV_MARK, SEEK_SET);
-  if (!hmachandle.cmphmac(key, fin, hash))
+  if (!hmachandle.cmphmac(key, fin, hash, fsize))
     return 2;
   else
     return 0;
@@ -145,7 +151,7 @@ threads_num:线程数
 runcrypt::runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
     : header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
       hmachandle(settings.get_htype()), aesfactory(key), crym(threads_num), threads_num(threads_num),
-      fin(fin), out(out), key(key), settings(settings)
+      fin(fin), out(out), key(key), settings(settings), mode(false)
 {
   if (settings.get_no_echo())
     resultprint = new NullResPrint;
@@ -175,7 +181,7 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   // 写入hamc
   TIMER_START(Hashing_Time)
   resultprint->printtask("Calculating hmac");
-  hmachandle.writeFileHmac(out, key, FILE_IV_MARK, FILE_HMAC_MARK);
+  hmachandle.writeFileHmac(out, key, FILE_IV_MARK, FILE_HMAC_MARK, fsize);
   TIMER_END(Hashing_Time)
   // 释放空间
   resultprint->printtask("Releasing allocated memory");
@@ -199,7 +205,7 @@ bool runcrypt::execute_decrypt(size_t fsize)
 
   // 验证文件
   TIMER_START(Verify_Time);
-  u8_t state = verify();
+  u8_t state = verify(fsize);
   TIMER_END(Verify_Time);
   if (state != 0)
     res = state;
@@ -227,7 +233,7 @@ bool runcrypt::execute_decrypt(size_t fsize)
 execute_verify:验证执行过程
 fsize:文件大小
 */
-bool runcrypt::execute_verify()
+bool runcrypt::execute_verify(size_t fsize)
 {
   int res = 0;
   auto t1 = resultprint->createTimer("Total_Time");
@@ -235,7 +241,7 @@ bool runcrypt::execute_verify()
     return resultprint->printinv(0);
   // 验证文件
   TIMER_START(Verify_Time);
-  u8_t state = verify();
+  u8_t state = verify(fsize);
   res = state;
   TIMER_END(Verify_Time);
   resultprint->printres(res);  // 打印结果
@@ -243,3 +249,14 @@ bool runcrypt::execute_verify()
   over();                      // 关闭文件
   return res == 0;
 }
+int runcrypt::get_percentage() { 
+  int res = buffergroup::get_instance()->percentage; 
+  if(res < 0 || res > 99){
+    if(mode) return hmachandle.get_percentage();
+    else {
+      mode =true;
+      return -1;
+    }
+  }else 
+    return res;
+};

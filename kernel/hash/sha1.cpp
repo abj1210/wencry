@@ -62,7 +62,7 @@ loadsize:装载字节数
 void sha1hash::getHash(const u8_t *input, u32_t final_loadsize)
 {
   addtotal(final_loadsize);
-  u8_t temp[getblen()];
+  u8_t *temp = new u8_t[getblen()];
   memset(temp, 0, getblen());
   memcpy(temp, input, final_loadsize);
   temp[final_loadsize] = 0x80u;
@@ -76,6 +76,7 @@ void sha1hash::getHash(const u8_t *input, u32_t final_loadsize)
     temp[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
   }
   getHash(temp);
+  delete[] temp;
 }
 /*
 接口函数

@@ -8,12 +8,8 @@ mode:生成的加密算法
 void multiruncrypt_file(u8_t id, Aesmode &mode)
 {
   buffergroup *iobuffer = buffergroup::get_instance();
-  u8_t *block = iobuffer->require_buffer_entry(id);
-  while (block != NULL)
-  {
+  for (u8_t *block = iobuffer->require_buffer_entry(id); block != NULL; block = iobuffer->require_buffer_entry(id))
     mode.runcry(block);
-    block = iobuffer->require_buffer_entry(id);
-  }
 };
 /*
 run_multicry:进行多线程并发
@@ -24,8 +20,7 @@ void multicry_master::run_multicry(Aesmode **mode)
 {
   for (u8_t i = 0; i < THREADS_NUM; ++i)
     threads[i] = std::thread(multiruncrypt_file, i, std::ref((*mode[i])));
-  buffergroup *iobuffer = buffergroup::get_instance();
-  iobuffer->run_buffer();
+  buffergroup::get_instance()->run_buffer();
   for (u8_t i = 0; i < THREADS_NUM; ++i)
     threads[i].join();
 };

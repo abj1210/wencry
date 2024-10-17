@@ -4,11 +4,11 @@ cmake_minimum_required(VERSION 3.22.1)
 set(CMAKE_C_STANDARD 17)
 IF("${CMAKE_BUILD_TYPE}" MATCHES "Debug")
     message(STATUS "building for: debugging")
-    
+    add_definitions(-DDEBUG_ON)
     set(CXX_FORMAT_SIGNEDNESS "-Wformat-signedness")
     set(CXX_FORMAT_SECURITY "-Werror=format-security")
     set(CXX_STACK_PROTECTOR "-fstack-protector-all")
-    set(CXX_FLAGS_DEBUG "-O0 -gp")
+    set(CXX_FLAGS_DEBUG "-O0")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O1 -ggdb -Wall -Wextra -DNETDATA_INTERNAL_CHECKS=1 -DNETDATA_VERIFY_LOCKS=1 ${CXX_FORMAT_SIGNEDNESS} ${CXX_FORMAT_SECURITY} ${CXX_STACK_PROTECTOR} ${CXX_FLAGS_DEBUG}")
 ELSE()
     message(STATUS "building for: release")
@@ -29,7 +29,7 @@ ENDIF()
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
 
-project(Wencry VERSION 3.6.4 LANGUAGES CXX)
+project(Wencry VERSION 3.7.0 LANGUAGES CXX)
 
 configure_file(
   config.h.in

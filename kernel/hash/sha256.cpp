@@ -16,8 +16,7 @@ const u32_t sha256hash::k[64] = {
     0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
     0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-};
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2};
 /*
 getwdata:根据每个输入单元生成sha1中w数组的值
 */
@@ -72,7 +71,7 @@ loadsize:装载字节数
 void sha256hash::getHash(const u8_t *input, u32_t final_loadsize)
 {
   addtotal(final_loadsize);
-  u8_t temp[getblen()];
+  u8_t *temp = new u8_t[getblen()];
   memset(temp, 0, getblen());
   memcpy(temp, input, final_loadsize);
   temp[final_loadsize] = 0x80u;
@@ -86,6 +85,7 @@ void sha256hash::getHash(const u8_t *input, u32_t final_loadsize)
     temp[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
   }
   getHash(temp);
+  delete[] temp;
 }
 /*
 接口函数
