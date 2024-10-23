@@ -56,7 +56,6 @@ public:
   return:返回的表项地址
   */
   u8_t *get_entry() { return (now < total) ? b[now++] : NULL; };
-  u32_t update_buffer(bool write, bool &over);
   /*
   bufferover:缓冲区和文件是否读取完毕
   return:若为0则未读取完毕,否则已读取完毕
@@ -67,6 +66,8 @@ public:
   return:若为空返回真否则返回假
   */
   bool fin_empty() const { return (total == 0) && (tail == 0); };
+
+  u32_t update_buffer(bool write, bool &over);
   void final_write();
 };
 enum bufstate_t
@@ -80,7 +81,8 @@ enum bufstate_t
 bufferctrl:缓冲区状态控制类
 live_num:有效控制器数
 lock:互斥锁
-cv:条件变量
+cv_ready:是否就绪条件变量
+cv_update:是否更新条件变量
 state:缓冲区状态(EMPTY:缓冲区为空 UPDATING:缓冲区正在更新 READY:缓冲区更新完毕 INV:缓冲区不可用)
 */
 class bufferctrl
@@ -88,17 +90,17 @@ class bufferctrl
   static u8_t live_num;
   enum bufstate_t state;
   std::mutex lock;
-  std::condition_variable cv;
+  std::condition_variable cv_ready, cv_update;
 
 public:
   bufferctrl() : state(EMPTY) { live_num++; };
   bool cmpstate(const enum bufstate_t state) const { return this->state == state; };
   static bool haslive() { return live_num != 0; };
+
   void wait_ready();
   void wait_update();
-  void set_ready();
+  void set_ready(bool load);
   void set_update();
-  void set_inv();
 };
 /*
 buffergroup:用于多线程的缓冲区组
@@ -113,6 +115,9 @@ over:是否加载结束
 */
 class buffergroup
 {
+public:
+  int percentage;
+private:
   iobuffer *buflst;
   bufferctrl *ctrl;
   u32_t turn;
@@ -120,18 +125,13 @@ class buffergroup
   u32_t size;
   bool no_echo;
   bool over;
-  buffergroup() : buflst(NULL), turn(0), now_size(0), over(false) {};
+  buffergroup() : buflst(NULL), turn(0), now_size(0), over(false), percentage(-1) {};
   ~buffergroup()
   {
     delete[] buflst;
     delete[] ctrl;
   };
-  void turn_iter()
-  {
-    do
-      turn = (turn + 1) % size;
-    while (ctrl[turn].cmpstate(INV));
-  };
+  bool turn_iter();
   void printload(const u8_t id, const size_t size);
   void buffer_update();
   void final_update();
@@ -140,7 +140,7 @@ class buffergroup
   static std::mutex mtx;
 
 public:
-  int percentage = -1;
+  
   buffergroup(const buffergroup &) = delete;
   buffergroup &operator=(const buffergroup &) = delete;
   static buffergroup *get_instance();

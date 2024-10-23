@@ -22,15 +22,15 @@ class hmac
   HashFactory::HASH_TYPE type;
   u8_t *hmac_res, length;
   buffer64 *buf = NULL;
-  int percentage=0;
+  int percentage = 0;
   bool no_echo;
-  void getres(u8_t *key, FILE *fp, size_t fsize);
+  void getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize);
 
 public:
-  hmac(u8_t hashtype, bool no_echo = false);
-  void gethmac(u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
-  bool cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
-  void writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize = 0);
+  hmac(bool no_echo = false);
+  void gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
+  bool cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
+  void writeFileHmac(u8_t hashtype, FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize = 0);
   const u8_t get_length();
   int get_percentage();
 };
@@ -48,11 +48,14 @@ class FileHeader
   HashFactory hf;
 
 public:
+  FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t num) : fp(fp), out(out), key(key), ctype(-1), htype(-1), num(num) {};
   FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t ctype, u8_t htype, u8_t num) : fp(fp), out(out), key(key), ctype(ctype), htype(htype), num(num) {};
   void getIV(const u8_t *r_buf, u8_t *iv);
   void getIV(FILE *fp, u8_t *iv);
   void getFileHeader(u8_t *iv);
-  bool checkType();
+  void checkType();
+  u8_t getctype() { return ctype; };
+  u8_t gethtype() { return htype; };
   bool checkMn();
   u8_t *getHmac(u8_t len);
 };
@@ -80,6 +83,8 @@ public:
   virtual void printTimer(Timer *timer) = 0;
   virtual void printenc() = 0;
   virtual void printres(int res) = 0;
+  virtual void printctype(u8_t type) = 0;
+  virtual void printhtype(u8_t type) = 0;
 };
 
 class NullResPrint : public AbsResultPrint
@@ -91,6 +96,8 @@ public:
   virtual void printTimer(Timer *timer) {};
   virtual void printenc() {};
   virtual void printres(int res) {};
+  virtual void printctype(u8_t type) {};
+  virtual void printhtype(u8_t type) {};
 };
 
 class ResultPrint : public AbsResultPrint
@@ -107,6 +114,8 @@ public:
   virtual void printTimer(Timer *timer);
   virtual void printenc();
   virtual void printres(int res);
+  virtual void printctype(u8_t type);
+  virtual void printhtype(u8_t type);
 };
 
 #endif

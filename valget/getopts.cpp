@@ -197,7 +197,7 @@ bool parseOpts(char c, vpak_t *res)
         res->no_echo = true;
         break;
     case 1:
-        if (res->ctype == 100)
+        if (res->ctype == -1)
         {
             res->ctype = atoi(optarg);
             printCryptMode(res->ctype);
@@ -209,7 +209,7 @@ bool parseOpts(char c, vpak_t *res)
         }
         break;
     case 2:
-        if (res->htype == 100)
+        if (res->htype == -1)
         {
             res->htype = atoi(optarg);
             printHashMode(res->htype);
@@ -263,8 +263,8 @@ u8_t *get_v_opt(int argc, char *argv[])
     optind = 1;
     vpak_t *res = new vpak_t;
     res->mode = 'u';
-    res->ctype = 100;
-    res->htype = 100;
+    res->ctype = -1;
+    res->htype = -1;
     res->no_echo = false;
     res->fp = NULL;
     res->out = NULL;
@@ -286,9 +286,9 @@ u8_t *get_v_opt(int argc, char *argv[])
         delete res;
         return NULL;
     }
-    else if (res->mode == 'e' || res->mode == 'd' || res->mode == 'v')
+    else if (res->mode == 'e')
     {
-        if (res->ctype == 100)
+        if (res->ctype == -1)
         {
             printCryptMode(0);
             res->ctype = 0;
@@ -299,7 +299,7 @@ u8_t *get_v_opt(int argc, char *argv[])
             delete res;
             return NULL;
         }
-        if (res->htype == 100)
+        if (res->htype == -1)
         {
             printHashMode(0);
             res->htype = 0;

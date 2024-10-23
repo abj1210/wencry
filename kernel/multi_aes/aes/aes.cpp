@@ -65,8 +65,8 @@ inline void encryaes_subbytes(state_t &w)
   for (int i = 0; i < 4; ++i)
   {
     u32_t t = w.g[i];
-    setbytes(w.g[i], s_box[(u8_t)t], s_box[(u8_t)(t >> 8)],
-             s_box[(u8_t)(t >> 16)], s_box[(u8_t)(t >> 24)]);
+    w.g[i] = setbytes(s_box[(u8_t)t], s_box[(u8_t)(t >> 8)],
+                      s_box[(u8_t)(t >> 16)], s_box[(u8_t)(t >> 24)]);
   }
 }
 /*
@@ -128,8 +128,8 @@ inline void decryaes_subbytes(state_t &w)
   for (int i = 0; i < 4; ++i)
   {
     u32_t t = w.g[i];
-    setbytes(w.g[i], rs_box[(u8_t)t], rs_box[(u8_t)(t >> 8)],
-             rs_box[(u8_t)(t >> 16)], rs_box[(u8_t)(t >> 24)]);
+    w.g[i] = setbytes(rs_box[(u8_t)t], rs_box[(u8_t)(t >> 8)],
+                      rs_box[(u8_t)(t >> 16)], rs_box[(u8_t)(t >> 24)]);
   }
 }
 /*
@@ -190,12 +190,12 @@ w:待加解密数据块的地址
 void encryaes::runaes_128bit(u8_t *w)
 {
   for (int i = 0; i < 4; ++i)
-    setbytes(this->w.g[i], w[i], w[4 + i], w[8 + i], w[12 + i]);
+    this->w.g[i] = setbytes(w[i], w[4 + i], w[8 + i], w[12 + i]);
   for (int i = 0; i < 9; ++i)
     encryaes_commonround(this->w, key.get_key(i));
   encryaes_specround(this->w, key.get_key(9), key.get_key(10));
   for (int j = 0; j < 4; ++j)
-    setbytes(*((u32_t *)w + j), this->w.s[0][j], this->w.s[1][j], this->w.s[2][j], this->w.s[3][j]);
+    *((u32_t *)w + j) = setbytes(this->w.s[0][j], this->w.s[1][j], this->w.s[2][j], this->w.s[3][j]);
 }
 /*
 runaes_128bit:将一个128bit的数据块进行aes解密
@@ -204,10 +204,10 @@ w:待加解密数据块的地址
 void decryaes::runaes_128bit(u8_t *w)
 {
   for (int i = 0; i < 4; ++i)
-    setbytes(this->w.g[i], w[i], w[4 + i], w[8 + i], w[12 + i]);
+    this->w.g[i] = setbytes(w[i], w[4 + i], w[8 + i], w[12 + i]);
   decryaes_specround(this->w, key.get_key(9), key.get_key(10));
   for (int i = 8; i >= 0; --i)
     decryaes_commonround(this->w, key.get_key(i));
   for (int j = 0; j < 4; ++j)
-    setbytes(*((u32_t *)w + j), this->w.s[0][j], this->w.s[1][j], this->w.s[2][j], this->w.s[3][j]);
+    *((u32_t *)w + j) = setbytes(this->w.s[0][j], this->w.s[1][j], this->w.s[2][j], this->w.s[3][j]);
 }

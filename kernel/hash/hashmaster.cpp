@@ -69,6 +69,28 @@ HashFactory::HASH_TYPE HashFactory::getType(u8_t type)
   }
 }
 /*
+getName:获取模式名称
+type:模式码
+return:模式名称
+*/
+std::string HashFactory::getName(u8_t type){
+  switch (type)
+  {
+  case 0:
+    return "SHA1";
+    break;
+  case 1:
+    return "MD5";
+    break;
+  case 2:
+    return "SHA256";
+    break;
+  default:
+    return "Unknown";
+    break;
+  }
+}
+/*
 getHasher:根据哈希类型返回相应的算法
 type:哈希类型
 return:返回的哈希类

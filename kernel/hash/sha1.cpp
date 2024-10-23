@@ -14,7 +14,7 @@ void sha1hash::getwdata()
   for (i; i < 16; ++i)
   {
     t = this->i[i];
-    setbytes(w[i], ((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)), t);
+    w[i] = setbytes(((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)), t);
   }
   for (i; i < 80; ++i)
   {
@@ -32,8 +32,8 @@ void sha1hash::getHash(const u8_t *input)
   getwdata();
   addtotal(64);
   u32_t temph[5];
-  memcpy(temph, h, sizeof(h));
   u32_t f, temp;
+  memcpy(temph, h, sizeof(h));
   for (u32_t i = 0; i < 80; ++i)
   {
     if (i < 20)

@@ -3,6 +3,7 @@
 
 #include "aes.h"
 #include <string.h>
+#include <string>
 #include <stdio.h>
 /*
 Aesmode:带模式Aes加解密单元
@@ -35,6 +36,7 @@ class AesFactory {
 public:
   AesFactory(u8_t *key): key(key) {};
   AesFactory(u8_t *key, const u8_t * iv): key(key), iv(iv) {};
+  static std::string getName(u8_t type);
   void loadiv(const u8_t * iv){this->iv = iv;};
   Aesmode * createCryMaster(bool isenc, u8_t type);
 };

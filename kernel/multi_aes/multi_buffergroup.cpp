@@ -23,12 +23,14 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
 {
   if (write)
     fwrite(b, 1, sum, fout);
+  if (over)
+    return 0;
   u32_t load = fread(b, 1, sum, fin);
   bool readover = feof(fin);
   tail = load & 0xf;
   total = load >> 4;
   now = 0;
-  if (ispadding && (load != sum) && (!over))
+  if (ispadding && (load != sum))
   {
     u8_t padding = 16 - tail;
     memset(b[total++] + tail, padding, padding);
@@ -36,7 +38,7 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
     over = true;
     return load + padding;
   }
-  if ((!ispadding) && readover && (!over))
+  if ((!ispadding) && readover)
   {
     isfinal = true;
     over = true;
@@ -61,7 +63,7 @@ void bufferctrl::wait_ready()
 {
   std::unique_lock<std::mutex> locker(lock);
   while (state != READY && state != INV)
-    cv.wait(locker);
+    cv_ready.wait(locker);
   locker.unlock();
 }
 /*
@@ -71,17 +73,24 @@ void bufferctrl::wait_update()
 {
   std::unique_lock<std::mutex> locker(lock);
   while (state != UPDATING && state != EMPTY)
-    cv.wait(locker);
+    cv_update.wait(locker);
   locker.unlock();
 }
 /*
-set_ready:设置就绪状态
+set_ready:设置就绪或无效状态
+load:装载是否不为空
 */
-void bufferctrl::set_ready()
+void bufferctrl::set_ready(bool load)
 {
   std::unique_lock<std::mutex> locker(lock);
-  state = READY;
-  cv.notify_all();
+  if (load)
+    state = READY;
+  else
+  {
+    state = INV;
+    live_num--;
+  }
+  cv_ready.notify_all();
   locker.unlock();
 }
 /*
@@ -93,19 +102,8 @@ void bufferctrl::set_update()
   if (state == READY)
   {
     state = UPDATING;
-    cv.notify_all();
+    cv_update.notify_all();
   }
-  locker.unlock();
-}
-/*
-设置无效状态
-*/
-void bufferctrl::set_inv()
-{
-  std::unique_lock<std::mutex> locker(lock);
-  state = INV;
-  live_num--;
-  cv.notify_all();
   locker.unlock();
 }
 /*################################
@@ -184,6 +182,19 @@ void buffergroup::del_instance()
   }
 };
 /*
+turn_iter:缓冲区序号迭代
+return:迭代是否成功
+*/
+bool buffergroup::turn_iter()
+{
+  if (!bufferctrl::haslive())
+    return false;
+  do
+    turn = (turn + 1) % size;
+  while (ctrl[turn].cmpstate(INV));
+  return true;
+};
+/*
 require_buffer_entry:获取下一个缓冲区表项
 id:缓冲区标号
 return:表项地址，若缓冲区已经读取完毕返回NULL
@@ -208,10 +219,7 @@ void buffergroup::buffer_update()
   size_t loadsize = buflst[turn].update_buffer(ctrl[turn].cmpstate(UPDATING), over);
   if ((loadsize != 0) && (!no_echo))
     printload(turn, loadsize);
-  if (loadsize == 0)
-    ctrl[turn].set_inv();
-  else
-    ctrl[turn].set_ready();
+  ctrl[turn].set_ready(loadsize != 0);
 }
 /*
 final_update:缓冲区最终装载
@@ -219,7 +227,7 @@ final_update:缓冲区最终装载
 void buffergroup::final_update()
 {
   buflst[turn].final_write();
-  ctrl[turn].set_inv();
+  ctrl[turn].set_ready(false);
   if (!no_echo)
     std::cout << "\r\n";
 }
@@ -228,16 +236,12 @@ run_buffer:缓冲区组自动装载函数
 */
 void buffergroup::run_buffer()
 {
-  while(true)
+  do
   {
     ctrl[turn].wait_update();
     if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
       final_update();
     else
       buffer_update();
-    if(bufferctrl::haslive())
-      turn_iter();
-    else 
-      break;
-  }
+  } while (turn_iter());
 }

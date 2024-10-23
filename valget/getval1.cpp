@@ -161,15 +161,15 @@ u8_t *get_v_mod1()
       strlog("Output File: ", outn);
     }
     res->key = getInputKey();
-    res->ctype = selectCMode();
-    res->htype = selectHMode();
+    res->ctype = -1;
+    res->htype = -1;
   }
   else if (res->mode == 'v')
   {
     res->key = getInputKey();
     res->out = NULL;
-    res->ctype = selectCMode();
-    res->htype = selectHMode();
+    res->ctype = -1;
+    res->htype = -1;
   }
   else if (res->mode == 'h')
     help();

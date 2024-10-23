@@ -183,3 +183,25 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
     }
   }
 }
+/*
+getName:获取模式名称
+type:模式码
+return:模式名称
+*/
+std::string AesFactory::getName(u8_t type){
+  switch (type)
+  {
+  case 0:
+    return "ECB";
+  case 1:
+    return "CBC";
+  case 2:
+    return "CTR";
+  case 3:
+    return "CFB";
+  case 4:
+    return "OFB";
+  default:
+    return "Unknown";
+  }
+}

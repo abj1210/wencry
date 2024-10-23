@@ -26,7 +26,7 @@ void sha256hash::getwdata()
   for (i; i < 16; ++i)
   {
     t = this->i[i];
-    setbytes(w[i], ((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)), t);
+    w[i] = setbytes(((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)), t);
   }
   for (i; i < 64; ++i)
   {

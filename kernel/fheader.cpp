@@ -10,32 +10,38 @@ using namespace chrono;
 ################################*/
 
 /*
-构造函数:设定哈希模式
+构造函数
+no_echo:是否隐藏输出
 */
-hmac::hmac(u8_t hashtype, bool no_echo) : type(hf.getType(hashtype)), no_echo(no_echo) {};
+hmac::hmac(bool no_echo) : no_echo(no_echo) {};
 
 const u8_t hmac::get_length() { return length; };
 
-int hmac::get_percentage(){
-    if(buf != NULL)
+int hmac::get_percentage()
+{
+    if (buf != NULL)
         percentage = buf->percentage;
     return percentage;
 };
 
 /*
 getres:计算HMAC值
+hashtype:哈希模式
 key:密钥序列
 fp:需验证文件指针
+fsize:文件大小
 */
-void hmac::getres(u8_t *key, FILE *fp, size_t fsize)
+void hmac::getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize)
 {
-    Hashmaster *hashmaster = hf.getHasher(type);
+    // 准备数据
+    Hashmaster *hashmaster = hf.getHasher(hf.getType(hashtype));
     const u8_t block = hashmaster->getblen();
     length = hashmaster->gethlen();
     hmac_res = new u8_t[length];
     u8_t *key1 = new u8_t[block], *h1 = new u8_t[block], *h2 = new u8_t[block + length];
     memset(key1, 0, sizeof(u8_t) * block);
     memcpy(key1, key, 16);
+    // 计算hmac
     for (int i = 0; i < block; ++i)
         h1[i] = key1[i] ^ ipad;
     buf = new filebuffer64(fp, no_echo, fsize, h1);
@@ -43,34 +49,39 @@ void hmac::getres(u8_t *key, FILE *fp, size_t fsize)
     for (int i = 0; i < block; ++i)
         h2[i] = key1[i] ^ opad;
     hashmaster->getStringHash(h2, block + length, hmac_res);
-    if(!no_echo)
+    if (!no_echo)
         std::cout << "\r\n";
+    // 清理数据
     delete[] key1, h1, h2;
-    delete buf;
+    delete buf, hashmaster;
     buf = NULL;
 }
 /*
 gethmac:获取HMAC值
+hashtype:哈希模式
 key:密钥序列
 fp:需验证文件指针
 hmac_out:输出地址
+fsize:文件大小
 */
-void hmac::gethmac(u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize)
+void hmac::gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize)
 {
-    getres(key, fp, fsize);
+    getres(hashtype, key, fp, fsize);
     memcpy(hmac_out, hmac_res, length);
     delete[] hmac_res;
 }
 /*
 cmphmac:校验HMAC值
+hashtype:哈希模式
 key:密钥序列
 fp:需验证文件指针
 hmac_out:待校验的HMAC值
+fsize:文件大小
 return:校验是否成功
 */
-bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
+bool hmac::cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
 {
-    getres(key, fp, fsize);
+    getres(hashtype, key, fp, fsize);
     for (int i = 0; i < length; ++i)
         if (hmac_out[i] != hmac_res[i])
         {
@@ -82,14 +93,16 @@ bool hmac::cmphmac(u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
 }
 /*
 writeFileHmac:写入HMAC值
+hashtype:哈希模式
 fp:文件指针
 hashMark:开始hash的地址
 writeMark:写入Hmac的地址
+fsize:文件大小
 */
-void hmac::writeFileHmac(FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize)
+void hmac::writeFileHmac(u8_t hashtype, FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize)
 {
     fseek(fp, hashMark, SEEK_SET);
-    getres(key, fp, fsize);
+    getres(hashtype, key, fp, fsize);
     fseek(fp, writeMark, SEEK_SET);
     fwrite(hmac_res, 1, length, fp);
     delete[] hmac_res;
@@ -140,19 +153,11 @@ void FileHeader::getFileHeader(u8_t *iv)
 /*
 checkType:检查加密和哈希模式
 */
-bool FileHeader::checkType()
+void FileHeader::checkType()
 {
     fseek(fp, FILE_MODE_MARK, SEEK_SET);
-    u8_t ct, ht;
-    fread(&ct, 1, 1, fp);
-    fread(&ht, 1, 1, fp);
-    if (ct != ctype || ht != htype)
-    {
-        printf("Type not match, it shuld be : ctype %d htype %d\n", ct, ht);
-        return false;
-    }
-    else
-        return true;
+    fread(&ctype, 1, 1, fp);
+    fread(&htype, 1, 1, fp);
 }
 /*
 checkMn:检查魔数
@@ -242,4 +247,22 @@ void ResultPrint::printres(int res)
         strlog(resstr, "Wrong magic number.");
     else
         strlog(resstr, "Unknown res number: " + std::to_string(res));
+}
+/*
+printctype:打印加密模式
+type:模式码
+*/
+void ResultPrint::printctype(u8_t type)
+{
+    std::string name = to_string(type) + "/" + AesFactory::getName(type);
+    strlog("Crypt Mode:", name);
+}
+/*
+printctype:打印哈希模式
+type:模式码
+*/
+void ResultPrint::printhtype(u8_t type)
+{
+    std::string name = to_string(type) + "/" + HashFactory::getName(type);
+    strlog("Hash Mode:", name);
 }

@@ -17,6 +17,9 @@ typedef unsigned long long u64_t;
 #define PADDING 38
 /*
 加密模式设置类
+ctype:加密模式
+htype:哈希模式
+no_echo:是否隐藏输出
 */
 class Settings
 {
@@ -54,6 +57,12 @@ extern Settings default_settings;
 
 /*
 整体加密类
+fin:输入文件
+out:输出文件
+key:密钥
+settings:加解密参数
+threads_num:线程数
+mode:是否为加密模式
 */
 class runcrypt
 {
@@ -81,7 +90,7 @@ class runcrypt
 
   u8_t *prepare_IV(const u8_t *r_buf);
   u8_t *prepare_IV();
-  Aesmode **prepare_AES(u8_t *iv, size_t fsize, bool mode);
+  Aesmode **prepare_AES(u8_t ctype, u8_t *iv, size_t fsize, bool mode);
   void release(u8_t *iv, Aesmode **mode);
   u8_t verify(size_t fsize);
   void over();

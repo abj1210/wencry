@@ -15,8 +15,8 @@ typedef unsigned long long u64_t;
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - (i))))
 
 
-#define setbytes(t, b0, b1, b2, b3) \
-  t = ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
+#define setbytes(b0, b1, b2, b3) \
+  ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
 class Hashmaster
 {
   u8_t hashblock[64];
@@ -134,8 +134,9 @@ public:
     SHA1,
     MD5,
     SHA256,
-    Unknown
+    Unknown = -1
   };
+  static std::string getName(u8_t type);
   static HASH_TYPE getType(u8_t type);
   Hashmaster *getHasher(HASH_TYPE type);
 };

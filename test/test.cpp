@@ -88,8 +88,8 @@ int makeFullTest(const char *str, u8_t type) {
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key};
   if (!exec(10, (char **)argv1))
     return 0;
-  char *argv2[] = {name, dflg, iflg, fwenc, mflg, ctype, hflg, htype, kflg, key, oflg, fout};
-  if (!exec(12, (char **)argv2))
+  char *argv2[] = {name, dflg, iflg, fwenc, kflg, key, oflg, fout};
+  if (!exec(8, (char **)argv2))
     return 0;
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");

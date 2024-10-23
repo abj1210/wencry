@@ -8,8 +8,8 @@
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - (i))))
 // 对byteint每字节赋值
 
-#define setbytes(t, b0, b1, b2, b3) \
-  t = ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
+#define setbytes(b0, b1, b2, b3) \
+  ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
 
 // 在GF(255)上执行乘法
 

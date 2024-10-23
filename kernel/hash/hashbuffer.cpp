@@ -10,14 +10,15 @@ fsize:文件大小
 fp:输入文件指针
 */
 filebuffer64::filebuffer64(FILE *fp, bool no_echo, size_t fsize, u8_t *block) : fp(fp), no_echo(no_echo), now(0), has_extra(block != NULL),
-total_size(fsize == 0 ? 1:fsize), now_size(0)
+                                                                                total_size(fsize == 0 ? 1 : fsize), now_size(0)
 {
   if (block != NULL)
     memcpy(extra_entry, block, 64);
   u32_t sum = fread(b, 1, HBUF_SZ << 6, fp);
   tail = sum & 0x3f;
   total = (sum >> 6);
-  if(sum != 0 && !no_echo)printload(sum);
+  if (sum != 0 && !no_echo)
+    printload(sum);
 };
 /*
 read_buffer:从缓冲区读取64B数据
@@ -38,7 +39,8 @@ u32_t filebuffer64::read_buffer64(u8_t *block)
     tail = sum & 0x3f;
     total = sum >> 6;
     now = 0;
-    if(sum != 0 && !no_echo)printload(sum);
+    if (sum != 0 && !no_echo)
+      printload(sum);
   }
   u32_t load_size = (now >= total) ? tail : 64;
   if (now == total)
