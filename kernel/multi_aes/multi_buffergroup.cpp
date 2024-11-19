@@ -237,4 +237,6 @@ void buffergroup::run_buffer()
     ctrl[turn].wait_update();
     buffer_update();
   } while (turn_iter());
+  if (!no_echo)
+    std::cout << "\r\n";
 }
