@@ -21,6 +21,8 @@ void multicry_master::run_multicry(Aesmode **mode)
   for (u8_t i = 0; i < THREADS_NUM; ++i)
     threads[i] = std::thread(multiruncrypt_file, i, std::ref((*mode[i])));
   buffergroup::get_instance()->run_buffer();
+  if (!no_echo)
+    std::cout << "\r\n";
   for (u8_t i = 0; i < THREADS_NUM; ++i)
     threads[i].join();
 };

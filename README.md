@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2024.10.23 (最后修改)  
-版本：v3.7.1
+日期：2024.11.19 (最后修改)  
+版本：v3.7.2
 
 **默认4+1线程,CBC加密模式,SHA1哈希**  
 **处理速度可达50MB/s以上**  
@@ -154,23 +154,14 @@ void multiruncrypt_file(u8_t id, Aesmode &mode)
 ```cpp
 void buffergroup::run_buffer()
 {
-  u8_t cnt = size;
-  while (cnt > 0)
+  do
   {
-    if (!ctrl[turn].cmpstate(INV))
-    {
-      ctrl[turn].wait_update();
-      if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
-        final_update();
-      else 
-        buffer_update();
-      if (ctrl[turn].cmpstate(INV))
-        cnt--;
-    }
-    turn = turn == (size - 1) ? 0 : turn + 1;
-  }
+    ctrl[turn].wait_update();
+    buffer_update();
+  } while (turn_iter());
 }
-```
+```  
+在访问一个缓冲区时,首先会等待该缓冲区进入"等待更新"(即UPDATE或EMPTY)状态,随后根据该缓冲区状态进行缓冲区更新并切换到下一个缓冲区.  
 - **线程间协作**  
 上述两种线程间的协作通过各个缓冲区对于的`bufferctrl`类实例完成,该类指示了相应缓冲区的状态,并提供了相应的条件变量来进行线程间同步.  
 具体来说,当处理线程调用`require_buffer_entry`函数时,MBG会首先检查数据是否读完,若读完则更改状态为`UPDATING`并唤醒缓冲区维护线程.随后,检查相应的缓冲区的状态.若状态为`EMPTY`或`UPDATING`则表明该缓冲区数据尚未准备好,此时该线程将被阻塞并等待缓冲区维护线程将数据准备好.  
@@ -233,4 +224,4 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V3.4 新增:采用多种设计模式进行代码优化(3.4.1优化部分处理过程输出 3.4.2 使用设计模式进行进一步优化).*
 *V3.5 新增:修复已知bug,更新输出界面,采用统一格式输出结果.*
 *V3.6 新增:更改多线程实现,提高效率.可选择使用sha256的hmac(v3.6.1修复部分bug, v3.6.2改变部分函数实现,修复已知bug v3.6.3更改核心接口函数 v3.6.4更改默认输出文件路径 v3.6.5windows兼容).*  
-*V3.6 新增:适配windowsGUI,添加哈希进度显示,增加密钥输入审查(v3.7.1修复部分bug,改进验证流程)*  
+*V3.6 新增:适配windowsGUI,添加哈希进度显示,增加密钥输入审查(v3.7.1修复部分bug,改进验证流程 v3.7.2修改缓冲区更新代码)*  

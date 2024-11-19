@@ -15,16 +15,11 @@ std::mutex buffergroup::mtx;
   单缓冲区函数
 ################################*/
 /*
-update_buffer:保存缓冲区数据并更新缓冲区
-over:加载是否结束
-return:重新读入的字节数
+load_buffer:更新缓冲区
+return:返回装载状态
 */
-u32_t iobuffer::update_buffer(bool write, bool &over)
+loadstate_t iobuffer::load_buffer()
 {
-  if (write)
-    fwrite(b, 1, sum, fout);
-  if (over)
-    return 0;
   u32_t load = fread(b, 1, sum, fin);
   bool readover = feof(fin);
   tail = load & 0xf;
@@ -35,23 +30,27 @@ u32_t iobuffer::update_buffer(bool write, bool &over)
     u8_t padding = 16 - tail;
     memset(b[total++] + tail, padding, padding);
     isfinal = true;
-    over = true;
-    return load + padding;
+    return FINAL;
   }
   if ((!ispadding) && readover)
   {
     isfinal = true;
-    over = true;
+    return FINAL;
   }
-  return load;
+  return load == 0 ? NO_DATA : FULL;
 }
 /*
-final_write:将缓冲区内容保存到文件并关闭缓冲区
+export_buffer:将缓冲区内容保存到文件
 */
-void iobuffer::final_write()
+void iobuffer::export_buffer()
 {
-  u8_t padding = ispadding ? 0 : b[now - 1][15];
-  fwrite(b, 1, (now << 4) - padding, fout);
+  if (isfinal)
+  {
+    u8_t padding = ispadding ? 0 : b[now - 1][15];
+    fwrite(b, 1, (now << 4) - padding, fout);
+  }
+  else
+    fwrite(b, 1, sum, fout);
 }
 /*################################
   缓冲区控制函数
@@ -116,7 +115,8 @@ size:装载大小
 */
 void buffergroup::printload(const u8_t id, const size_t size)
 {
-
+  if (size == 0)
+    return;
   now_size += size;
   double percentage = 100.0 * ((double)now_size / (double)(total_size));
 #ifndef GUI_ON
@@ -216,20 +216,16 @@ buffer_update:缓冲区轮流装载
 */
 void buffergroup::buffer_update()
 {
-  size_t loadsize = buflst[turn].update_buffer(ctrl[turn].cmpstate(UPDATING), over);
-  if ((loadsize != 0) && (!no_echo))
-    printload(turn, loadsize);
-  ctrl[turn].set_ready(loadsize != 0);
-}
-/*
-final_update:缓冲区最终装载
-*/
-void buffergroup::final_update()
-{
-  buflst[turn].final_write();
-  ctrl[turn].set_ready(false);
-  if (!no_echo)
-    std::cout << "\r\n";
+  loadstate_t loadstate = NO_DATA;
+  if (ctrl[turn].cmpstate(UPDATING)){
+    buflst[turn].export_buffer();
+    if (!no_echo)
+      printload(turn, buflst[turn].get_size());
+  }
+  if (!over)
+    loadstate = buflst[turn].load_buffer();
+  over = loadstate != FULL;
+  ctrl[turn].set_ready(loadstate != NO_DATA);
 }
 /*
 run_buffer:缓冲区组自动装载函数
@@ -239,9 +235,6 @@ void buffergroup::run_buffer()
   do
   {
     ctrl[turn].wait_update();
-    if (ctrl[turn].cmpstate(UPDATING) && buflst[turn].buffer_over())
-      final_update();
-    else
-      buffer_update();
+    buffer_update();
   } while (turn_iter());
 }

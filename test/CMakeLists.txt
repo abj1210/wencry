@@ -173,7 +173,6 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                             ${PROJECT_SOURCE_DIR}/../kernel
                             )
 
-
 set(SUBNAME small)
 
 add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp)

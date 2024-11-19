@@ -8,6 +8,20 @@
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
+enum bufstate_t
+{
+  EMPTY,
+  UPDATING,
+  READY,
+  INV
+};
+
+enum loadstate_t
+{
+  FULL,
+  FINAL,
+  NO_DATA
+};
 
 /*
 iobuffer:用于aes的16B单元输入输出缓冲区
@@ -31,11 +45,9 @@ public:
 
 private:
   u8_t b[BUF_SZ][0x10];
-  u32_t total, now;
-  u8_t tail, pad;
+  u32_t total, now, tail;
   FILE *fin, *fout;
-  bool ispadding;
-  bool isfinal;
+  bool ispadding, isfinal;
 
 public:
   /*
@@ -57,25 +69,12 @@ public:
   */
   u8_t *get_entry() { return (now < total) ? b[now++] : NULL; };
   /*
-  bufferover:缓冲区和文件是否读取完毕
-  return:若为0则未读取完毕,否则已读取完毕
+  get_size:获取缓冲区装载大小
+  return:返回的装载大小
   */
-  bool buffer_over() const { return (now >= total) && isfinal; };
-  /*
-  fin_empty:判断缓冲区是否为空
-  return:若为空返回真否则返回假
-  */
-  bool fin_empty() const { return (total == 0) && (tail == 0); };
-
-  u32_t update_buffer(bool write, bool &over);
-  void final_write();
-};
-enum bufstate_t
-{
-  EMPTY,
-  UPDATING,
-  READY,
-  INV
+  u32_t get_size() { return (total << 4) | tail; };
+  loadstate_t load_buffer();
+  void export_buffer();
 };
 /*
 bufferctrl:缓冲区状态控制类
@@ -117,6 +116,7 @@ class buffergroup
 {
 public:
   int percentage;
+
 private:
   iobuffer *buflst;
   bufferctrl *ctrl;
@@ -134,13 +134,11 @@ private:
   bool turn_iter();
   void printload(const u8_t id, const size_t size);
   void buffer_update();
-  void final_update();
 
   static buffergroup *instance;
   static std::mutex mtx;
 
 public:
-  
   buffergroup(const buffergroup &) = delete;
   buffergroup &operator=(const buffergroup &) = delete;
   static buffergroup *get_instance();
