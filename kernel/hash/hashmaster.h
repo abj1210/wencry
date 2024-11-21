@@ -14,7 +14,6 @@ typedef unsigned long long u64_t;
 
 #define rrot(x, i) (((x) >> (i)) | ((x) << (32 - (i))))
 
-
 #define setbytes(b0, b1, b2, b3) \
   ((u32_t)b0) | ((u32_t)b1 << 8) | ((u32_t)b2 << 16) | ((u32_t)b3 << 24)
 class Hashmaster
@@ -38,7 +37,7 @@ protected:
 public:
   virtual const u8_t gethlen() = 0;
   virtual const u8_t getblen() = 0;
-  void getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, size_t)>& printload= [](std::string, size_t)-> void{});
+  void getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, size_t)> &printload = [](std::string, size_t) -> void {});
   void getStringHash(const u8_t *string, u32_t length, u8_t *hashres);
 };
 

@@ -44,10 +44,6 @@ b:缓冲区数组
 total:缓冲区被填满的单元数量
 now:将要被读写的单元索引
 tail:未被填满的单元中数据的长度
-pad:填充所需的数据
-fin:读取文件的地址
-fout:写入文件的地址
-ispadding:是否需要填充
 isfinal:加载是否结束
 */
 class iobuffer
@@ -104,10 +100,10 @@ buffergroup:用于多线程的缓冲区组
 buflst:缓冲区数组指针
 ctrl控制器数组指针
 turn:当前缓冲区序号
-now_size:当前加载数据大小
-total_size:总数据大小
 size:缓冲区个数
-no_echo:是否不回显
+fin:输入文件
+fout:输出文件
+ispadding:是否填充
 over:是否加载结束
 */
 class buffergroup

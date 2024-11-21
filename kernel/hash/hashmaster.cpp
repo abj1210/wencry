@@ -9,7 +9,7 @@ getFileHash:返回文件哈希
 buffer:文件缓冲区
 hashres:结果哈希地址
 */
-void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres,  const std::function<void(std::string, size_t)>& printload)
+void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, size_t)> &printload)
 {
   reset();
   while (true)
@@ -73,7 +73,8 @@ getName:获取模式名称
 type:模式码
 return:模式名称
 */
-std::string HashFactory::getName(u8_t type){
+std::string HashFactory::getName(u8_t type)
+{
   switch (type)
   {
   case 0:

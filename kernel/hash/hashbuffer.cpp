@@ -3,7 +3,7 @@
 /*
 构造函数:加载拼接的数据
 block:拼接块
-fsize:文件大小
+printload:加载打印函数
 fp:输入文件指针
 */
 filebuffer64::filebuffer64(FILE *fp, const std::function<void(std::string, size_t)> &printload, u8_t *block) : fp(fp), now(0), has_extra(block != NULL)
@@ -19,6 +19,7 @@ filebuffer64::filebuffer64(FILE *fp, const std::function<void(std::string, size_
 /*
 read_buffer:从缓冲区读取64B数据
 block:读取数据的地址
+printload:加载打印函数
 return:读取的字节数
 */
 u32_t filebuffer64::read_buffer64(u8_t *block, const std::function<void(std::string, size_t)> &printload)
