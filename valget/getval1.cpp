@@ -1,12 +1,11 @@
 #include "base64.h"
 #include "getval.h"
-#include <filesystem>
-
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <sys/stat.h>
 void strlog(std::string s1, std::string s2, char fill)
 {
   std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
@@ -24,9 +23,10 @@ return:获取的文件名
 */
 static std::string getInputFilep(vpak_t *pak)
 {
-  char fn[128];
+  char fn[128], name[128], ext[128];
   size_t size = 0;
   FILE *fp;
+  struct stat buf;
   while (1)
   {
     int r = scanf("%s", fn);
@@ -35,21 +35,14 @@ static std::string getInputFilep(vpak_t *pak)
       break;
     strlog("Error :", "File not found");
   }
-  std::filesystem::path filePath(fn);
-  std::string fileName = filePath.filename().string();
-  try
-  {
-    auto fileSize = std::filesystem::file_size(fn);
-    size = fileSize;
-    strlog(fileName + " file size: ", std::to_string(((double)fileSize) / ((double)(1024 * 1024))) + "MB");
-  }
-  catch (std::filesystem::filesystem_error &e)
-  {
-    std::cerr << "Error: " << e.what() << std::endl;
-  }
+  _splitpath(fn, NULL, NULL, name, ext);
+  strcat(name, ext);
+  stat(name, &buf);
+  size = buf.st_size;
+  strlog(std::string(name) + " file size: ", std::to_string(((double)size) / ((double)(1024 * 1024))) + "MB");
   pak->fp = fp;
   pak->size = size;
-  return fileName;
+  return name;
 }
 /*
 getRandomKey:获取随机密钥

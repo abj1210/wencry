@@ -2,13 +2,14 @@
 #define SBF
 #include <stdio.h>
 #include <mutex>
+#include <functional>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 class buffer64
 {
 public:
   int percentage = 0;
-  virtual u32_t read_buffer64(u8_t *block) = 0;
+  virtual u32_t read_buffer64(u8_t *block, const std::function<void(std::string, double)> &printload) = 0;
 };
 /*
 HBUF_SZ:用于hash的64B单元缓冲区单元数量
@@ -24,14 +25,14 @@ class filebuffer64 : public buffer64
   static const u32_t HBUF_SZ = 0x80000;
   u8_t b[HBUF_SZ][0x40];
   u8_t extra_entry[0x40];
-  bool has_extra, no_echo;
+  bool has_extra;
   u32_t total, now;
   u8_t tail;
   FILE *fp;
   size_t total_size, now_size;
-  void printload(const size_t size);
+
 public:
-  filebuffer64(FILE *fp, bool no_echo = true, size_t fsize = 0, u8_t *block = NULL);
-  u32_t read_buffer64(u8_t *block);
+  filebuffer64(FILE *fp, const std::function<void(std::string, double)> &printload = [](std::string, double) -> void {}, size_t fsize = 0, u8_t *block = NULL);
+  u32_t read_buffer64(u8_t *block, const std::function<void(std::string, double)> &printload = [](std::string, double) -> void {});
 };
 #endif

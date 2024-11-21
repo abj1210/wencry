@@ -1,7 +1,5 @@
 #include "multi_buffergroup.h"
-#include <assert.h>
-#include <iomanip>
-#include <math.h>
+#include <string>
 
 /*################################
   初始化
@@ -16,9 +14,11 @@ std::mutex buffergroup::mtx;
 ################################*/
 /*
 load_buffer:更新缓冲区
+fin:输入文件
+ispadding:是否填充
 return:返回装载状态
 */
-loadstate_t iobuffer::load_buffer()
+loadstate_t iobuffer::load_buffer(FILE *fin, bool ispadding)
 {
   u32_t load = fread(b, 1, sum, fin);
   bool readover = feof(fin);
@@ -37,12 +37,14 @@ loadstate_t iobuffer::load_buffer()
     isfinal = true;
     return FINAL;
   }
-  return load == 0 ? NO_DATA : FULL;
+  return load == 0 ? NODATA : FULL;
 }
 /*
 export_buffer:将缓冲区内容保存到文件
+fout:输出文件
+ispadding:是否填充
 */
-void iobuffer::export_buffer()
+void iobuffer::export_buffer(FILE *fout, bool ispadding)
 {
   if (isfinal)
   {
@@ -109,49 +111,17 @@ void bufferctrl::set_update()
   多缓冲区函数
 ################################*/
 /*
-printload:打印装载情况
-id:装载数据的线程
-size:装载大小
-*/
-void buffergroup::printload(const u8_t id, const size_t size)
-{
-  if (size == 0)
-    return;
-  now_size += size;
-  double percentage = 100.0 * ((double)now_size / (double)(total_size));
-#ifndef GUI_ON
-  std::cout << "Tid " << (const u32_t)id << " loaded ";
-  const int barWidth = 50; // 进度条的总宽度
-  std::cout << "[";
-  int pos = round(barWidth * percentage / 100.0);
-  for (int i = 0; i < barWidth; ++i)
-  {
-    if (i < pos)
-      std::cout << "=";
-    else if (i == pos)
-      std::cout << ">";
-    else
-      std::cout << " ";
-  }
-  std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
-  std::cout.flush();
-#else
-  this->percentage = percentage;
-#endif
-}
-/*
 set_buffergroup:设置缓冲区组选项
 */
-void buffergroup::set_buffergroup(u32_t size, bool no_echo, FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
+void buffergroup::set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
 {
-  this->percentage = 0;
   this->size = size;
-  this->no_echo = no_echo;
   this->total_size = fsize == 0 ? 1 : fsize;
+  this->fin = fin;
+  this->fout = fout;
+  this->ispadding = ispadding;
   this->buflst = new iobuffer[size];
   this->ctrl = new bufferctrl[size];
-  for (int i = 0; i < size; ++i)
-    buflst[i].init(fin, fout, ispadding);
 };
 /*
 get_instance:获取实例
@@ -213,30 +183,30 @@ u8_t *buffergroup::require_buffer_entry(const u8_t id)
 }
 /*
 buffer_update:缓冲区轮流装载
+printload:过程打印函数
 */
-void buffergroup::buffer_update()
+void buffergroup::buffer_update(const std::function<void(std::string, double)> &printload)
 {
-  loadstate_t loadstate = NO_DATA;
-  if (ctrl[turn].cmpstate(UPDATING)){
-    buflst[turn].export_buffer();
-    if (!no_echo)
-      printload(turn, buflst[turn].get_size());
+  loadstate_t loadstate = NODATA;
+  if (ctrl[turn].cmpstate(UPDATING))
+  {
+    buflst[turn].export_buffer(fout, ispadding);
+    printload("Tid " + std::to_string(turn), 100.0 * ((double)buflst[turn].get_size() / (double)(total_size)));
   }
   if (!over)
-    loadstate = buflst[turn].load_buffer();
+    loadstate = buflst[turn].load_buffer(fin, ispadding);
   over = loadstate != FULL;
-  ctrl[turn].set_ready(loadstate != NO_DATA);
+  ctrl[turn].set_ready(loadstate != NODATA);
 }
 /*
 run_buffer:缓冲区组自动装载函数
+printload:过程打印函数
 */
-void buffergroup::run_buffer()
+void buffergroup::run_buffer(const std::function<void(std::string, double)> &printload)
 {
   do
   {
     ctrl[turn].wait_update();
-    buffer_update();
+    buffer_update(printload);
   } while (turn_iter());
-  if (!no_echo)
-    std::cout << "\r\n";
 }

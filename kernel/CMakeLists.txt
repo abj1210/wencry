@@ -1,5 +1,10 @@
 project(Wenkernel)
 
+option(GUI_OPT "Whether or not to build GUI" OFF)
+if (GUI_OPT)
+    add_definitions(-DGUI_ON)
+endif ()
+
 add_subdirectory(multi_aes)
 
 add_subdirectory(hash)

@@ -1,6 +1,7 @@
 #include "cry.h"
 #include <chrono>
 #include <iostream>
+#include <functional>
 using namespace std;
 using namespace chrono;
 
@@ -85,7 +86,7 @@ Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, size_t fsize, bool cmode)
   if (!cmode)
     fseek(fin, FILE_TEXT_MARK(threads_num), SEEK_SET);
   buffergroup *iobuffer = buffergroup::get_instance();
-  iobuffer->set_buffergroup(threads_num, settings.get_no_echo(), fin, out, cmode, fsize);
+  iobuffer->set_buffergroup(threads_num, fin, out, cmode, fsize);
   Aesmode **mode = new Aesmode *[threads_num];
   aesfactory.loadiv(iv);
   for (int i = 0; i < threads_num; i++)
@@ -130,7 +131,7 @@ u8_t runcrypt::verify(size_t fsize)
   if (hash == NULL)
     return 1;
   fseek(fin, FILE_IV_MARK, SEEK_SET);
-  if (!hmachandle.cmphmac(header.gethtype(),key, fin, hash, fsize))
+  if (!hmachandle.cmphmac(header.gethtype(), key, fin, hash, fsize))
     return 2;
   else
     return 0;
@@ -148,14 +149,14 @@ settings:加解密参数
 threads_num:线程数
 */
 runcrypt::runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
-    : header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
-      hmachandle(settings.get_no_echo()), aesfactory(key), crym(threads_num), threads_num(threads_num),
+    : header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num), aesfactory(key), crym(threads_num), threads_num(threads_num),
       fin(fin), out(out), key(key), settings(settings), mode(false)
 {
   if (settings.get_no_echo())
     resultprint = new NullResPrint;
   else
     resultprint = new ResultPrint;
+  hmachandle.loadprinter(resultprint);
 };
 /*
 execute_encrypt:加密执行过程
@@ -164,10 +165,9 @@ r_buf:随机缓冲数组
 */
 bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
 {
-  auto t1 = resultprint->createTimer("Total_Time");
   if (fin == NULL)
     return resultprint->printinv(0);
-
+  auto t1 = resultprint->createTimer("Total_Time");
   // 准备初始化
   resultprint->printtask("Preparing encrypt");
   u8_t *iv = prepare_IV(r_buf);
@@ -175,21 +175,23 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   // 运行加密
   TIMER_START(AES_Encryption_Time)
   resultprint->printtask("Encrypting");
-  crym.run_multicry(mode);
-  TIMER_END(AES_Encryption_Time)
+  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2);
+  crym.run_multicry(mode, boundfunc);
+  resultprint->resetPercentage();
   buffergroup::del_instance();
+  TIMER_END(AES_Encryption_Time)
   // 写入hamc
   TIMER_START(Hashing_Time)
   resultprint->printtask("Calculating hmac");
   hmachandle.writeFileHmac(settings.get_htype(), out, key, FILE_IV_MARK, FILE_HMAC_MARK, fsize);
+  resultprint->resetPercentage();
   TIMER_END(Hashing_Time)
   // 释放空间
   resultprint->printtask("Releasing allocated memory");
   release(iv, mode);
-
   resultprint->printenc();     // 打印结果
-  resultprint->printTimer(t1); // 打印时间
   over();                      // 关闭文件
+  resultprint->printTimer(t1); // 打印时间
   return true;
 }
 /*
@@ -205,6 +207,7 @@ bool runcrypt::execute_decrypt(size_t fsize)
   // 验证文件
   TIMER_START(Verify_Time);
   u8_t state = verify(fsize);
+  resultprint->resetPercentage();
   TIMER_END(Verify_Time);
   if (state != 0)
     res = state;
@@ -217,7 +220,9 @@ bool runcrypt::execute_decrypt(size_t fsize)
     // 运行解密
     TIMER_START(AES_Decryption_Time)
     resultprint->printtask("Decrypting");
-    crym.run_multicry(mode);
+    auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2);
+    crym.run_multicry(mode, boundfunc);
+    resultprint->resetPercentage();
     TIMER_END(AES_Decryption_Time)
     // 释放空间
     resultprint->printtask("Releasing allocated memory");
@@ -225,8 +230,8 @@ bool runcrypt::execute_decrypt(size_t fsize)
     release(iv, mode);
   }
   resultprint->printres(res);  // 打印结果
-  resultprint->printTimer(t1); // 打印时间
   over();                      // 关闭文件
+  resultprint->printTimer(t1); // 打印时间
   return res == 0;
 }
 /*
@@ -242,17 +247,23 @@ bool runcrypt::execute_verify(size_t fsize)
   // 验证文件
   TIMER_START(Verify_Time);
   u8_t state = verify(fsize);
+  resultprint->resetPercentage();
   res = state;
   TIMER_END(Verify_Time);
   resultprint->printres(res);  // 打印结果
-  resultprint->printTimer(t1); // 打印时间
   over();                      // 关闭文件
+  resultprint->printTimer(t1); // 打印时间
+
   return res == 0;
 }
-int runcrypt::get_percentage() { 
-  int res = buffergroup::get_instance()->percentage; 
-  if(res < 0)
-    return hmachandle.get_percentage();
-  else 
-      return res;
+/*
+get_percentage:获取进度
+return: -1表示已完成, 0-100表示进度
+*/
+
+int runcrypt::get_percentage()
+{
+  if (resultprint->isOver())
+    return -1;
+  return resultprint->getPercentage();
 };

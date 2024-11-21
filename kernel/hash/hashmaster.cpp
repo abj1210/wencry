@@ -9,12 +9,12 @@ getFileHash:返回文件哈希
 buffer:文件缓冲区
 hashres:结果哈希地址
 */
-void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres)
+void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres,  const std::function<void(std::string, double)>& printload)
 {
   reset();
   while (true)
   {
-    u64_t sum = buffer->read_buffer64(hashblock);
+    u64_t sum = buffer->read_buffer64(hashblock, printload);
     if (sum != 64)
     {
       getHash(hashblock, sum);

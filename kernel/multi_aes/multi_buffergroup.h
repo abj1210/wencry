@@ -3,11 +3,19 @@
 
 #include <condition_variable>
 #include <mutex>
-#include <iostream>
 #include <string.h>
+#include <functional>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
+
+/*
+bufstate_t:缓冲区状态
+EMPTY:空缓冲区
+UPDATING:正在更新的缓冲区
+READY:更新完毕的缓冲区
+INV:无效缓冲区
+*/
 enum bufstate_t
 {
   EMPTY,
@@ -15,12 +23,17 @@ enum bufstate_t
   READY,
   INV
 };
-
+/*
+loadstate_t:加载状态
+FULL:全部加载
+FINAL:最后一次加载
+NODATA:无数据
+*/
 enum loadstate_t
 {
   FULL,
   FINAL,
-  NO_DATA
+  NODATA
 };
 
 /*
@@ -46,23 +59,10 @@ public:
 private:
   u8_t b[BUF_SZ][0x10];
   u32_t total, now, tail;
-  FILE *fin, *fout;
-  bool ispadding, isfinal;
+  bool isfinal;
 
 public:
-  /*
-  init:初始化
-  fin:读取文件的地址
-  fout:写入文件的地址
-  ispadding:是否需要填充
-  */
-  void init(FILE *fin, FILE *fout, bool ispadding)
-  {
-    this->isfinal = false;
-    this->fin = fin;
-    this->fout = fout;
-    this->ispadding = ispadding;
-  };
+  iobuffer() : total(0), now(0), tail(0), isfinal(false) {};
   /*
   get_entry:获取当前缓冲区单元表项
   return:返回的表项地址
@@ -73,8 +73,8 @@ public:
   return:返回的装载大小
   */
   u32_t get_size() { return (total << 4) | tail; };
-  loadstate_t load_buffer();
-  void export_buffer();
+  loadstate_t load_buffer(FILE *fin, bool ispadding);
+  void export_buffer(FILE *fout, bool ispadding);
 };
 /*
 bufferctrl:缓冲区状态控制类
@@ -82,7 +82,6 @@ live_num:有效控制器数
 lock:互斥锁
 cv_ready:是否就绪条件变量
 cv_update:是否更新条件变量
-state:缓冲区状态(EMPTY:缓冲区为空 UPDATING:缓冲区正在更新 READY:缓冲区更新完毕 INV:缓冲区不可用)
 */
 class bufferctrl
 {
@@ -95,7 +94,6 @@ public:
   bufferctrl() : state(EMPTY) { live_num++; };
   bool cmpstate(const enum bufstate_t state) const { return this->state == state; };
   static bool haslive() { return live_num != 0; };
-
   void wait_ready();
   void wait_update();
   void set_ready(bool load);
@@ -114,26 +112,21 @@ over:是否加载结束
 */
 class buffergroup
 {
-public:
-  int percentage;
-
-private:
   iobuffer *buflst;
   bufferctrl *ctrl;
   u32_t turn;
   u64_t now_size, total_size;
   u32_t size;
-  bool no_echo;
-  bool over;
-  buffergroup() : buflst(NULL), turn(0), now_size(0), over(false), percentage(-1) {};
+  FILE *fin, *fout;
+  bool ispadding, over;
+  buffergroup() : buflst(NULL), ctrl(NULL), turn(0), now_size(0), over(false) {};
   ~buffergroup()
   {
     delete[] buflst;
     delete[] ctrl;
   };
   bool turn_iter();
-  void printload(const u8_t id, const size_t size);
-  void buffer_update();
+  void buffer_update(const std::function<void(std::string, double)> &printload);
 
   static buffergroup *instance;
   static std::mutex mtx;
@@ -143,9 +136,8 @@ public:
   buffergroup &operator=(const buffergroup &) = delete;
   static buffergroup *get_instance();
   static void del_instance();
-
-  void set_buffergroup(u32_t size, bool no_echo, FILE *fin, FILE *fout, bool ispadding, u64_t fsize);
+  void set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, u64_t fsize);
   u8_t *require_buffer_entry(const u8_t id);
-  void run_buffer();
+  void run_buffer(const std::function<void(std::string, double)> &printload);
 };
 #endif

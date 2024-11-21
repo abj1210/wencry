@@ -3,6 +3,9 @@
 #include <chrono>
 #include <string>
 #include <iostream>
+#include <math.h>
+#include <iomanip>
+#include <functional>
 using namespace std;
 using namespace chrono;
 /*################################
@@ -13,16 +16,9 @@ using namespace chrono;
 构造函数
 no_echo:是否隐藏输出
 */
-hmac::hmac(bool no_echo) : no_echo(no_echo) {};
+hmac::hmac() : res_printer(new NullResPrint) {};
 
 const u8_t hmac::get_length() { return length; };
-
-int hmac::get_percentage()
-{
-    if (buf != NULL)
-        percentage = buf->percentage;
-    return percentage;
-};
 
 /*
 getres:计算HMAC值
@@ -44,13 +40,12 @@ void hmac::getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize)
     // 计算hmac
     for (int i = 0; i < block; ++i)
         h1[i] = key1[i] ^ ipad;
-    buf = new filebuffer64(fp, no_echo, fsize, h1);
-    hashmaster->getFileHash(buf, &h2[block]);
+    auto boundfunc = bind(&AbsResultPrint::printpercentage, res_printer, std::placeholders::_1, std::placeholders::_2);
+    buf = new filebuffer64(fp, boundfunc, fsize, h1);
+    hashmaster->getFileHash(buf, &h2[block], boundfunc);
     for (int i = 0; i < block; ++i)
         h2[i] = key1[i] ^ opad;
     hashmaster->getStringHash(h2, block + length, hmac_res);
-    if (!no_echo)
-        std::cout << "\r\n";
     // 清理数据
     delete[] key1, h1, h2;
     delete buf, hashmaster;
@@ -173,6 +168,7 @@ bool FileHeader::checkMn()
 }
 /*
 checkHmac:获得HMAC
+len:hmac长度
 return:HMAC地址
 */
 u8_t *FileHeader::getHmac(u8_t len)
@@ -187,7 +183,11 @@ u8_t *FileHeader::getHmac(u8_t len)
 /*################################
   结果打印辅助函数
 ################################*/
-
+void AbsResultPrint::resetPercentage()
+{
+    percentage = 0;
+    std::cout << "\r\n";
+}
 /*
 printtask:打印任务
 name:任务名
@@ -205,6 +205,11 @@ u8_t ResultPrint::printinv(const u8_t ret)
     strlog("Invalid values:", std::to_string(ret));
     return ret;
 }
+/*
+createTimer:创建定时器
+name:定时器名
+return:返回的定时器
+*/
 Timer *ResultPrint::createTimer(string name)
 {
     Timer *timer = new Timer;
@@ -265,4 +270,32 @@ void ResultPrint::printhtype(u8_t type)
 {
     std::string name = to_string(type) + "/" + HashFactory::getName(type);
     strlog("Hash Mode:", name);
+}
+/*
+printpercentage:打印加载进度
+name:进度名
+percent:百分比
+*/
+void ResultPrint::printpercentage(std::string name, double percent)
+{
+    percentage += percent;
+#ifndef GUI_ON
+    std::cout << std::setw(5) << name << " loaded ";
+    const int barWidth = 50; // 进度条的总宽度
+    std::cout << "[";
+    int pos = round(barWidth * percentage / 100.0);
+    for (int i = 0; i < barWidth; ++i)
+    {
+        if (i < pos)
+            std::cout << "=";
+        else if (i == pos)
+            std::cout << ">";
+        else
+            std::cout << " ";
+    }
+    std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
+    std::cout.flush();
+#else
+    this->percentage = percentage;
+#endif
 }
