@@ -2,7 +2,7 @@
 #include "getval.h"
 #include <iostream>
 #include <iomanip>
-#include <stdlib.h>
+#include <string>
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -23,7 +23,7 @@ return:获取的文件名
 */
 static std::string getInputFilep(vpak_t *pak)
 {
-  char fn[128], name[128], ext[128];
+  char fn[128];
   size_t size = 0;
   FILE *fp;
   struct stat buf;
@@ -35,14 +35,15 @@ static std::string getInputFilep(vpak_t *pak)
       break;
     strlog("Error :", "File not found");
   }
-  _splitpath(fn, NULL, NULL, name, ext);
-  strcat(name, ext);
-  stat(name, &buf);
+  std::string path(fn);
+  size_t pos = path.find_last_of("/\\");
+  std::string filename = (pos == std::string::npos) ? path : path.substr(pos + 1);
+  stat(filename.c_str(), &buf);
   size = buf.st_size;
-  strlog(std::string(name) + " file size: ", std::to_string(((double)size) / ((double)(1024 * 1024))) + "MB");
+  strlog(std::string(filename.c_str()) + " file size: ", std::to_string(((double)size) / ((double)(1024 * 1024))) + "MB");
   pak->fp = fp;
   pak->size = size;
-  return name;
+  return filename;
 }
 /*
 getRandomKey:获取随机密钥
