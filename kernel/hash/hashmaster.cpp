@@ -9,7 +9,7 @@ getFileHash:返回文件哈希
 buffer:文件缓冲区
 hashres:结果哈希地址
 */
-void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres,  const std::function<void(std::string, double)>& printload)
+void Hashmaster::getFileHash(buffer64 *buffer, u8_t *hashres,  const std::function<void(std::string, size_t)>& printload)
 {
   reset();
   while (true)

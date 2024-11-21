@@ -38,7 +38,7 @@ protected:
 public:
   virtual const u8_t gethlen() = 0;
   virtual const u8_t getblen() = 0;
-  void getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, double)>& printload= [](std::string, double)-> void{});
+  void getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, size_t)>& printload= [](std::string, size_t)-> void{});
   void getStringHash(const u8_t *string, u32_t length, u8_t *hashres);
 };
 

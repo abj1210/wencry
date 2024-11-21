@@ -77,16 +77,15 @@ u8_t *runcrypt::prepare_IV()
 prepare_AES:准备缓冲区和aes加密器
 ctype:加密模式
 iv:初始向量
-fsize:文件大小
 cmode:模式(true:加密,false:解密)
 return:加密器地址组
 */
-Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, size_t fsize, bool cmode)
+Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, bool cmode)
 {
   if (!cmode)
     fseek(fin, FILE_TEXT_MARK(threads_num), SEEK_SET);
   buffergroup *iobuffer = buffergroup::get_instance();
-  iobuffer->set_buffergroup(threads_num, fin, out, cmode, fsize);
+  iobuffer->set_buffergroup(threads_num, fin, out, cmode);
   Aesmode **mode = new Aesmode *[threads_num];
   aesfactory.loadiv(iv);
   for (int i = 0; i < threads_num; i++)
@@ -171,11 +170,11 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   // 准备初始化
   resultprint->printtask("Preparing encrypt");
   u8_t *iv = prepare_IV(r_buf);
-  Aesmode **mode = prepare_AES(settings.get_ctype(), iv, fsize, true);
+  Aesmode **mode = prepare_AES(settings.get_ctype(), iv, true);
   // 运行加密
   TIMER_START(AES_Encryption_Time)
   resultprint->printtask("Encrypting");
-  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2);
+  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
   crym.run_multicry(mode, boundfunc);
   resultprint->resetPercentage();
   buffergroup::del_instance();
@@ -216,11 +215,11 @@ bool runcrypt::execute_decrypt(size_t fsize)
     // 准备初始化
     resultprint->printtask("Preparing decrypt");
     u8_t *iv = prepare_IV();
-    Aesmode **mode = prepare_AES(header.getctype(), iv, fsize, false);
+    Aesmode **mode = prepare_AES(header.getctype(), iv, false);
     // 运行解密
     TIMER_START(AES_Decryption_Time)
     resultprint->printtask("Decrypting");
-    auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2);
+    auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
     crym.run_multicry(mode, boundfunc);
     resultprint->resetPercentage();
     TIMER_END(AES_Decryption_Time)

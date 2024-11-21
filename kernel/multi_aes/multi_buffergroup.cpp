@@ -1,5 +1,6 @@
 #include "multi_buffergroup.h"
 #include <string>
+#include <iostream>
 
 /*################################
   初始化
@@ -113,10 +114,9 @@ void bufferctrl::set_update()
 /*
 set_buffergroup:设置缓冲区组选项
 */
-void buffergroup::set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, u64_t fsize)
+void buffergroup::set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding)
 {
   this->size = size;
-  this->total_size = fsize == 0 ? 1 : fsize;
   this->fin = fin;
   this->fout = fout;
   this->ispadding = ispadding;
@@ -185,13 +185,13 @@ u8_t *buffergroup::require_buffer_entry(const u8_t id)
 buffer_update:缓冲区轮流装载
 printload:过程打印函数
 */
-void buffergroup::buffer_update(const std::function<void(std::string, double)> &printload)
+void buffergroup::buffer_update(const std::function<void(std::string, size_t)> &printload)
 {
   loadstate_t loadstate = NODATA;
   if (ctrl[turn].cmpstate(UPDATING))
   {
     buflst[turn].export_buffer(fout, ispadding);
-    printload("Tid " + std::to_string(turn), 100.0 * ((double)buflst[turn].get_size() / (double)(total_size)));
+    printload("Tid " + std::to_string(turn), buflst[turn].get_size());
   }
   if (!over)
     loadstate = buflst[turn].load_buffer(fin, ispadding);
@@ -202,7 +202,7 @@ void buffergroup::buffer_update(const std::function<void(std::string, double)> &
 run_buffer:缓冲区组自动装载函数
 printload:过程打印函数
 */
-void buffergroup::run_buffer(const std::function<void(std::string, double)> &printload)
+void buffergroup::run_buffer(const std::function<void(std::string, size_t)> &printload)
 {
   do
   {

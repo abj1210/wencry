@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <filesystem>
 #include <string.h>
 #include <time.h>
 #include <sys/stat.h>
@@ -26,7 +27,6 @@ static std::string getInputFilep(vpak_t *pak)
   char fn[128];
   size_t size = 0;
   FILE *fp;
-  struct stat buf;
   while (1)
   {
     int r = scanf("%s", fn);
@@ -38,7 +38,8 @@ static std::string getInputFilep(vpak_t *pak)
   std::string path(fn);
   size_t pos = path.find_last_of("/\\");
   std::string filename = (pos == std::string::npos) ? path : path.substr(pos + 1);
-  stat(filename.c_str(), &buf);
+  struct stat buf;
+  stat(fn, &buf);
   size = buf.st_size;
   strlog(std::string(filename.c_str()) + " file size: ", std::to_string(((double)size) / ((double)(1024 * 1024))) + "MB");
   pak->fp = fp;

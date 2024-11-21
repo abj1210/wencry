@@ -9,7 +9,7 @@ class buffer64
 {
 public:
   int percentage = 0;
-  virtual u32_t read_buffer64(u8_t *block, const std::function<void(std::string, double)> &printload) = 0;
+  virtual u32_t read_buffer64(u8_t *block, const std::function<void(std::string, size_t)> &printload) = 0;
 };
 /*
 HBUF_SZ:用于hash的64B单元缓冲区单元数量
@@ -29,10 +29,9 @@ class filebuffer64 : public buffer64
   u32_t total, now;
   u8_t tail;
   FILE *fp;
-  size_t total_size, now_size;
 
 public:
-  filebuffer64(FILE *fp, const std::function<void(std::string, double)> &printload = [](std::string, double) -> void {}, size_t fsize = 0, u8_t *block = NULL);
-  u32_t read_buffer64(u8_t *block, const std::function<void(std::string, double)> &printload = [](std::string, double) -> void {});
+  filebuffer64(FILE *fp, const std::function<void(std::string, size_t)> &printload = [](std::string, size_t) -> void {}, u8_t *block = NULL);
+  u32_t read_buffer64(u8_t *block, const std::function<void(std::string, size_t)> &printload = [](std::string, size_t) -> void {});
 };
 #endif

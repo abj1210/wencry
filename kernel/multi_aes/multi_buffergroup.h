@@ -115,18 +115,17 @@ class buffergroup
   iobuffer *buflst;
   bufferctrl *ctrl;
   u32_t turn;
-  u64_t now_size, total_size;
   u32_t size;
   FILE *fin, *fout;
   bool ispadding, over;
-  buffergroup() : buflst(NULL), ctrl(NULL), turn(0), now_size(0), over(false) {};
+  buffergroup() : buflst(NULL), ctrl(NULL), turn(0), over(false) {};
   ~buffergroup()
   {
     delete[] buflst;
     delete[] ctrl;
   };
   bool turn_iter();
-  void buffer_update(const std::function<void(std::string, double)> &printload);
+  void buffer_update(const std::function<void(std::string, size_t)> &printload);
 
   static buffergroup *instance;
   static std::mutex mtx;
@@ -136,8 +135,8 @@ public:
   buffergroup &operator=(const buffergroup &) = delete;
   static buffergroup *get_instance();
   static void del_instance();
-  void set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding, u64_t fsize);
+  void set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding);
   u8_t *require_buffer_entry(const u8_t id);
-  void run_buffer(const std::function<void(std::string, double)> &printload);
+  void run_buffer(const std::function<void(std::string, size_t)> &printload);
 };
 #endif

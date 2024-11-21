@@ -20,7 +20,7 @@ private:
 
 public:
   multicry_master(u8_t thread_num) : THREADS_NUM(thread_num) {};
-  void run_multicry(Aesmode **mode, const std::function<void(std::string, double)> &printload);
+  void run_multicry(Aesmode **mode, const std::function<void(std::string, size_t)> &printload);
 };
 
 #endif

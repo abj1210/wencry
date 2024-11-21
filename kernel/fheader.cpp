@@ -40,8 +40,8 @@ void hmac::getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize)
     // 计算hmac
     for (int i = 0; i < block; ++i)
         h1[i] = key1[i] ^ ipad;
-    auto boundfunc = bind(&AbsResultPrint::printpercentage, res_printer, std::placeholders::_1, std::placeholders::_2);
-    buf = new filebuffer64(fp, boundfunc, fsize, h1);
+    auto boundfunc = bind(&AbsResultPrint::printpercentage, res_printer, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
+    buf = new filebuffer64(fp, boundfunc, h1);
     hashmaster->getFileHash(buf, &h2[block], boundfunc);
     for (int i = 0; i < block; ++i)
         h2[i] = key1[i] ^ opad;
@@ -185,7 +185,7 @@ u8_t *FileHeader::getHmac(u8_t len)
 ################################*/
 void AbsResultPrint::resetPercentage()
 {
-    percentage = 0;
+    acc_size = 0;
     std::cout << "\r\n";
 }
 /*
@@ -276,11 +276,13 @@ printpercentage:打印加载进度
 name:进度名
 percent:百分比
 */
-void ResultPrint::printpercentage(std::string name, double percent)
+void ResultPrint::printpercentage(std::string name, size_t now_size, size_t total_size)
 {
-    percentage += percent;
+    acc_size += now_size;
+    this->total_size = total_size;
 #ifndef GUI_ON
     std::cout << std::setw(5) << name << " loaded ";
+    double percentage = 100*((double)acc_size / (double)total_size);
     const int barWidth = 50; // 进度条的总宽度
     std::cout << "[";
     int pos = round(barWidth * percentage / 100.0);
@@ -295,7 +297,5 @@ void ResultPrint::printpercentage(std::string name, double percent)
     }
     std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
     std::cout.flush();
-#else
-    this->percentage = percentage;
 #endif
 }

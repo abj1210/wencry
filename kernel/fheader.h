@@ -52,11 +52,11 @@ struct Timer
 class AbsResultPrint
 {
 protected:
-  double percentage;
+  size_t acc_size, total_size;
   bool over;
 
 public:
-  AbsResultPrint() : percentage(0), over(false) {};
+  AbsResultPrint() : acc_size(0), total_size(0), over(false) {};
   virtual void printtask(std::string name) = 0;
   virtual u8_t printinv(const u8_t ret) = 0;
   virtual Timer *createTimer(std::string name) = 0;
@@ -65,9 +65,9 @@ public:
   virtual void printres(int res) = 0;
   virtual void printctype(u8_t type) = 0;
   virtual void printhtype(u8_t type) = 0;
-  virtual void printpercentage(std::string name, double percent) = 0;
+  virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
   void resetPercentage();
-  int getPercentage() { return percentage; };
+  int getPercentage() { return 100*(((double)acc_size)/((double)total_size)); };
   bool isOver() { return over; };
 };
 
@@ -82,7 +82,7 @@ public:
   virtual void printres(int res) { over = true; };
   virtual void printctype(u8_t type) {};
   virtual void printhtype(u8_t type) {};
-  virtual void printpercentage(std::string name, double percent) { percentage += percent; };
+  virtual void printpercentage(std::string name, size_t now_size, size_t total_size) { this->total_size = total_size;this->acc_size += now_size; };
 };
 
 class ResultPrint : public AbsResultPrint
@@ -102,7 +102,7 @@ public:
   virtual void printres(int res);
   virtual void printctype(u8_t type);
   virtual void printhtype(u8_t type);
-  virtual void printpercentage(std::string name, double percent);
+  virtual void printpercentage(std::string name, size_t now_size, size_t total_size);
 };
 
 /*

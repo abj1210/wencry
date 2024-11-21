@@ -90,7 +90,7 @@ class runcrypt
 
   u8_t *prepare_IV(const u8_t *r_buf);
   u8_t *prepare_IV();
-  Aesmode **prepare_AES(u8_t ctype, u8_t *iv, size_t fsize, bool mode);
+  Aesmode **prepare_AES(u8_t ctype, u8_t *iv, bool mode);
   void release(u8_t *iv, Aesmode **mode);
   u8_t verify(size_t fsize);
   void over();

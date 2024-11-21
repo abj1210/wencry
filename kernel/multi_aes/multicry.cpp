@@ -15,7 +15,7 @@ run_multicry:进行多线程并发
 mode:生成的加密算法序列
 printload:过程打印函数
 */
-void multicry_master::run_multicry(Aesmode **mode, const std::function<void(std::string, double)> &printload)
+void multicry_master::run_multicry(Aesmode **mode, const std::function<void(std::string, size_t)> &printload)
 {
   for (u8_t i = 0; i < THREADS_NUM; ++i)
     threads[i] = std::thread(multiruncrypt_file, i, std::ref((*mode[i])));
