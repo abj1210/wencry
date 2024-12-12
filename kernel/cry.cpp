@@ -249,12 +249,14 @@ bool runcrypt::execute_verify(size_t fsize)
   TIMER_END(Total_Time);       // 打印时间
   return res == 0;
 }
+
+
 /*
 get_percentage:获取进度
 return: -1表示已完成, 0-100表示进度
 */
 
-int runcrypt::get_percentage()
+int runcrypt::get_percentage_gui()
 {
   if (resultprint->isOver())
     return -1;

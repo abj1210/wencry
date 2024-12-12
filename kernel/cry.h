@@ -101,7 +101,7 @@ public:
   bool execute_encrypt(size_t fsize, u8_t *r_buf = NULL);
   bool execute_decrypt(size_t fsize);
   bool execute_verify(size_t fsize);
-  int get_percentage();
+  int get_percentage_gui();
 };
 
 #endif

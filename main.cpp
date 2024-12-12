@@ -6,8 +6,10 @@
 int main(int argc, char *argv[])
 {
   // 初始化
+
   unsigned char *vals = NULL;
   // 获取参数
+
   if (argc == 1)
     vals = get_v_mod1();
   else

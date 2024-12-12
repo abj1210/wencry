@@ -56,7 +56,7 @@ protected:
   bool over;
 
 public:
-  AbsResultPrint() : acc_size(0), total_size(0), over(false) {};
+  AbsResultPrint() : acc_size(0), total_size(1), over(false) {};
   virtual void printtask(std::string name) = 0;
   virtual u8_t printinv(const u8_t ret) = 0;
   virtual Timer *createTimer(std::string name) = 0;
@@ -75,6 +75,7 @@ public:
 class NullResPrint : public AbsResultPrint
 {
 public:
+    NullResPrint() : AbsResultPrint() {};
   virtual void printtask(std::string name) {};
   virtual u8_t printinv(const u8_t ret) { return ret; };
   virtual Timer *createTimer(std::string name) { return NULL; };
@@ -100,6 +101,7 @@ class ResultPrint : public AbsResultPrint
   }
 
 public:
+    ResultPrint() : AbsResultPrint() {};
   virtual void printtask(std::string name);
   virtual u8_t printinv(const u8_t ret);
   virtual Timer *createTimer(std::string name);
