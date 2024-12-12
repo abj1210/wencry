@@ -232,18 +232,22 @@ void ResultPrint::printTimer(Timer *timer)
 /*
 printenc: 打印加密结果
 */
-void ResultPrint::printenc() { strlog("Result:", "Encrypt over!"); }
+void ResultPrint::printenc()
+{
+    strlog("Result:", "Encryption is over!");
+    over = true;
+}
 /*
 printres: 打印解密结果
 res: 解密结果
 */
-void ResultPrint::printres(int res)
+void ResultPrint::printresv(int res)
 {
     std::string resstr = "Result:";
     if (res <= 0)
-        strlog(resstr, "Verify pass!");
+        strlog(resstr, "Verification passed!");
     else if (res == 1)
-        strlog(resstr, "File too short.");
+        strlog(resstr, "Input file is too short.");
     else if (res == 2)
         strlog(resstr, "Wrong key or File not complete.");
     else if (res == 3)
@@ -252,6 +256,17 @@ void ResultPrint::printres(int res)
         strlog(resstr, "Wrong magic number.");
     else
         strlog(resstr, "Unknown res number: " + std::to_string(res));
+    over = true;
+}
+void ResultPrint::printresd(int res)
+{
+    if (res <= 0)
+    {
+        strlog("Result:", "Decryption is over!");
+        over = true;
+    }
+    else
+        printresv(res);
 }
 /*
 printctype:打印加密模式
@@ -282,7 +297,7 @@ void ResultPrint::printpercentage(std::string name, size_t now_size, size_t tota
     this->total_size = total_size;
 #ifndef GUI_ON
     std::cout << std::setw(5) << name << " loaded ";
-    double percentage = 100*((double)acc_size / (double)total_size);
+    double percentage = 100 * ((double)acc_size / (double)total_size);
     const int barWidth = 50; // 进度条的总宽度
     std::cout << "[";
     int pos = round(barWidth * percentage / 100.0);

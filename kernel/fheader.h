@@ -62,12 +62,13 @@ public:
   virtual Timer *createTimer(std::string name) = 0;
   virtual void printTimer(Timer *timer) = 0;
   virtual void printenc() = 0;
-  virtual void printres(int res) = 0;
+  virtual void printresd(int res) = 0;
+  virtual void printresv(int res) = 0;
   virtual void printctype(u8_t type) = 0;
   virtual void printhtype(u8_t type) = 0;
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
   void resetPercentage();
-  int getPercentage() { return 100*(((double)acc_size)/((double)total_size)); };
+  int getPercentage() { return 100 * (((double)acc_size) / ((double)total_size)); };
   bool isOver() { return over; };
 };
 
@@ -79,10 +80,15 @@ public:
   virtual Timer *createTimer(std::string name) { return NULL; };
   virtual void printTimer(Timer *timer) {};
   virtual void printenc() { over = true; };
-  virtual void printres(int res) { over = true; };
+  virtual void printresd(int res) { over = true; };
+  virtual void printresv(int res) { over = true; };
   virtual void printctype(u8_t type) {};
   virtual void printhtype(u8_t type) {};
-  virtual void printpercentage(std::string name, size_t now_size, size_t total_size) { this->total_size = total_size;this->acc_size += now_size; };
+  virtual void printpercentage(std::string name, size_t now_size, size_t total_size)
+  {
+    this->total_size = total_size;
+    this->acc_size += now_size;
+  };
 };
 
 class ResultPrint : public AbsResultPrint
@@ -99,7 +105,8 @@ public:
   virtual Timer *createTimer(std::string name);
   virtual void printTimer(Timer *timer);
   virtual void printenc();
-  virtual void printres(int res);
+  virtual void printresd(int res);
+  virtual void printresv(int res);
   virtual void printctype(u8_t type);
   virtual void printhtype(u8_t type);
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size);

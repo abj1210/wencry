@@ -33,9 +33,7 @@ std::string get_typelist(std::vector<std::string> list)
   std::string res = "";
   int cnt = 0;
   for (std::vector<std::string>::iterator it = list.begin(); it != list.end(); ++it)
-  {
     res += std::to_string(cnt++) + ":" + *it + ", ";
-  }
   res.erase(res.end() - 2);
   return res;
 }
@@ -47,6 +45,29 @@ std::string get_htypelist()
 {
   return get_typelist(htype);
 }
+bool check_ctype(int ctype_num)
+{
+  return ctype_num >= 0 && ctype_num < ctype.size();
+}
+bool check_htype(int htype_num)
+{
+  return htype_num >= 0 && htype_num < htype.size();
+}
+std::string get_cname(int ctype_num)
+{
+  if (check_ctype(ctype_num))
+    return ctype[ctype_num];
+  else
+    return "unknown";
+}
+std::string get_hname(int htype_num)
+{
+  if (check_htype(htype_num))
+    return htype[htype_num];
+  else
+    return "unknown";
+}
+
 /*
 version:获取版本信息
 */

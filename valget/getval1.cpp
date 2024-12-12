@@ -82,11 +82,16 @@ return:选择的模式
 */
 static u8_t selectCMode()
 {
-  u32_t c;
+  u32_t c = -1;
   printf("Select a crypt mode(%s).\n", get_ctypelist().c_str());
   scanf("%d", &c);
-  if (c > 4 || c < 0)
-    c = 0;
+  while (!check_ctype(c))
+  {
+    scanf("%*[^\n]");
+    printf("Sorry, please enter a valid mode(%s).\n", get_ctypelist().c_str());
+    scanf("%d", &c);
+  }
+  printf("Cmode is : %s\n", get_cname(c).c_str());
   return (u8_t)c;
 }
 /*
@@ -95,11 +100,16 @@ return:选择的模式
 */
 static u8_t selectHMode()
 {
-  u32_t h;
+  u32_t h = -1;
   printf("Select a hash mode(%s).\n", get_htypelist().c_str());
   scanf("%d", &h);
-  if (h > 2 || h < 0)
-    h = 0;
+  while (!check_htype(h))
+  {
+    scanf("%*[^\n]");
+    printf("Sorry, please enter a valid mode(%s).\n", get_htypelist().c_str());
+    scanf("%d", &h);
+  }
+  printf("Hmode is : %s\n", get_hname(h).c_str());
   return (u8_t)h;
 }
 /*

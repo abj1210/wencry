@@ -65,28 +65,7 @@ mode:模式
 static void printCryptMode(u8_t mode)
 {
     std::string cm = "Crypt mode :";
-    std::string cry;
-    switch (mode)
-    {
-    case 0:
-        cry = "ECB";
-        break;
-    case 1:
-        cry = "CBC";
-        break;
-    case 2:
-        cry = "CTR";
-        break;
-    case 3:
-        cry = "CFB";
-        break;
-    case 4:
-        cry = "OFB";
-        break;
-    default:
-        cry = "Unknown";
-        break;
-    }
+    std::string cry = get_cname(mode);
     strlog(cm, cry);
 }
 /*
@@ -96,22 +75,7 @@ mode:模式
 static void printHashMode(u8_t mode)
 {
     std::string hm = "Hash mode :";
-    std::string hash;
-    switch (mode)
-    {
-    case 0:
-        hash = "sha1";
-        break;
-    case 1:
-        hash = "md5";
-        break;
-    case 2:
-        hash = "sha256";
-        break;
-    default:
-        hash = "Unknown";
-        break;
-    }
+    std::string hash = get_hname(mode);
     strlog(hm, hash);
 }
 /*
@@ -293,7 +257,7 @@ u8_t *get_v_opt(int argc, char *argv[])
             printCryptMode(0);
             res->ctype = 0;
         }
-        else if (res->ctype < 0 || res->ctype > 4)
+        else if (!check_ctype(res->ctype))
         {
             strlog("Error :", "Wrong ctype");
             delete res;
@@ -304,7 +268,7 @@ u8_t *get_v_opt(int argc, char *argv[])
             printHashMode(0);
             res->htype = 0;
         }
-        else if (res->htype < 0 || res->htype > 2)
+        else if (!check_htype(res->htype))
         {
             strlog("Error :", "Wrong htype");
             delete res;

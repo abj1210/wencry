@@ -166,7 +166,7 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
 {
   if (fin == NULL)
     return resultprint->printinv(0);
-  auto t1 = resultprint->createTimer("Total_Time");
+  TIMER_START(Total_Time);
   // 准备初始化
   resultprint->printtask("Preparing encrypt");
   u8_t *iv = prepare_IV(r_buf);
@@ -188,9 +188,9 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   // 释放空间
   resultprint->printtask("Releasing allocated memory");
   release(iv, mode);
-  resultprint->printenc();     // 打印结果
-  over();                      // 关闭文件
-  resultprint->printTimer(t1); // 打印时间
+  resultprint->printenc(); // 打印结果
+  over();                  // 关闭文件
+  TIMER_END(Total_Time);   // 打印时间
   return true;
 }
 /*
@@ -199,18 +199,15 @@ fsize:文件大小
 */
 bool runcrypt::execute_decrypt(size_t fsize)
 {
-  int res = 0;
   if (fin == NULL)
     return resultprint->printinv(0);
-  auto t1 = resultprint->createTimer("Total_Time");
+  TIMER_START(Total_Time);
   // 验证文件
   TIMER_START(Verify_Time);
-  u8_t state = verify(fsize);
+  int res = verify(fsize);
   resultprint->resetPercentage();
   TIMER_END(Verify_Time);
-  if (state != 0)
-    res = state;
-  else
+  if (res == 0)
   {
     // 准备初始化
     resultprint->printtask("Preparing decrypt");
@@ -228,9 +225,9 @@ bool runcrypt::execute_decrypt(size_t fsize)
     buffergroup::del_instance();
     release(iv, mode);
   }
-  resultprint->printres(res);  // 打印结果
+  resultprint->printresd(res); // 打印结果
   over();                      // 关闭文件
-  resultprint->printTimer(t1); // 打印时间
+  TIMER_END(Total_Time);       // 打印时间
   return res == 0;
 }
 /*
@@ -239,20 +236,17 @@ fsize:文件大小
 */
 bool runcrypt::execute_verify(size_t fsize)
 {
-  int res = 0;
-  auto t1 = resultprint->createTimer("Total_Time");
   if (fin == NULL)
     return resultprint->printinv(0);
+  TIMER_START(Total_Time);
   // 验证文件
   TIMER_START(Verify_Time);
-  u8_t state = verify(fsize);
+  int res = verify(fsize);
   resultprint->resetPercentage();
-  res = state;
   TIMER_END(Verify_Time);
-  resultprint->printres(res);  // 打印结果
+  resultprint->printresv(res); // 打印结果
   over();                      // 关闭文件
-  resultprint->printTimer(t1); // 打印时间
-
+  TIMER_END(Total_Time);       // 打印时间
   return res == 0;
 }
 /*

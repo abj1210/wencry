@@ -28,7 +28,10 @@ typedef union
 void printkey(u8_t *key);
 std::string get_ctypelist();
 std::string get_htypelist();
-
+bool check_ctype(int ctype_num);
+bool check_htype(int htype_num);
+std::string get_cname(int ctype_num);
+std::string get_hname(int htype_num);
 void strlog(std::string s1, std::string s2, char fill = ' ');
 u8_t *getRandomKey();
 u8_t *get_v_mod1();
