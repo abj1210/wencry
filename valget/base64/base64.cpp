@@ -74,6 +74,7 @@ bool base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out)
 }
 
 // Base64 字符集
+
 const std::string base64_chars =
 "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 "abcdefghijklmnopqrstuvwxyz"

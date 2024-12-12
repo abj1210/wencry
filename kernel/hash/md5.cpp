@@ -2,6 +2,7 @@
 #include <string.h>
 
 // 循环左移的位数
+
 #define S11 7
 #define S12 12
 #define S13 17
@@ -20,12 +21,14 @@
 #define S44 21
 
 // F,G,H,I四个非线性变换函数
+
 #define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
 #define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
 #define H(x, y, z) ((x) ^ (y) ^ (z))
 #define I(x, y, z) ((y) ^ ((x) | (~z)))
 
 // FF,GG,HH,II是四轮循环变换分别用到的变换函数
+
 #define FF(a, b, c, d, x, s, ac)                        \
   {                                                     \
     (a) += F((b), (c), (d)) + (x) + (unsigned int)(ac); \
@@ -60,7 +63,9 @@ void md5hash::getHash(const u8_t *input)
   unsigned int b = h[1];
   unsigned int c = h[2];
   unsigned int d = h[3];
+
   // 第1轮循环变换
+
   FF(a, b, c, d, x[0], S11, 0xd76aa478);  /* 1 */
   FF(d, a, b, c, x[1], S12, 0xe8c7b756);  /* 2 */
   FF(c, d, a, b, x[2], S13, 0x242070db);  /* 3 */
@@ -77,7 +82,9 @@ void md5hash::getHash(const u8_t *input)
   FF(d, a, b, c, x[13], S12, 0xfd987193); /* 14 */
   FF(c, d, a, b, x[14], S13, 0xa679438e); /* 15 */
   FF(b, c, d, a, x[15], S14, 0x49b40821); /* 16 */
+
   // 第2轮循环变换
+
   GG(a, b, c, d, x[1], S21, 0xf61e2562);  /* 17 */
   GG(d, a, b, c, x[6], S22, 0xc040b340);  /* 18 */
   GG(c, d, a, b, x[11], S23, 0x265e5a51); /* 19 */
@@ -94,7 +101,9 @@ void md5hash::getHash(const u8_t *input)
   GG(d, a, b, c, x[2], S22, 0xfcefa3f8);  /* 30 */
   GG(c, d, a, b, x[7], S23, 0x676f02d9);  /* 31 */
   GG(b, c, d, a, x[12], S24, 0x8d2a4c8a); /* 32 */
+
   // 第3轮循环变换
+
   HH(a, b, c, d, x[5], S31, 0xfffa3942);  /* 33 */
   HH(d, a, b, c, x[8], S32, 0x8771f681);  /* 34 */
   HH(c, d, a, b, x[11], S33, 0x6d9d6122); /* 35 */
@@ -111,7 +120,9 @@ void md5hash::getHash(const u8_t *input)
   HH(d, a, b, c, x[12], S32, 0xe6db99e5); /* 46 */
   HH(c, d, a, b, x[15], S33, 0x1fa27cf8); /* 47 */
   HH(b, c, d, a, x[2], S34, 0xc4ac5665);  /* 48 */
+
   // 第4轮循环变换
+
   II(a, b, c, d, x[0], S41, 0xf4292244);  /* 49 */
   II(d, a, b, c, x[7], S42, 0x432aff97);  /* 50 */
   II(c, d, a, b, x[14], S43, 0xab9423a7); /* 51 */
