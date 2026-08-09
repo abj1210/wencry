@@ -48,7 +48,7 @@ public:
   /*
   set_no_echo:设置回显模式
   */
-  void set_no_echo(bool no_echo) { no_echo = no_echo; };
+  void set_no_echo(bool no_echo) { this->no_echo = no_echo; };
   char get_ctype() const { return ctype; };
   char get_htype() const { return htype; };
   bool get_no_echo() const { return no_echo; };
@@ -69,7 +69,7 @@ class runcrypt
   FILE *fin, *out;
   u8_t *key;
   Settings settings;
-  const u8_t threads_num;
+  u8_t threads_num;
   bool mode;
 
   // 文件头构造器

@@ -175,7 +175,7 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
 
 set(SUBNAME small)
 
-add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp)
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
  
@@ -195,7 +195,7 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
 
 set(SUBNAME smode)
 
-add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp)
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
@@ -215,7 +215,7 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
 
 set(SUBNAME shash)
 
-add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp)
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
@@ -235,7 +235,7 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
 
 set(SUBNAME big)
 
-add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp)
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
@@ -255,7 +255,7 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                             
 set(SUBNAME speed)
 
-add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp)
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
  
@@ -271,4 +271,54 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
                            ${PROJECT_SOURCE_DIR}/../kernel
+                           )
+
+set(SUBNAME vectors)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           )
+
+set(SUBNAME boundary)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           ${PROJECT_SOURCE_DIR}/../valget
+                           )
+
+set(SUBNAME interactive)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+
+target_compile_definitions(${PROJECT_NAME}${SUBNAME} PRIVATE
+                           WENCRY_BIN="$<TARGET_FILE:Wencry>")
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           ${PROJECT_SOURCE_DIR}/../valget
                            )

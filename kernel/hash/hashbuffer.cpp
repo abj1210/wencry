@@ -6,7 +6,7 @@ block:拼接块
 printload:加载打印函数
 fp:输入文件指针
 */
-filebuffer64::filebuffer64(FILE *fp, const std::function<void(std::string, size_t)> &printload, u8_t *block) : fp(fp), now(0), has_extra(block != NULL)
+filebuffer64::filebuffer64(FILE *fp, const std::function<void(std::string, size_t)> &printload, u8_t *block) : has_extra(block != NULL), now(0), fp(fp)
 
 {
   if (block != NULL)

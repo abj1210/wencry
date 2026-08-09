@@ -1,8 +1,11 @@
 #include "cry.h"
 #include "getval.h"
+#include "testutil.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <chrono>
+#include <cstdio>
 
 bool exec(int argc, char *argv[]) {
   //初始化
@@ -42,7 +45,7 @@ bool exec(int argc, char *argv[]) {
 }
 #define BUFFER_SIZE 0x10000
 int cmp_file(FILE *x, FILE *y) {
-  char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
+  unsigned char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
   int read1, read2;
   int flag = 0;
   int cnt = 0;
@@ -51,7 +54,7 @@ int cmp_file(FILE *x, FILE *y) {
     memset(buffer2, 0, BUFFER_SIZE + 2);
     read1 = fread(buffer1, 1, BUFFER_SIZE, x);
     read2 = fread(buffer2, 1, BUFFER_SIZE, y);
-    flag = (read1 == read2) && (strcmp(buffer1, buffer2) == 0);
+    flag = (read1 == read2) && (memcmp(buffer1, buffer2, read1) == 0);
     if(!flag){
       printf("A%d-%d:%s\nB%d-%d:%s\n", cnt, read1, buffer1, cnt, read2, buffer2);
     }
@@ -67,13 +70,14 @@ int cmp_file(FILE *x, FILE *y) {
     return 0;
 }
 int makeFullTest(const char *str, u8_t type) {
-  FILE *fp = fopen("test.txt", "w");
+  char fname[128], fwenc[160], fout[160];
+  make_tmp_name(fname, sizeof(fname), "ft");
+  snprintf(fwenc, sizeof(fwenc), "%s.wenc", fname);
+  snprintf(fout, sizeof(fout), "%s.out", fname);
+  FILE *fp = fopen(fname, "w");
   fwrite(str, 1, strlen(str), fp);
   fclose(fp);
   char name[] = "./wencry";
-  char fname[] = "test.txt";
-  char fwenc[] = "test.txt.wenc";
-  char fout[] = "test.out";
   char eflg[] = "-e";
   char dflg[] = "-d";
   char iflg[] = "-i";
@@ -86,14 +90,23 @@ int makeFullTest(const char *str, u8_t type) {
   sprintf(htype, "%d", (type>>4)&0xf);
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, hflg, htype, kflg, key};
-  if (!exec(10, (char **)argv1))
+  if (!exec(10, (char **)argv1)) {
+    remove(fname);
     return 0;
+  }
   char *argv2[] = {name, dflg, iflg, fwenc, kflg, key, oflg, fout};
-  if (!exec(8, (char **)argv2))
+  if (!exec(8, (char **)argv2)) {
+    remove(fname);
+    remove(fwenc);
     return 0;
+  }
   FILE *f1 = fopen(fname, "rb");
   FILE *f2 = fopen(fout, "rb");
-  return cmp_file(f1, f2);
+  int r = cmp_file(f1, f2);
+  remove(fname);
+  remove(fwenc);
+  remove(fout);
+  return r;
 }
 char buf[0x2000010];
 int makeBigTest(int offset, u8_t type = 0) {
@@ -102,19 +115,42 @@ int makeBigTest(int offset, u8_t type = 0) {
   buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
 }
-int makeSpeedTest(u8_t type = 1) {
+double makeSpeedTest(u8_t type) {
+  char fname[128], fwenc[160], ctype[32];
+  make_tmp_name(fname, sizeof(fname), "spd");
+  snprintf(fwenc, sizeof(fwenc), "%s.wenc", fname);
+  const size_t SIZE = (size_t)32 * 1024 * 1024 + 16;
+  FILE *fp = fopen(fname, "wb");
+  if (fp == NULL)
+    return 0;
+  unsigned char b[4096];
+  size_t left = SIZE, off = 0;
+  while (left) {
+    size_t n = left < sizeof(b) ? left : sizeof(b);
+    for (size_t i = 0; i < n; ++i)
+      b[i] = (unsigned char)((off + i) % 251);
+    fwrite(b, 1, n, fp);
+    off += n;
+    left -= n;
+  }
+  fclose(fp);
   char name[] = "./wencry";
-  char fname[] = "test.txt";
   char key[] = "ABEiM0RVZneImaq7zN3u/w==";
   char eflg[] = "-e";
   char iflg[] = "-i";
+  char oflg[] = "-o";
   char kflg[] = "-k";
   char mflg[] = "--cmode";
-  char ctype[100];
+  char nflg[] = "-n";
   sprintf(ctype, "%d", type);
-  char *argv1[] = {name, eflg, iflg, fname, mflg, ctype, kflg, key};
-  if (!exec(8, (char **)argv1))
-    return 0;
-  else
-    return 1;
+  char *argv1[] = {name, eflg, iflg, fname, oflg, fwenc, mflg, ctype, kflg, key, nflg};
+  auto t0 = std::chrono::steady_clock::now();
+  bool ok = exec(11, (char **)argv1);
+  auto t1 = std::chrono::steady_clock::now();
+  double secs = std::chrono::duration<double>(t1 - t0).count();
+  double mbs = (secs > 0) ? (double)SIZE / 1e6 / secs : 0;
+  printf("Encrypt throughput: %.2f MB/s\n", mbs);
+  remove(fname);
+  remove(fwenc);
+  return ok ? mbs : 0;
 }

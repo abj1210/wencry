@@ -4,29 +4,16 @@
 #include <condition_variable>
 #include <mutex>
 #include <string.h>
+#include <string>
 #include <functional>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
 
 /*
-bufstate_t:缓冲区状态
-EMPTY:空缓冲区
-UPDATING:正在更新的缓冲区
-READY:更新完毕的缓冲区
-INV:无效缓冲区
-*/
-enum bufstate_t
-{
-  EMPTY,
-  UPDATING,
-  READY,
-  INV
-};
-/*
 loadstate_t:加载状态
 FULL:全部加载
-FINAL:最后一次加载
+FINAL:最后一次加载(含数据)
 NODATA:无数据
 */
 enum loadstate_t
@@ -34,6 +21,19 @@ enum loadstate_t
   FULL,
   FINAL,
   NODATA
+};
+
+/*
+bufstate_t:缓冲区状态(三级流水线)
+EMPTY:空闲,可装载
+LOADED:已装载,工作线程可处理
+PROCESSED:已处理完毕,写线程可导出
+*/
+enum bufstate_t
+{
+  EMPTY,
+  LOADED,
+  PROCESSED
 };
 
 /*
@@ -65,66 +65,59 @@ public:
   */
   u8_t *get_entry() { return (now < total) ? b[now++] : NULL; };
   /*
+  get_data:获取缓冲区数据起始地址
+  return:数据起始地址
+  */
+  u8_t *get_data() { return &b[0][0]; };
+  /*
   get_size:获取缓冲区装载大小
   return:返回的装载大小
   */
   u32_t get_size() { return (total << 4) | tail; };
   loadstate_t load_buffer(FILE *fin, bool ispadding);
-  void export_buffer(FILE *fout, bool ispadding);
+  /*
+  export_buffer:将缓冲区内容保存到文件,返回实际写出的字节数
+  fout:输出文件
+  ispadding:是否填充
+  return:写出的字节数
+  */
+  u32_t export_buffer(FILE *fout, bool ispadding);
 };
-/*
-bufferctrl:缓冲区状态控制类
-live_num:有效控制器数
-lock:互斥锁
-cv_ready:是否就绪条件变量
-cv_update:是否更新条件变量
-*/
-class bufferctrl
-{
-  static u8_t live_num;
-  enum bufstate_t state;
-  std::mutex lock;
-  std::condition_variable cv_ready, cv_update;
 
-public:
-  bufferctrl() : state(EMPTY) { live_num++; };
-  bool cmpstate(const enum bufstate_t state) const { return this->state == state; };
-  static bool haslive() { return live_num != 0; };
-  void wait_ready();
-  void wait_update();
-  void set_ready(bool load);
-  void set_update();
-};
 /*
-buffergroup:用于多线程的缓冲区组
-buflst:缓冲区数组指针
-ctrl控制器数组指针
-turn:当前缓冲区序号
-size:缓冲区个数
-fin:输入文件
-fout:输出文件
-ispadding:是否填充
-over:是否加载结束
+buffergroup:多线程缓冲区组
+采用"读线程--工作线程--写线程"三级流水线:
+  EMPTY --(读线程 fread)--> LOADED --(工作线程就地AES)--> PROCESSED --(写线程 fwrite)--> EMPTY
+chunk k 固定装入 buf[k%size],由工作线程 (k%size) 处理,写线程按序号顺序写出。
+读线程负责背压(等待目标缓冲为EMPTY),保证有界缓冲与不死锁。
 */
 class buffergroup
 {
+  static const u32_t MAX_BUF = 16;
+
   iobuffer *buflst;
-  bufferctrl *ctrl;
-  u32_t turn;
-  u32_t size;
+  u8_t state[MAX_BUF];   // bufstate_t
+  u32_t size;            // 缓冲个数 == 工作线程数
   FILE *fin, *fout;
-  bool ispadding, over;
-  buffergroup() : buflst(NULL), ctrl(NULL), turn(0), over(false) {};
+  bool ispadding;
+
+  bool over;             // 读线程已到达EOF
+  bool read_done;        // 读线程已结束
+  u32_t total_chunks;    // 装载的总块数
+
+  std::function<void(const u8_t *, size_t)> hash_feed;  // 写线程导出密文时的哈希喂入钩子(加密融合用)
+
+  std::mutex mtx;
+  std::condition_variable cv_empty, cv_loaded, cv_processed;
+
+  buffergroup() : buflst(NULL), size(0), over(false), read_done(false), total_chunks(0) {};
   ~buffergroup()
   {
     delete[] buflst;
-    delete[] ctrl;
   };
-  bool turn_iter();
-  void buffer_update(const std::function<void(std::string, size_t)> &printload);
 
   static buffergroup *instance;
-  static std::mutex mtx;
+  static std::mutex mtx_singleton;
 
 public:
   buffergroup(const buffergroup &) = delete;
@@ -132,7 +125,17 @@ public:
   static buffergroup *get_instance();
   static void del_instance();
   void set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding);
-  u8_t *require_buffer_entry(const u8_t id);
-  void run_buffer(const std::function<void(std::string, size_t)> &printload);
+  void set_hash_feed(const std::function<void(const u8_t *, size_t)> &feed) { hash_feed = feed; };
+
+  /* 工作线程接口 */
+  void wait_loaded(const u8_t id);
+  bool stop_worker(const u8_t id);
+  u8_t *get_entry(const u8_t id);
+  bool finish_chunk(const u8_t id);
+
+  /* 读线程 */
+  void run_read(const std::function<void(std::string, size_t)> &printload);
+  /* 写线程 */
+  void run_write(const std::function<void(std::string, size_t)> &printload);
 };
 #endif

@@ -16,9 +16,107 @@ using namespace chrono;
 构造函数
 no_echo:是否隐藏输出
 */
-hmac::hmac() : res_printer(new NullResPrint) {};
+hmac::hmac() : res_printer(new NullResPrint), hmac_res(NULL), hashmaster(NULL), key1(NULL), h1(NULL), block_len(0), accum_len(0) {};
 
-const u8_t hmac::get_length() { return length; };
+u8_t hmac::get_length() { return length; };
+
+/*
+析构函数:清理增量HMAC状态
+*/
+hmac::~hmac()
+{
+    clear_incr();
+    delete[] hmac_res;
+}
+
+/*
+clear_incr:释放增量HMAC状态
+*/
+void hmac::clear_incr()
+{
+    delete[] key1;
+    delete[] h1;
+    delete hashmaster;
+    key1 = NULL;
+    h1 = NULL;
+    hashmaster = NULL;
+    accum_len = 0;
+}
+
+/*
+init_hash:初始化增量HMAC,喂入ipad块与prefix(文件头IV区)
+hashtype:哈希模式
+key:密钥
+prefix:需先喂入的前缀数据(IV区)
+prefix_len:前缀长度
+*/
+void hmac::init_hash(u8_t hashtype, u8_t *key, const u8_t *prefix, size_t prefix_len)
+{
+    hashmaster = hf.getHasher(hf.getType(hashtype));
+    block_len = hashmaster->getblen();
+    length = hashmaster->gethlen();
+    hmac_res = new u8_t[length];
+    key1 = new u8_t[block_len];
+    h1 = new u8_t[block_len];
+    memset(key1, 0, block_len);
+    memcpy(key1, key, 16);
+    for (int i = 0; i < block_len; ++i)
+        h1[i] = key1[i] ^ ipad;
+    accum_len = 0;
+    hashmaster->reset_hash();
+    hashmaster->hash_block(h1);
+    feed_hash(prefix, prefix_len);
+}
+
+/*
+feed_hash:喂入密文数据,按64字节块缓冲哈希
+data:数据
+len:数据长度
+*/
+void hmac::feed_hash(const u8_t *data, size_t len)
+{
+    while (len > 0)
+    {
+        size_t take = len < (size_t)(block_len - accum_len) ? len : (size_t)(block_len - accum_len);
+        memcpy(accum + accum_len, data, take);
+        accum_len = (u8_t)(accum_len + take);
+        data += take;
+        len -= take;
+        if (accum_len == block_len)
+        {
+            hashmaster->hash_block(accum);
+            accum_len = 0;
+        }
+    }
+}
+
+/*
+final_hash:完成增量HMAC,结果存于hmac_res
+*/
+void hmac::final_hash()
+{
+    u8_t *h2 = new u8_t[block_len + length];
+    hashmaster->hash_final(accum, accum_len);
+    for (int i = 0; i < block_len; ++i)
+        h2[i] = key1[i] ^ opad;
+    hashmaster->get_result(h2 + block_len);
+    hashmaster->getStringHash(h2, block_len + length, hmac_res);
+    delete[] h2;
+    clear_incr();
+}
+
+/*
+write_hmac:将hmac_res写入文件指定偏移
+fp:文件指针
+writeMark:写入偏移
+*/
+void hmac::write_hmac(FILE *fp, u8_t writeMark)
+{
+    fseek(fp, writeMark, SEEK_SET);
+    fwrite(hmac_res, 1, length, fp);
+    delete[] hmac_res;
+    hmac_res = NULL;
+}
 
 /*
 getres:计算HMAC值
@@ -47,8 +145,11 @@ void hmac::getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize)
         h2[i] = key1[i] ^ opad;
     hashmaster->getStringHash(h2, block + length, hmac_res);
     // 清理数据
-    delete[] key1, h1, h2;
-    delete buf, hashmaster;
+    delete[] key1;
+    delete[] h1;
+    delete[] h2;
+    delete buf;
+    delete hashmaster;
     buf = NULL;
 }
 /*
@@ -64,6 +165,7 @@ void hmac::gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fs
     getres(hashtype, key, fp, fsize);
     memcpy(hmac_out, hmac_res, length);
     delete[] hmac_res;
+    hmac_res = NULL;
 }
 /*
 cmphmac:校验HMAC值
@@ -77,14 +179,16 @@ return:校验是否成功
 bool hmac::cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
 {
     getres(hashtype, key, fp, fsize);
+    bool same = true;
     for (int i = 0; i < length; ++i)
         if (hmac_out[i] != hmac_res[i])
         {
-            delete[] hmac_res;
-            return false;
+            same = false;
+            break;
         }
     delete[] hmac_res;
-    return true;
+    hmac_res = NULL;
+    return same;
 }
 /*
 writeFileHmac:写入HMAC值
@@ -114,7 +218,8 @@ iv:初始向量数组
 void FileHeader::getIV(const u8_t *r_buf, u8_t *iv)
 {
     Hashmaster *hm = hf.getHasher(HashFactory::SHA1);
-    hm->getStringHash(r_buf, strlen((const char *)r_buf), iv);
+    size_t len = strnlen((const char *)r_buf, 256);
+    hm->getStringHash(r_buf, len, iv);
     for (int i = 1; i < num; ++i)
         hm->getStringHash(iv + (20 * (i - 1)), 20, iv + (20 * i));
     delete hm;
@@ -137,6 +242,7 @@ void FileHeader::getFileHeader(u8_t *iv)
 {
     u8_t padding[PADDING];
     memset(padding, 0, sizeof(padding));
+    padding[PADDING - 1] = num;   // 末尾填充字节(offset 47)记录线程数
     u64_t mn = Magic_Num;
     fwrite(&mn, 1, 8, out);
     fwrite(&ctype, 1, 1, out);
@@ -146,13 +252,21 @@ void FileHeader::getFileHeader(u8_t *iv)
         fwrite(iv + (20 * i), 1, 20, out);
 }
 /*
-checkType:检查加密和哈希模式
+checkType:检查加密和哈希模式,并读取文件头记录的线程数
+线程数记录于offset 47(始终空闲的填充尾,不参与HMAC)。
+值为0表示旧格式文件,回退为4线程。
 */
 void FileHeader::checkType()
 {
     fseek(fp, FILE_MODE_MARK, SEEK_SET);
     fread(&ctype, 1, 1, fp);
     fread(&htype, 1, 1, fp);
+    u8_t fn = 0;
+    fseek(fp, 47, SEEK_SET);
+    if (fread(&fn, 1, 1, fp) == 1 && fn != 0)
+        num = fn;
+    else
+        num = 4;
 }
 /*
 checkMn:检查魔数

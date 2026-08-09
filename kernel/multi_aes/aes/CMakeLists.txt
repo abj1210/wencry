@@ -1,5 +1,5 @@
 project(Aes)
 
-add_library(${PROJECT_NAME} aes.cpp aesmode.cpp)
+add_library(${PROJECT_NAME} aes_ni.cpp aesmode.cpp)
 
 

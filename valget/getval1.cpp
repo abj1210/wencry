@@ -29,7 +29,7 @@ static std::string getInputFilep(vpak_t *pak)
   FILE *fp;
   while (1)
   {
-    int r = scanf("%s", fn);
+    scanf("%127s", fn);
     fp = fopen(fn, "rb");
     if (fp != NULL)
       break;
@@ -66,11 +66,11 @@ static u8_t *getInputKey()
 {
   u8_t kn[128] = "";
   printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
-  scanf("%s", kn);
+  scanf("%127s", kn);
   while (!is_valid_b64(kn, strlen((char *)kn)))
   {
     printf("Sorry, please enter 128 bits (16 bytes) key in base64 mod:\n");
-    scanf("%s", kn);
+    scanf("%127s", kn);
   }
   u8_t *keyout = new u8_t[16];
   base64_to_hex(kn, 24, keyout);
@@ -82,7 +82,7 @@ return:选择的模式
 */
 static u8_t selectCMode()
 {
-  u32_t c = -1;
+  int c = -1;
   printf("Select a crypt mode(%s).\n", get_ctypelist().c_str());
   scanf("%d", &c);
   while (!check_ctype(c))
@@ -100,7 +100,7 @@ return:选择的模式
 */
 static u8_t selectHMode()
 {
-  u32_t h = -1;
+  int h = -1;
   printf("Select a hash mode(%s).\n", get_htypelist().c_str());
   scanf("%d", &h);
   while (!check_htype(h))
@@ -119,7 +119,7 @@ return:返回的参数包
 */
 u8_t *get_v_mod1()
 {
-  char flag, fn[] = "out", outn[138], decn[128];
+  char flag, outn[138], decn[128];
   vpak_t *res = new vpak_t;
   res->no_echo = false;
   version();
@@ -144,7 +144,7 @@ u8_t *get_v_mod1()
     if (res->ctype != 0)
     {
       printf("Please input some random characters.\n");
-      int r = scanf("%s", res->r_buf);
+      scanf("%255s", res->r_buf);
     }
   }
   else if (res->mode == 'd' || res->mode == 'D')
@@ -155,7 +155,7 @@ u8_t *get_v_mod1()
     {
       printf("Enter new name:\n");
       scanf("%*[\n]");
-      scanf("%s", decn);
+      scanf("%127s", decn);
       res->out = fopen(decn, "wb+");
       strlog("Output File: ", decn);
     }

@@ -33,7 +33,7 @@ const struct option longOpts[] = {
 /*
 短选项设置
 */
-const char shortOpts[] = "edvVhni:o:k:m:";
+const char shortOpts[] = "edvVhni:o:k:";
 char fout[128];
 /*################################
   辅助函数
@@ -86,7 +86,6 @@ return:是否解析成功
 */
 bool parseOpts(char c, vpak_t *res)
 {
-    int tnum;
     size_t fsize = 0;
     switch (c)
     {
@@ -119,7 +118,7 @@ bool parseOpts(char c, vpak_t *res)
         break;
     case 'i':
         res->fp = fopen(optarg, "rb");
-        sprintf(fout, "%s.wenc", optarg);
+        snprintf(fout, sizeof(fout), "%s.wenc", optarg);
         try
         {
             auto fileSize = std::filesystem::file_size(optarg);

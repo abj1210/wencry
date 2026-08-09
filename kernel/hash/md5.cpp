@@ -148,6 +148,7 @@ void md5hash::getHash(const u8_t *input)
 void md5hash::getHash(const u8_t *input, u32_t final_loadsize)
 {
   addtotal(final_loadsize);
+  u64_t bitlen = totalsize;
   u8_t* temp = new u8_t[getblen()];
   memset(temp, 0, getblen());
   memcpy(temp, input, final_loadsize);
@@ -159,7 +160,7 @@ void md5hash::getHash(const u8_t *input, u32_t final_loadsize)
   }
   for (int i = 0; i < 8; ++i)
   {
-    temp[56 + i] = (u8_t)(((u64_t)totalsize >> (i << 3)));
+    temp[56 + i] = (u8_t)((bitlen >> (i << 3)));
   }
   getHash(temp);
   delete[] temp;

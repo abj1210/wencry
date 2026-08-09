@@ -23,17 +23,21 @@ bool hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out)
     }
   }
   if (j == 1)
+  {
     for (int j = 0; j < 4; ++j)
       if (j < 2)
         base64_out[idx++] = b64_tab[(h_in >> (6 * (3 - j))) & 0x3f];
       else
         base64_out[idx++] = '=';
+  }
   else if (j == 2)
+  {
     for (int j = 0; j < 4; ++j)
       if (j < 3)
         base64_out[idx++] = b64_tab[(h_in >> (6 * (3 - j))) & 0x3f];
       else
         base64_out[idx++] = '=';
+  }
   base64_out[idx] = '\0';
   return true;
 }
@@ -85,13 +89,13 @@ bool is_base64(unsigned char c) {
     return std::isalnum(c) || c == '+' || c == '/';
 }
 
-bool is_valid_b64(const u8_t* base64_in, int len) {
+bool is_valid_b64(const u8_t* base64_in, u32_t len) {
     int tail = 0;
     if (len % 4 != 0) return false;
     else if ((len / 4) * 3 - 2 != 16) return false;
 
     // 2. 检查每个字符是否是合法的 Base64 字符或填充字符 '='
-    for (int i = 0; i < len; ++i) {
+    for (u32_t i = 0; i < len; ++i) {
         if (base64_in[i] != '=' && !is_base64(base64_in[i]))
             return false;
         else if (base64_in[i] == '=') {

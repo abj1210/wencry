@@ -35,10 +35,22 @@ protected:
   virtual void getres(u8_t *hashout) = 0;
 
 public:
-  virtual const u8_t gethlen() = 0;
-  virtual const u8_t getblen() = 0;
+  virtual ~Hashmaster() {};
+  virtual u8_t gethlen() = 0;
+  virtual u8_t getblen() = 0;
   void getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, size_t)> &printload = [](std::string, size_t) -> void {});
   void getStringHash(const u8_t *string, u32_t length, u8_t *hashres);
+  /*
+  增量哈希接口(供HMAC融合等场景使用)
+  reset_hash:重置哈希状态
+  hash_block:喂入64字节整块(累积)
+  hash_final:喂入末尾块(含填充与长度)
+  get_result:输出摘要
+  */
+  void reset_hash() { reset(); };
+  void hash_block(const u8_t *input) { getHash(input); };
+  void hash_final(const u8_t *input, u32_t final_loadsize) { getHash(input, final_loadsize); };
+  void get_result(u8_t *hashout) { getres(hashout); };
 };
 
 class sha1hash : public Hashmaster
@@ -63,8 +75,8 @@ class sha1hash : public Hashmaster
 
 public:
   sha1hash() { reset(); };
-  virtual const u8_t gethlen() { return 20; };
-  virtual const u8_t getblen() { return 64; };
+  virtual u8_t gethlen() { return 20; };
+  virtual u8_t getblen() { return 64; };
 };
 
 class md5hash : public Hashmaster
@@ -86,8 +98,8 @@ class md5hash : public Hashmaster
 
 public:
   md5hash() { reset(); };
-  virtual const u8_t gethlen() { return 16; };
-  virtual const u8_t getblen() { return 64; };
+  virtual u8_t gethlen() { return 16; };
+  virtual u8_t getblen() { return 64; };
 };
 
 class sha256hash : public Hashmaster
@@ -119,8 +131,8 @@ class sha256hash : public Hashmaster
 
 public:
   sha256hash() { reset(); };
-  virtual const u8_t gethlen() { return 32; };
-  virtual const u8_t getblen() { return 64; };
+  virtual u8_t gethlen() { return 32; };
+  virtual u8_t getblen() { return 64; };
 };
 /*
 哈希函数工厂类

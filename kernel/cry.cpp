@@ -32,9 +32,9 @@ Settings::Settings(char ctype, char htype, bool no_echo) : ctype(ctype), htype(h
 }
 void Settings::set_ctype(char c)
 {
-  if (ctype < -1 || ctype > 4)
+  if (c < -1 || c > 4)
   {
-    fprintf(stderr, "Invalid crypt type: %d\n", ctype);
+    fprintf(stderr, "Invalid crypt type: %d\n", c);
     exit(1);
   }
   else
@@ -42,9 +42,9 @@ void Settings::set_ctype(char c)
 };
 void Settings::set_htype(char h)
 {
-  if (htype < -1 || htype > 2)
+  if (h < -1 || h > 2)
   {
-    fprintf(stderr, "Invalid hash type: %d\n", htype);
+    fprintf(stderr, "Invalid hash type: %d\n", h);
     exit(1);
   }
   else
@@ -87,9 +87,8 @@ Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, bool cmode)
   buffergroup *iobuffer = buffergroup::get_instance();
   iobuffer->set_buffergroup(threads_num, fin, out, cmode);
   Aesmode **mode = new Aesmode *[threads_num];
-  aesfactory.loadiv(iv);
   for (int i = 0; i < threads_num; i++)
-    mode[i] = aesfactory.createCryMaster(cmode, ctype);
+    mode[i] = aesfactory.createCryMaster(cmode, ctype, iv + 20 * i);
   return mode;
 }
 /*
@@ -148,8 +147,9 @@ settings:加解密参数
 threads_num:线程数
 */
 runcrypt::runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
-    : header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num), aesfactory(key), crym(threads_num), threads_num(threads_num),
-      fin(fin), out(out), key(key), settings(settings), mode(false)
+    : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num), mode(false),
+      header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
+      aesfactory(key)
 {
   if (settings.get_no_echo())
     resultprint = new NullResPrint;
@@ -171,18 +171,22 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   resultprint->printtask("Preparing encrypt");
   u8_t *iv = prepare_IV(r_buf);
   Aesmode **mode = prepare_AES(settings.get_ctype(), iv, true);
-  // 运行加密
+  // 运行加密(写线程导出密文时同步喂入HMAC,避免回读)
   TIMER_START(AES_Encryption_Time)
   resultprint->printtask("Encrypting");
+  hmachandle.init_hash(settings.get_htype(), key, iv, 20 * threads_num);
+  buffergroup::get_instance()->set_hash_feed([this](const u8_t *d, size_t n) { hmachandle.feed_hash(d, n); });
   auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
-  crym.run_multicry(mode, boundfunc);
+  crym.run_multicry(threads_num, mode, boundfunc);
+  buffergroup::get_instance()->set_hash_feed(nullptr);
   resultprint->resetPercentage();
   buffergroup::del_instance();
   TIMER_END(AES_Encryption_Time)
-  // 写入hamc
+  // 完成hmac并写入
   TIMER_START(Hashing_Time)
   resultprint->printtask("Calculating hmac");
-  hmachandle.writeFileHmac(settings.get_htype(), out, key, FILE_IV_MARK, FILE_HMAC_MARK, fsize);
+  hmachandle.final_hash();
+  hmachandle.write_hmac(out, FILE_HMAC_MARK);
   resultprint->resetPercentage();
   TIMER_END(Hashing_Time)
   // 释放空间
@@ -211,13 +215,14 @@ bool runcrypt::execute_decrypt(size_t fsize)
   {
     // 准备初始化
     resultprint->printtask("Preparing decrypt");
+    threads_num = header.get_num();
     u8_t *iv = prepare_IV();
     Aesmode **mode = prepare_AES(header.getctype(), iv, false);
     // 运行解密
     TIMER_START(AES_Decryption_Time)
     resultprint->printtask("Decrypting");
     auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
-    crym.run_multicry(mode, boundfunc);
+    crym.run_multicry(threads_num, mode, boundfunc);
     resultprint->resetPercentage();
     TIMER_END(AES_Decryption_Time)
     // 释放空间

@@ -23,8 +23,8 @@ static std::string description = "命令行参数模式的介绍如下\n\n"
                                  "- `--hmode` + `[mode]` 指示哈希模式:- 0:sha1 - 1:md5 - 2:sha256 \n"
                                  "- `-n`/`--no_echo` 此选项表示隐藏处理信息\n\n"
                                  "### 示例\n\n"
-                                 "- 加密: ./Wencry -e -i ../a.mp4 -cmode 2 -o ../a.mp4.wenc\n"
-                                 "- 解密: ./Wencry -d -i ../a.mp4.wenc -cmode 2 -o ../aa.mp4 -k Z8Zpc1HSuwpzbqr8vvjRg==\n";
+                                 "- 加密: ./Wencry -e -i ../a.mp4 --cmode 2 -o ../a.mp4.wenc\n"
+                                 "- 解密: ./Wencry -d -i ../a.mp4.wenc --cmode 2 -o ../aa.mp4 -k Z8Zpc1HSuwpzbqr8vvjRg==\n";
 /*################################
   信息获取函数
 ################################*/
@@ -47,11 +47,11 @@ std::string get_htypelist()
 }
 bool check_ctype(int ctype_num)
 {
-  return ctype_num >= 0 && ctype_num < ctype.size();
+  return ctype_num >= 0 && (size_t)ctype_num < ctype.size();
 }
 bool check_htype(int htype_num)
 {
-  return htype_num >= 0 && htype_num < htype.size();
+  return htype_num >= 0 && (size_t)htype_num < htype.size();
 }
 std::string get_cname(int ctype_num)
 {
@@ -86,7 +86,7 @@ std::string verstring()
 #ifdef DEBUG_ON
   ver += " Debug";
 #endif
-  return "Liucan's wencry\r\nKernel version: " + ver + "\r\nBuild time: " + V_BUILD_TIME;
+  return "Wencry\r\nKernel version: " + ver + "\r\nBuild time: " + V_BUILD_TIME;
 }
 /*
 help:获取帮助信息

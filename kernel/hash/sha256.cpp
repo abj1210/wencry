@@ -23,12 +23,12 @@ getwdata:根据每个输入单元生成sha1中w数组的值
 void sha256hash::getwdata()
 {
   u32_t t, t1, t2, i = 0;
-  for (i; i < 16; ++i)
+  for (; i < 16; ++i)
   {
     t = this->i[i];
     w[i] = setbytes(((u8_t)(t >> 24)), ((u8_t)(t >> 16)), ((u8_t)(t >> 8)), t);
   }
-  for (i; i < 64; ++i)
+  for (; i < 64; ++i)
   {
     t1 = w[i - 2];
     t2 = w[i - 15];
@@ -71,6 +71,7 @@ loadsize:装载字节数
 void sha256hash::getHash(const u8_t *input, u32_t final_loadsize)
 {
   addtotal(final_loadsize);
+  u64_t bitlen = totalsize;
   u8_t *temp = new u8_t[getblen()];
   memset(temp, 0, getblen());
   memcpy(temp, input, final_loadsize);
@@ -82,7 +83,7 @@ void sha256hash::getHash(const u8_t *input, u32_t final_loadsize)
   }
   for (int i = 0; i < 8; ++i)
   {
-    temp[56 + i] = (u8_t)(((u64_t)totalsize >> ((7 - i) << 3)));
+    temp[56 + i] = (u8_t)((bitlen >> ((7 - i) << 3)));
   }
   getHash(temp);
   delete[] temp;

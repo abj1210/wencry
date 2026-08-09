@@ -4,21 +4,10 @@
   AES算法子类实现
 ################################*/
 
-/*
-getXor:获取异或值
-x:被异或值
-mask:异或掩码
-*/
-void Aesmode::getXor(u8_t *x, u8_t *mask)
-{
-  for (int i = 0; i < 4; ++i)
-    *(((u32_t *)x) + i) ^= *(((u32_t *)mask) + i);
-}
-
 class AesEncrypt : public Aesmode
 {
 protected:
-  encryaes crypt;
+  EncryAes crypt;
 
 public:
   AesEncrypt(u8_t *key, const u8_t *iv) : Aesmode(iv), crypt(key){};
@@ -27,7 +16,7 @@ public:
 class AesDecrypt : public Aesmode
 {
 protected:
-  decryaes crypt;
+  DecryAes crypt;
 
 public:
   AesDecrypt(u8_t *key, const u8_t *iv) : Aesmode(iv), crypt(key){};
@@ -37,14 +26,22 @@ class AesECB_Enc : public AesEncrypt
 {
 public:
   AesECB_Enc(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
-  virtual void runcry(u8_t *block) override { crypt.runaes_128bit(block); };
+  virtual void runcry(u8_t *block) override { 
+    __m128i s = _mm_loadu_si128((const __m128i*)block); 
+    s = crypt.runaes_128bit(s); 
+    _mm_storeu_si128((__m128i*)block, s);
+  };
 };
 
 class AesECB_Dec : public AesDecrypt
 {
 public:
   AesECB_Dec(u8_t *key, const u8_t *iv) : AesDecrypt(key, iv){};
-  virtual void runcry(u8_t *block) override { crypt.runaes_128bit(block); };
+  virtual void runcry(u8_t *block) override { 
+    __m128i s = _mm_loadu_si128((const __m128i*)block); 
+    s = crypt.runaes_128bit(s); 
+    _mm_storeu_si128((__m128i*)block, s);
+   };
 };
 
 class AesCBC_Enc : public AesEncrypt
@@ -53,9 +50,10 @@ public:
   AesCBC_Enc(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
   virtual void runcry(u8_t *block) override
   {
-    getXor(block, iv);
-    crypt.runaes_128bit(block);
-    memcpy(iv, block, 16);
+    __m128i s = _mm_loadu_si128((const __m128i*)block); 
+    s = _mm_xor_si128(s, iv);
+    iv = crypt.runaes_128bit(s);
+    _mm_storeu_si128((__m128i*)block, iv);
   }
 };
 
@@ -65,11 +63,11 @@ public:
   AesCBC_Dec(u8_t *key, const u8_t *iv) : AesDecrypt(key, iv){};
   virtual void runcry(u8_t *block) override
   {
-    u8_t nxt_iv[16];
-    memcpy(nxt_iv, block, 16);
-    crypt.runaes_128bit(block);
-    getXor(block, iv);
-    memcpy(iv, nxt_iv, 16);
+    __m128i nxt_iv = _mm_loadu_si128((const __m128i*)block); 
+    __m128i s = crypt.runaes_128bit(nxt_iv);
+    s = _mm_xor_si128(s, iv);
+    iv = nxt_iv;
+    _mm_storeu_si128((__m128i*)block, s);
   }
 };
 
@@ -77,23 +75,25 @@ class AesCTR : public AesEncrypt
 {
   void ctrInc()
   {
+    u8_t ivb[16];
+    _mm_storeu_si128((__m128i*)ivb, iv);
     for (int i = 15; i >= 0; i--)
     {
-      iv[i]++;
-      if (iv[i] != 0)
+      ivb[i]++;
+      if (ivb[i] != 0)
         break;
     }
+    iv = _mm_loadu_si128((const __m128i*)ivb);
   }
-
 public:
   AesCTR(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
   virtual void runcry(u8_t *block) override
   {
-    u8_t mask[16];
-    memcpy(mask, iv, 16);
-    crypt.runaes_128bit(mask);
-    getXor(block, mask);
+    __m128i s = _mm_loadu_si128((const __m128i*)block); 
+    __m128i mask = crypt.runaes_128bit(iv);
+    s = _mm_xor_si128(s, mask);
     ctrInc();
+    _mm_storeu_si128((__m128i*)block, s);
   }
 };
 
@@ -103,9 +103,10 @@ public:
   AesCFB_Enc(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
   virtual void runcry(u8_t *block) override
   {
-    crypt.runaes_128bit(iv);
-    getXor(block, iv);
-    memcpy(iv, block, 16);
+    __m128i s = _mm_loadu_si128((const __m128i*)block);
+    iv = crypt.runaes_128bit(iv);
+    iv = _mm_xor_si128(s, iv);
+    _mm_storeu_si128((__m128i*)block, iv);
   }
 };
 
@@ -115,11 +116,11 @@ public:
   AesCFB_Dec(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
   virtual void runcry(u8_t *block) override
   {
-    u8_t nxt_iv[16];
-    memcpy(nxt_iv, block, 16);
-    crypt.runaes_128bit(iv);
-    getXor(block, iv);
-    memcpy(iv, nxt_iv, 16);
+    __m128i nxt_iv = _mm_loadu_si128((const __m128i*)block);
+    iv = crypt.runaes_128bit(iv);
+    __m128i s = _mm_xor_si128(nxt_iv, iv);
+    iv=nxt_iv;
+    _mm_storeu_si128((__m128i*)block, s);
   }
 };
 
@@ -129,8 +130,10 @@ public:
   AesOFB(u8_t *key, const u8_t *iv) : AesEncrypt(key, iv){};
   virtual void runcry(u8_t *block) override
   {
-    crypt.runaes_128bit(iv);
-    getXor(block, iv);
+    __m128i s = _mm_loadu_si128((const __m128i*)block);
+    iv = crypt.runaes_128bit(iv);
+    s = _mm_xor_si128(s, iv);
+    _mm_storeu_si128((__m128i*)block, s);
   }
 };
 
@@ -139,12 +142,13 @@ public:
 ################################*/
 
 /*
-createEncryMaster:返回相应的加密器
+createCryMaster:返回相应的加密器
 isenc:是否为加密
 type:类型(0:ECB,1:CBC,2:CTR,3:CFB,4:OFB)
+iv:初始向量
 return:返回的加密器
 */
-Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
+Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type, const u8_t *iv)
 {
   if (isenc)
   {
@@ -182,6 +186,10 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
       return NULL;
     }
   }
+}
+Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
+{
+  return createCryMaster(isenc, type, iv);
 }
 /*
 getName:获取模式名称

@@ -23,14 +23,15 @@ class FileHeader
   HashFactory hf;
 
 public:
-  FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t num) : fp(fp), out(out), key(key), ctype(-1), htype(-1), num(num) {};
-  FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t ctype, u8_t htype, u8_t num) : fp(fp), out(out), key(key), ctype(ctype), htype(htype), num(num) {};
+    FileHeader(FILE* fp, FILE* out, u8_t* key, u8_t num) : key(key), num(num), ctype(-1), htype(-1), fp(fp), out(out) { memset(hash, 0, sizeof(hash)); };
+  FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t ctype, u8_t htype, u8_t num) : key(key), num(num), ctype(ctype), htype(htype), fp(fp), out(out) { memset(hash, 0, sizeof(hash)); };
   void getIV(const u8_t *r_buf, u8_t *iv);
   void getIV(FILE *fp, u8_t *iv);
   void getFileHeader(u8_t *iv);
   void checkType();
-  u8_t getctype() { return ctype; };
-  u8_t gethtype() { return htype; };
+  u8_t getctype() const { return ctype; };
+  u8_t gethtype() const { return htype; };
+  u8_t get_num() const { return num; };
   bool checkMn();
   u8_t *getHmac(u8_t len);
 };
@@ -57,6 +58,7 @@ protected:
 
 public:
   AbsResultPrint() : acc_size(0), total_size(1), over(false) {};
+  virtual ~AbsResultPrint() {};
   virtual void printtask(std::string name) = 0;
   virtual u8_t printinv(const u8_t ret) = 0;
   virtual Timer *createTimer(std::string name) = 0;
@@ -68,24 +70,24 @@ public:
   virtual void printhtype(u8_t type) = 0;
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
   void resetPercentage();
-  int getPercentage() { return 100 * (((double)acc_size) / ((double)total_size)); };
-  bool isOver() { return over; };
+  int getPercentage() const { return 100 * (int)(((double)acc_size) / ((double)total_size)); };
+  bool isOver() const { return over; };
 };
 
 class NullResPrint : public AbsResultPrint
 {
 public:
     NullResPrint() : AbsResultPrint() {};
-  virtual void printtask(std::string name) {};
+  virtual void printtask(std::string) {};
   virtual u8_t printinv(const u8_t ret) { return ret; };
-  virtual Timer *createTimer(std::string name) { return NULL; };
-  virtual void printTimer(Timer *timer) {};
+  virtual Timer *createTimer(std::string) { return NULL; };
+  virtual void printTimer(Timer *) {};
   virtual void printenc() { over = true; };
-  virtual void printresd(int res) { over = true; };
-  virtual void printresv(int res) { over = true; };
-  virtual void printctype(u8_t type) {};
-  virtual void printhtype(u8_t type) {};
-  virtual void printpercentage(std::string name, size_t now_size, size_t total_size)
+  virtual void printresd(int) { over = true; };
+  virtual void printresv(int) { over = true; };
+  virtual void printctype(u8_t) {};
+  virtual void printhtype(u8_t) {};
+  virtual void printpercentage(std::string, size_t now_size, size_t total_size)
   {
     this->total_size = total_size;
     this->acc_size += now_size;
@@ -128,13 +130,33 @@ class hmac
   buffer64 *buf = NULL;
   void getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize);
 
+  // 增量HMAC(加密融合路径)使用的状态
+  Hashmaster *hashmaster;
+  u8_t *key1, *h1;
+  u8_t accum[64];
+  u8_t block_len, accum_len;
+
+  void clear_incr();
+
 public:
   hmac();
+  ~hmac();
   void loadprinter(AbsResultPrint *res_printer) { this->res_printer = res_printer; };
   void gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
   bool cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
   void writeFileHmac(u8_t hashtype, FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize = 0);
-  const u8_t get_length();
+  u8_t get_length();
+  /*
+  增量HMAC(加密时融合计算,避免回读密文)
+  init_hash:初始化,喂入ipad块与prefix(文件头IV区)
+  feed_hash:喂入密文块
+  final_hash:完成计算,结果存于hmac_res
+  write_hmac:将hmac_res写入文件指定偏移
+  */
+  void init_hash(u8_t hashtype, u8_t *key, const u8_t *prefix, size_t prefix_len);
+  void feed_hash(const u8_t *data, size_t len);
+  void final_hash();
+  void write_hmac(FILE *fp, u8_t writeMark);
 };
 
 #endif

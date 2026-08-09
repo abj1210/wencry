@@ -6,9 +6,8 @@
   初始化
 ################################*/
 
-u8_t bufferctrl::live_num = 0;
 buffergroup *buffergroup::instance = NULL;
-std::mutex buffergroup::mtx;
+std::mutex buffergroup::mtx_singleton;
 
 /*################################
   单缓冲区函数
@@ -23,6 +22,13 @@ loadstate_t iobuffer::load_buffer(FILE *fin, bool ispadding)
 {
   u32_t load = fread(b, 1, sum, fin);
   bool readover = feof(fin);
+  if (!ispadding && !readover && load == sum)
+  {
+    int c = fgetc(fin);
+    readover = (c == EOF);
+    if (!readover)
+      fseek(fin, -1, SEEK_CUR);
+  }
   tail = load & 0xf;
   total = load >> 4;
   now = 0;
@@ -35,6 +41,8 @@ loadstate_t iobuffer::load_buffer(FILE *fin, bool ispadding)
   }
   if ((!ispadding) && readover)
   {
+    if (load == 0)
+      return NODATA;
     isfinal = true;
     return FINAL;
   }
@@ -45,84 +53,26 @@ export_buffer:将缓冲区内容保存到文件
 fout:输出文件
 ispadding:是否填充
 */
-void iobuffer::export_buffer(FILE *fout, bool ispadding)
+u32_t iobuffer::export_buffer(FILE *fout, bool ispadding)
 {
+  if (now == 0)
+    return 0;
   if (isfinal)
   {
     u8_t padding = ispadding ? 0 : b[now - 1][15];
-    fwrite(b, 1, (now << 4) - padding, fout);
+    if (padding > (now << 4))
+      padding = (u8_t)(now << 4);
+    u32_t n = (now << 4) - padding;
+    fwrite(b, 1, n, fout);
+    return n;
   }
-  else
-    fwrite(b, 1, sum, fout);
+  fwrite(b, 1, sum, fout);
+  return sum;
 }
+
 /*################################
-  缓冲区控制函数
+  缓冲组管理
 ################################*/
-/*
-wait_ready:等待装载就绪
-*/
-void bufferctrl::wait_ready()
-{
-  std::unique_lock<std::mutex> locker(lock);
-  while (state != READY && state != INV)
-    cv_ready.wait(locker);
-  locker.unlock();
-}
-/*
-wait_update:等待可以装载
-*/
-void bufferctrl::wait_update()
-{
-  std::unique_lock<std::mutex> locker(lock);
-  while (state != UPDATING && state != EMPTY)
-    cv_update.wait(locker);
-  locker.unlock();
-}
-/*
-set_ready:设置就绪或无效状态
-load:装载是否不为空
-*/
-void bufferctrl::set_ready(bool load)
-{
-  std::unique_lock<std::mutex> locker(lock);
-  if (load)
-    state = READY;
-  else
-  {
-    state = INV;
-    live_num--;
-  }
-  cv_ready.notify_all();
-  locker.unlock();
-}
-/*
-set_update:设置可装载状态
-*/
-void bufferctrl::set_update()
-{
-  std::unique_lock<std::mutex> locker(lock);
-  if (state == READY)
-  {
-    state = UPDATING;
-    cv_update.notify_all();
-  }
-  locker.unlock();
-}
-/*################################
-  多缓冲区函数
-################################*/
-/*
-set_buffergroup:设置缓冲区组选项
-*/
-void buffergroup::set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding)
-{
-  this->size = size;
-  this->fin = fin;
-  this->fout = fout;
-  this->ispadding = ispadding;
-  this->buflst = new iobuffer[size];
-  this->ctrl = new bufferctrl[size];
-};
 /*
 get_instance:获取实例
 */
@@ -130,7 +80,7 @@ buffergroup *buffergroup::get_instance()
 {
   if (instance == NULL)
   {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(mtx_singleton);
     if (instance == NULL)
       instance = new buffergroup();
   }
@@ -143,7 +93,7 @@ void buffergroup::del_instance()
 {
   if (instance != NULL)
   {
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(mtx_singleton);
     if (instance != NULL)
     {
       delete instance;
@@ -152,61 +102,145 @@ void buffergroup::del_instance()
   }
 };
 /*
-turn_iter:缓冲区序号迭代
-return:迭代是否成功
+set_buffergroup:设置缓冲区组选项
 */
-bool buffergroup::turn_iter()
+void buffergroup::set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadding)
 {
-  if (!bufferctrl::haslive())
-    return false;
-  do
-    turn = (turn + 1) % size;
-  while (ctrl[turn].cmpstate(INV));
-  return true;
+  this->size = size;
+  this->fin = fin;
+  this->fout = fout;
+  this->ispadding = ispadding;
+  this->buflst = new iobuffer[size];
+  std::lock_guard<std::mutex> lock(mtx);
+  for (u32_t i = 0; i < size; ++i)
+    state[i] = EMPTY;
+  over = false;
+  read_done = false;
+  total_chunks = 0;
 };
+
+/*################################
+  工作线程接口
+################################*/
 /*
-require_buffer_entry:获取下一个缓冲区表项
-id:缓冲区标号
-return:表项地址，若缓冲区已经读取完毕返回NULL
+wait_loaded:等待缓冲区被装载
+id:工作线程标号
 */
-u8_t *buffergroup::require_buffer_entry(const u8_t id)
+void buffergroup::wait_loaded(const u8_t id)
 {
-  u8_t *result = buflst[id].get_entry();
-  if (result == NULL)
-  {
-    ctrl[id].set_update();
-    ctrl[id].wait_ready();
-    if (ctrl[id].cmpstate(READY))
-      result = buflst[id].get_entry();
-  }
-  return result;
+  std::unique_lock<std::mutex> locker(mtx);
+  cv_loaded.wait(locker, [&] { return state[id] == LOADED || read_done; });
+  locker.unlock();
 }
 /*
-buffer_update:缓冲区轮流装载
-printload:过程打印函数
+stop_worker:判断工作线程是否应退出
+id:工作线程标号
+return:true表示读线程已结束且本缓冲无新数据
 */
-void buffergroup::buffer_update(const std::function<void(std::string, size_t)> &printload)
+bool buffergroup::stop_worker(const u8_t id)
 {
-  loadstate_t loadstate = NODATA;
-  if (ctrl[turn].cmpstate(UPDATING))
-  {
-    buflst[turn].export_buffer(fout, ispadding);
-    printload("Tid " + std::to_string(turn), buflst[turn].get_size());
-  }
-  if (!over)
-    loadstate = buflst[turn].load_buffer(fin, ispadding);
-  over = loadstate != FULL;
-  ctrl[turn].set_ready(loadstate != NODATA);
+  std::lock_guard<std::mutex> locker(mtx);
+  return read_done && state[id] != LOADED;
 }
 /*
-run_buffer:缓冲区组自动装载函数
+get_entry:获取缓冲区下一个表项
+id:工作线程标号
+return:表项地址,若缓冲区已经读取完毕返回NULL
+*/
+u8_t *buffergroup::get_entry(const u8_t id)
+{
+  return buflst[id].get_entry();
+}
+/*
+finish_chunk:标记本块已处理完毕
+id:工作线程标号
+return:true表示读线程已结束,本块为最后一块,工作线程应退出
+*/
+bool buffergroup::finish_chunk(const u8_t id)
+{
+  std::lock_guard<std::mutex> locker(mtx);
+  state[id] = PROCESSED;
+  cv_processed.notify_all();
+  return read_done;
+}
+
+/*################################
+  读线程
+################################*/
+/*
+run_read:读线程,按顺序装载chunk
 printload:过程打印函数
 */
-void buffergroup::run_buffer(const std::function<void(std::string, size_t)> &printload)
+void buffergroup::run_read(const std::function<void(std::string, size_t)> &printload)
 {
-  do
+  (void)printload;
+  u32_t next = 0;
+  while (true)
   {
-    ctrl[turn].wait_update();
-    buffer_update(printload);
-  } while (turn_iter());
+    u8_t id = (u8_t)(next % size);
+    {
+      std::unique_lock<std::mutex> locker(mtx);
+      cv_empty.wait(locker, [&] { return state[id] == EMPTY || over; });
+      if (over)
+        break;
+    }
+    loadstate_t ls = buflst[id].load_buffer(fin, ispadding);
+    {
+      std::lock_guard<std::mutex> locker(mtx);
+      if (ls == FULL)
+      {
+        state[id] = LOADED;
+        ++next;
+      }
+      else
+      {
+        // FINAL:最后一个数据块(含填充); NODATA:无数据
+        if (ls == FINAL)
+        {
+          state[id] = LOADED;
+          ++next;
+        }
+        over = true;
+        total_chunks = next;
+        read_done = true;
+      }
+      cv_loaded.notify_all();
+      if (over)
+        break;
+    }
+  }
+}
+
+/*################################
+  写线程
+################################*/
+/*
+run_write:写线程,按chunk序号顺序导出
+printload:过程打印函数
+*/
+void buffergroup::run_write(const std::function<void(std::string, size_t)> &printload)
+{
+  u32_t next = 0;
+  while (true)
+  {
+    u8_t id = (u8_t)(next % size);
+    {
+      std::unique_lock<std::mutex> locker(mtx);
+      cv_processed.wait(locker, [&] {
+        return state[id] == PROCESSED || (read_done && next == total_chunks);
+      });
+      if (read_done && next == total_chunks)
+        break;
+    }
+    u32_t n = buflst[id].export_buffer(fout, ispadding);
+    if (hash_feed)
+      hash_feed(buflst[id].get_data(), n);
+    printload("Chunk " + std::to_string(next), n);
+    {
+      std::lock_guard<std::mutex> locker(mtx);
+      state[id] = EMPTY;
+      ++next;
+      cv_empty.notify_all();
+    }
+  }
 }

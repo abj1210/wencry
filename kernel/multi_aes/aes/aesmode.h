@@ -1,7 +1,8 @@
 #ifndef AMD
 #define AMD
 
-#include "aes.h"
+//#include "aes.h"
+#include "aes_ni.h"
 #include <string.h>
 #include <string>
 #include <stdio.h>
@@ -13,14 +14,14 @@ initiv:最初初始向量
 class Aesmode
 {
 protected:
-  u8_t iv[16], initiv[16];
-  void getXor(u8_t *x, u8_t *mask);
+  __m128i iv, initiv;
 
 public:
   Aesmode(const u8_t *iv){
-    memcpy(this->initiv, iv, 16);
-    memcpy(this->iv, this->initiv, 16);
+    this->iv = _mm_loadu_si128((const __m128i*)iv);
+    this->initiv = _mm_loadu_si128((const __m128i*)iv);
   };
+  virtual ~Aesmode() {};
   /*
   runcry:加解密方法
   block:加密块
@@ -39,6 +40,7 @@ public:
   static std::string getName(u8_t type);
   void loadiv(const u8_t * iv){this->iv = iv;};
   Aesmode * createCryMaster(bool isenc, u8_t type);
+  Aesmode * createCryMaster(bool isenc, u8_t type, const u8_t * iv);
 };
 
 #endif

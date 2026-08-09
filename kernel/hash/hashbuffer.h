@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include <mutex>
 #include <functional>
+#include <string>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 class buffer64
 {
 public:
   int percentage = 0;
+  virtual ~buffer64() {};
   virtual u32_t read_buffer64(u8_t *block, const std::function<void(std::string, size_t)> &printload) = 0;
 };
 /*

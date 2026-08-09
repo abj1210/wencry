@@ -12,7 +12,6 @@ unsigned char str[] =
     "I'm a test msg. I'm a test msg. I'm a test msg. I'm a test msg.";
 char res[] = "932f13241d607db9e194a270d42aa03ffc8e35ff18aab86a97d679b134dd3c500"
              "08312aadaa1ec68f08b5d2177994d2c27a9db77f7252098e1dd01f8d3fba78e";
-
 TEST(TestCTR, testCTR1) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
