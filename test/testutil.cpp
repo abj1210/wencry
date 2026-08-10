@@ -31,7 +31,7 @@ FILE *genfile(const char *str)
   char name[64];
   make_tmp_name(name, sizeof(name), "gen");
   snprintf(prev_name, sizeof(prev_name), "%s", name);
-  FILE *fp = fopen(name, "w");
+  FILE *fp = fopen(name, "wb");
   fputs(str, fp);
   fclose(fp);
   fp = fopen(name, "rb");

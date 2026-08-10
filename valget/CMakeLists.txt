@@ -2,7 +2,7 @@ project(CMDvals)
 
 add_subdirectory(base64)
 
-add_library(${PROJECT_NAME} getval1.cpp getopts.cpp information.cpp)
+add_library(${PROJECT_NAME} getval1.cpp getopts.cpp information.cpp getopt_port.cpp)
 
 option(BUILD_OPT "Whether or not to build cmd option" ON)
 if (BUILD_OPT)

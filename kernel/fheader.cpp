@@ -8,6 +8,23 @@
 #include <functional>
 using namespace std;
 using namespace chrono;
+
+/*################################
+  模块概述:HMAC 计算、加密文件头、结果打印
+  加密文件(.wenc)布局:
+    偏移 0   8字节  魔数 0xA5C3A5C3A5C3A5C3
+    偏移 8   1字节  加密模式 ctype(0=ECB..4=OFB)
+    偏移 9   1字节  哈希模式 htype(0=sha1,1=md5,2=sha256)
+    偏移 10  38字节 HMAC区(加密后写入,长度取决于htype;offset47恒空闲,用于记录线程数num)
+    偏移 48  20*num字节 每线程IV
+    之后    密文(含PKCS7填充)
+  HMAC 结构(标准 RFC 2104):
+    HMAC = H( (K xor opad) || H( (K xor ipad) || 数据 ) ),其中 ipad=0x36,opad=0x5c。
+  本文件同时提供两套HMAC计算路径:
+    - getres/gethmac/cmphmac:基于 FILE* 回读文件计算(解密验证路径)。
+    - init_hash/feed_hash/final_hash:增量喂入(加密写线程融合计算,避免回读)。
+################################*/
+
 /*################################
   HMAC函数
 ################################*/
@@ -17,8 +34,6 @@ using namespace chrono;
 no_echo:是否隐藏输出
 */
 hmac::hmac() : res_printer(new NullResPrint), hmac_res(NULL), hashmaster(NULL), key1(NULL), h1(NULL), block_len(0), accum_len(0) {};
-
-u8_t hmac::get_length() { return length; };
 
 /*
 析构函数:清理增量HMAC状态
@@ -190,23 +205,6 @@ bool hmac::cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, siz
     hmac_res = NULL;
     return same;
 }
-/*
-writeFileHmac:写入HMAC值
-hashtype:哈希模式
-fp:文件指针
-hashMark:开始hash的地址
-writeMark:写入Hmac的地址
-fsize:文件大小
-*/
-void hmac::writeFileHmac(u8_t hashtype, FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize)
-{
-    fseek(fp, hashMark, SEEK_SET);
-    getres(hashtype, key, fp, fsize);
-    fseek(fp, writeMark, SEEK_SET);
-    fwrite(hmac_res, 1, length, fp);
-    delete[] hmac_res;
-}
-
 /*################################
   文件头辅助函数
 ################################*/
@@ -228,6 +226,7 @@ void FileHeader::getIV(const u8_t *r_buf, u8_t *iv)
 getIV:获取初始向量(从文件)
 fp:文件指针
 iv:初始向量数组
+注意:读取后文件指针停在 48+20*num=FILE_TEXT_MARK,解密时 prepare_AES 依赖此定位。
 */
 void FileHeader::getIV(FILE *fp, u8_t *iv)
 {
@@ -263,7 +262,10 @@ void FileHeader::checkType()
     fread(&htype, 1, 1, fp);
     u8_t fn = 0;
     fseek(fp, 47, SEEK_SET);
-    if (fread(&fn, 1, 1, fp) == 1 && fn != 0)
+    // 线程数必须落在 [1, THREAD_MAX] 内,否则回退为4。
+    // 不校验上限会让解密路径使用任意大的 num:getIV 读 20*num 字节越过 iv 缓冲、
+    // run_multicry 越界写 threads[THREAD_MAX] 数组,导致堆/栈破坏。
+    if (fread(&fn, 1, 1, fp) == 1 && fn != 0 && fn <= multicry_master::THREAD_MAX)
         num = fn;
     else
         num = 4;
@@ -281,9 +283,9 @@ bool FileHeader::checkMn()
     return (mn == Magic_Num);
 }
 /*
-checkHmac:获得HMAC
-len:hmac长度
-return:HMAC地址
+getHmac:获得HMAC
+len:hmac长度(应与htype对应:16/20/32)
+return:HMAC地址(不足len字节返回NULL)
 */
 u8_t *FileHeader::getHmac(u8_t len)
 {
@@ -299,7 +301,14 @@ u8_t *FileHeader::getHmac(u8_t len)
 ################################*/
 void AbsResultPrint::resetPercentage()
 {
-    acc_size = 0;
+    acc_size.store(0);
+}
+/*
+ResultPrint::resetPercentage:重置进度并结束当前进度行(\r换行)
+*/
+void ResultPrint::resetPercentage()
+{
+    AbsResultPrint::resetPercentage();
     std::cout << "\r\n";
 }
 /*
@@ -349,7 +358,7 @@ printenc: 打印加密结果
 void ResultPrint::printenc()
 {
     strlog("Result:", "Encryption is over!");
-    over = true;
+    over.store(true);
 }
 /*
 printres: 打印解密结果
@@ -370,14 +379,14 @@ void ResultPrint::printresv(int res)
         strlog(resstr, "Wrong magic number.");
     else
         strlog(resstr, "Unknown res number: " + std::to_string(res));
-    over = true;
+    over.store(true);
 }
 void ResultPrint::printresd(int res)
 {
     if (res <= 0)
     {
         strlog("Result:", "Decryption is over!");
-        over = true;
+        over.store(true);
     }
     else
         printresv(res);
@@ -407,8 +416,8 @@ percent:百分比
 */
 void ResultPrint::printpercentage(std::string name, size_t now_size, size_t total_size)
 {
-    acc_size += now_size;
-    this->total_size = total_size;
+    acc_size.fetch_add(now_size);
+    this->total_size.store(total_size);
 #ifndef GUI_ON
     std::cout << std::setw(5) << name << " loaded ";
     double percentage = 100 * ((double)acc_size / (double)total_size);

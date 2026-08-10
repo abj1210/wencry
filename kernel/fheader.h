@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <chrono>
+#include <atomic>
 
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
@@ -23,7 +24,7 @@ class FileHeader
   HashFactory hf;
 
 public:
-    FileHeader(FILE* fp, FILE* out, u8_t* key, u8_t num) : key(key), num(num), ctype(-1), htype(-1), fp(fp), out(out) { memset(hash, 0, sizeof(hash)); };
+   FileHeader(FILE* fp, FILE* out, u8_t* key, u8_t num) : key(key), num(num), ctype(-1), htype(-1), fp(fp), out(out) { memset(hash, 0, sizeof(hash)); };
   FileHeader(FILE *fp, FILE *out, u8_t *key, u8_t ctype, u8_t htype, u8_t num) : key(key), num(num), ctype(ctype), htype(htype), fp(fp), out(out) { memset(hash, 0, sizeof(hash)); };
   void getIV(const u8_t *r_buf, u8_t *iv);
   void getIV(FILE *fp, u8_t *iv);
@@ -53,8 +54,9 @@ struct Timer
 class AbsResultPrint
 {
 protected:
-  size_t acc_size, total_size;
-  bool over;
+  std::atomic<size_t> acc_size;
+  std::atomic<size_t> total_size;
+  std::atomic<bool> over;
 
 public:
   AbsResultPrint() : acc_size(0), total_size(1), over(false) {};
@@ -69,9 +71,21 @@ public:
   virtual void printctype(u8_t type) = 0;
   virtual void printhtype(u8_t type) = 0;
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
-  void resetPercentage();
-  int getPercentage() const { return 100 * (int)(((double)acc_size) / ((double)total_size)); };
-  bool isOver() const { return over; };
+  virtual void resetPercentage();
+  int getPercentage() const
+  {
+    size_t t = total_size.load();
+    size_t a = acc_size.load();
+    if (t == 0)
+      return 0;
+    int p = (int)(100 * ((double)a / (double)t));
+    if (p < 0)
+      p = 0;
+    if (p > 100)
+      p = 100;
+    return p;
+  };
+  bool isOver() const { return over.load(); };
 };
 
 class NullResPrint : public AbsResultPrint
@@ -82,15 +96,16 @@ public:
   virtual u8_t printinv(const u8_t ret) { return ret; };
   virtual Timer *createTimer(std::string) { return NULL; };
   virtual void printTimer(Timer *) {};
-  virtual void printenc() { over = true; };
-  virtual void printresd(int) { over = true; };
-  virtual void printresv(int) { over = true; };
+  virtual void printenc() { over.store(true); };
+  virtual void printresd(int) { over.store(true); };
+  virtual void printresv(int) { over.store(true); };
   virtual void printctype(u8_t) {};
   virtual void printhtype(u8_t) {};
+  virtual void resetPercentage() override { acc_size.store(0); };
   virtual void printpercentage(std::string, size_t now_size, size_t total_size)
   {
-    this->total_size = total_size;
-    this->acc_size += now_size;
+    this->total_size.store(total_size);
+    this->acc_size.fetch_add(now_size);
   };
 };
 
@@ -113,6 +128,7 @@ public:
   virtual void printresv(int res);
   virtual void printctype(u8_t type);
   virtual void printhtype(u8_t type);
+  virtual void resetPercentage() override;
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size);
 };
 
@@ -125,7 +141,6 @@ class hmac
   static const u8_t ipad = 0x36, opad = 0x5c;
   HashFactory hf;
   AbsResultPrint *res_printer;
-  HashFactory::HASH_TYPE type;
   u8_t *hmac_res, length;
   buffer64 *buf = NULL;
   void getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize);
@@ -144,8 +159,6 @@ public:
   void loadprinter(AbsResultPrint *res_printer) { this->res_printer = res_printer; };
   void gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
   bool cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
-  void writeFileHmac(u8_t hashtype, FILE *fp, u8_t *key, u8_t hashMark, u8_t writeMark, size_t fsize = 0);
-  u8_t get_length();
   /*
   增量HMAC(加密时融合计算,避免回读密文)
   init_hash:初始化,喂入ipad块与prefix(文件头IV区)

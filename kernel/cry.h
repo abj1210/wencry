@@ -97,11 +97,28 @@ class runcrypt
 
 public:
   runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings = default_settings, u8_t threads_num = THREAD_NUM);
-  ~runcrypt() { delete resultprint; };
+  ~runcrypt();
   bool execute_encrypt(size_t fsize, u8_t *r_buf = NULL);
   bool execute_decrypt(size_t fsize);
   bool execute_verify(size_t fsize);
   int get_percentage_gui();
 };
+
+/*
+分配/释放工厂:由内核库按自身 sizeof(runcrypt) 分配。
+GUI 等外部模块只持有 runcrypt* 指针,不直接 new/delete,
+避免头文件版本不一致导致的对象尺寸不匹配(越界写穿)。
+*/
+runcrypt *runcrypt_create(FILE *fin, FILE *out, u8_t *key, const Settings& settings);
+void runcrypt_destroy(runcrypt *r);
+
+/*
+wencry_check_header:校验 .wenc 文件头
+魔数、加密模式(ctype<=4)、哈希模式(htype<=2)、线程数(1..THREAD_MAX)。
+线程数字节为0表示旧格式文件(隐式4线程),视为合法。
+fp:文件指针(函数不改变其读写位置)
+return:0=合法,1=魔数错误,2=加密/哈希模式非法,3=线程数越界(>THREAD_MAX),4=文件过短
+*/
+int wencry_check_header(FILE *fp);
 
 #endif

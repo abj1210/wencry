@@ -74,7 +74,7 @@ int makeFullTest(const char *str, u8_t type) {
   make_tmp_name(fname, sizeof(fname), "ft");
   snprintf(fwenc, sizeof(fwenc), "%s.wenc", fname);
   snprintf(fout, sizeof(fout), "%s.out", fname);
-  FILE *fp = fopen(fname, "w");
+  FILE *fp = fopen(fname, "wb");
   fwrite(str, 1, strlen(str), fp);
   fclose(fp);
   char name[] = "./wencry";

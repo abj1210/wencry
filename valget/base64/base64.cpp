@@ -90,11 +90,10 @@ bool is_base64(unsigned char c) {
 }
 
 bool is_valid_b64(const u8_t* base64_in, u32_t len) {
-    int tail = 0;
     if (len % 4 != 0) return false;
-    else if ((len / 4) * 3 - 2 != 16) return false;
+    u32_t tail = 0;
 
-    // 2. 检查每个字符是否是合法的 Base64 字符或填充字符 '='
+    // 检查每个字符是否是合法的 Base64 字符或填充字符 '='
     for (u32_t i = 0; i < len; ++i) {
         if (base64_in[i] != '=' && !is_base64(base64_in[i]))
             return false;
@@ -106,6 +105,9 @@ bool is_valid_b64(const u8_t* base64_in, u32_t len) {
         else if (tail != 0)
             return false;
     }
-    return true;
+    // 必须能精确解码为 16 字节(即 22 个数据字符 + 2 个 '=')。
+    // 旧写法 (len/4)*3-2==16 对任何 24 字符输入恒成立,
+    // 会放行无填充的 24 字符串,使 base64_to_hex 解码出 18 字节并越界写坏 key 缓冲。
+    return (len / 4) * 3 - tail == 16;
 
 }

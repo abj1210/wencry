@@ -3,6 +3,21 @@
 #include <iostream>
 
 /*################################
+  模块概述:读线程--工作线程--写线程三级流水线
+  本文件实现文件加解密的多线程数据管道。对每个 chunk(一次装载,最大16MB):
+    EMPTY --(读线程 fread)--> LOADED --(工作线程就地AES)--> PROCESSED --(写线程 fwrite)--> EMPTY
+  线程划分:
+    - 读线程(main):按 chunk 序号 k=0,1,2,... 依次装载到 buf[k%N](N=缓冲数),背压等待该缓冲为 EMPTY。
+    - 工作线程 i:仅消费 buf[i],对其中每个16字节块执行 AES(其 Aesmode 维护独立的 IV 链)。
+    - 写线程:按 chunk 序号顺序导出(PROCESSED->EMPTY),保证输出顺序 == 文件顺序。
+  chunk k 固定由线程 k%N 处理,保证该线程 AES 的 IV 链连续(链式模式正确性)。
+  终止:读线程读到 EOF(FINAL/NODATA)时置 read_done 并记录 total_chunks;
+        写线程写完 total_chunks 个 chunk 后退出;工作线程在 read_done 后退出。
+  同步:单一 mtx + cv_empty/cv_loaded/cv_processed;fread/fwrite 在锁外执行以允许 I/O 重叠。
+  死锁安全:流水线为读->worker->写单向 DAG,各线程等待的是下游进展,无环。
+################################*/
+
+/*################################
   初始化
 ################################*/
 

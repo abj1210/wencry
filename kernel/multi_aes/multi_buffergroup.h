@@ -69,11 +69,6 @@ public:
   return:数据起始地址
   */
   u8_t *get_data() { return &b[0][0]; };
-  /*
-  get_size:获取缓冲区装载大小
-  return:返回的装载大小
-  */
-  u32_t get_size() { return (total << 4) | tail; };
   loadstate_t load_buffer(FILE *fin, bool ispadding);
   /*
   export_buffer:将缓冲区内容保存到文件,返回实际写出的字节数

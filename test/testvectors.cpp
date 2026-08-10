@@ -363,6 +363,29 @@ TEST(Testvectors, hashfile_refill) {
   remove("tb_refill.bin");
 }
 
+/*################################
+  getPercentage 逻辑回归测试
+  修复前:100*(int)(a/t) 在进度<100%时恒返回0
+################################*/
+
+TEST(Testvectors, getPercentage_logic) {
+  ResultPrint rp;
+  rp.printpercentage("t", 50, 100);
+  EXPECT_EQ(50, rp.getPercentage());
+  rp.printpercentage("t", 50, 100);
+  EXPECT_EQ(100, rp.getPercentage());
+  rp.printpercentage("t", 10, 100);  // 110% -> 钳制
+  EXPECT_EQ(100, rp.getPercentage());
+  rp.resetPercentage();
+  EXPECT_EQ(0, rp.getPercentage());
+
+  NullResPrint np;
+  np.printpercentage("t", 25, 100);
+  EXPECT_EQ(25, np.getPercentage());
+  np.resetPercentage();
+  EXPECT_EQ(0, np.getPercentage());
+}
+
 int main(int argc, char **argv) {
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();

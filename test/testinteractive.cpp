@@ -49,7 +49,7 @@ return:进程退出码(-1 表示异常)
 static int run_bin(const char *script, const std::string &logfile) {
   char scriptfile[64];
   make_tmp_name(scriptfile, sizeof scriptfile, "script");
-  FILE *fp = fopen(scriptfile, "w");
+  FILE *fp = fopen(scriptfile, "wb");
   if (fp == NULL)
     return -1;
   fputs(script, fp);

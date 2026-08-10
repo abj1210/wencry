@@ -74,7 +74,7 @@
         "codecvt": "cpp",
         "iomanip": "cpp"
     },
-    "cmake.sourceDirectory": "/mnt/c/code/wencry",
+    "cmake.sourceDirectory": "/mnt/d/code/wencry",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.errorSquiggles": "enabled"
 }

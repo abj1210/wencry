@@ -1,5 +1,12 @@
 #include "hashbuffer.h"
 #include <string.h>
+
+/*################################
+  filebuffer64:为 Hashmaster::getFileHash 提供文件数据块流。
+  构造函数一次性装载 32MB,并在构造时可拼接一个64字节"额外块"(HMAC的ipad块),
+  使其先于文件数据进入哈希流。read_buffer64 每次返回一个64字节块,缓冲耗尽自动续读。
+################################*/
+
 /*
 构造函数:加载拼接的数据
 block:拼接块

@@ -1,11 +1,11 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2024.12.12 (最后修改)  
-版本：v4.0.0
+日期：2026.8.10 (最后修改)  
+版本：v4.1.0
 
 **默认4+2线程,CBC加密模式,SHA1哈希**  
-**处理速度可达50MB/s以上**  
+**Windows原生处理速度可达1000MB/s以上**  
 **内存占用小于90MB**   
 
 ## 加密原理
@@ -25,10 +25,12 @@
 
 **加密文件结构**  
 加密后的文件带有后缀.wenc,其结构如下:
-- 0B-7B:魔数 
-- 8B-10B:模式 
-- 10B-47B:HMAC值        
-- 48B-文件结尾:IV和加密后的文件数据
+- 偏移 0   8字节  魔数 0xA5C3A5C3A5C3A5C3
+- 偏移 8   1字节  加密模式 ctype(0=ECB..4=OFB)
+- 偏移 9   1字节  哈希模式 htype(0=sha1,1=md5,2=sha256)
+- 偏移 10  38字节 HMAC区(加密后写入,长度取决于htype;offset47恒空闲,用于记录线程数num)
+- 偏移 48  20*num字节 每线程IV
+- 之后    密文(含PKCS7填充)
 
 ## 文件结构
 
@@ -100,6 +102,36 @@
 **测试**
 在项目编译后使用`ctest`命令进行测试.  
 (若想关闭测试则需在根目录`CMakeLists.txt`中关闭`BUILD_TEST`选项.)  
+
+### Windows 环境构建
+
+项目支持在原生 Windows(MSVC/Visual Studio Build Tools)下编译运行,无需WSL:
+
+1. 安装 [Visual Studio Build Tools](https://visualstudio.microsoft.com/downloads/) 或 Visual Studio,勾选"C++ 生成工具"(含 MSVC 编译器、CMake、Ninja)。
+2. 在"开发人员 PowerShell"(Developer PowerShell)中执行:
+   ```bat
+   cmake -S . -B build\win -G Ninja -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=OFF
+   cmake --build build\win
+   ```
+   (测试需要 GTest,Windows 下未配置时可关闭 `BUILD_TEST`;也可用 vcpkg/`-DBUILD_TEST=ON` + FetchContent 方式引入。)
+3. 生成的 `build\win\Wencry.exe` 直接运行:
+   ```bat
+   Wencry.exe -e -i in.txt --cmode 1 -o in.txt.wenc
+   Wencry.exe -d -i in.txt.wenc -o out.txt -k 密钥
+   ```
+
+Windows 兼容说明:
+- 命令行参数解析在 Windows 下使用自带的 `valget/getopt_port.cpp`(POSIX `getopt_long` 移植),Linux 仍用系统 getopt。
+- AES-NI / SHA-NI 内联汇编式 intrinsics 在 MSVC x64 上直接可用,无需额外 `/arch` 开关。
+- 源码为 UTF-8(含中文注释),构建时已加 `/utf-8`。
+
+**生成 Visual Studio 解决方案**:
+在"开发人员 PowerShell"中执行(需使用 VS 自带的 CMake 或 CMake ≥4.2,以识别 VS 2026 生成器):
+   ```bat
+   cmake -G "Visual Studio 18 2026" -A x64 -S . -B build_vs -DBUILD_TEST=OFF
+   cmake --build build_vs --config Release
+   ```
+生成 `build\vs\Wencry.slnx`(VS 2026 新解决方案格式,含 Wencry/Wenkernel/Multiaes/Hash/Aes/Base64/CMDvals 各工程),可直接用 Visual Studio 打开编译、调试。若需传统 `.sln`,可改用 `-G "Visual Studio 17 2022"`。
 
 **以下操作均在./build目录下进行**  
 
@@ -213,3 +245,6 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.0.1 修复:修复SHA1/MD5/SHA256在消息末尾块为56-63字节时长度字段被填充块污染导致摘要错误的bug;为Aesmode/Hashmaster/buffer64/AbsResultPrint补充虚析构函数;修复测试比较函数对二进制数据的strcmp误判;修复hmac::getres中逗号运算符导致的h1/h2/hashmaster内存泄漏;修复runcrypt构造函数在settings初始化前读取其成员的问题;清除全部编译警告;新增NIST/标准向量测试、边界尺寸往返测试、线程数变化测试、失败路径测试、CLI错误路径测试、交互式E2E测试.*
 *V4.0.2 新增:文件头offset 47记录加密线程数(自描述,旧格式回退4线程,不同线程数构建可互相解密);多线程改为"读线程--工作线程--写线程"三级流水线,读写I/O可重叠;新增跨线程格式兼容测试.*
 *V4.0.3 优化:加密时HMAC改为写线程导出密文同步增量计算(init_hash/feed_hash/final_hash),消除加密后回读密文的一遍I/O,加密由三遍I/O降为两遍.*
+*V4.0.4 优化:SHA1/SHA256改用SHA-NI硬件指令(sha_ni.cpp, 移植自Intel ipsec-mb参考实现),软件SHA1 ~210MB/s→~1.8GB/s、SHA256 ~130MB/s→~1.6GB/s;native文件系统加密吞吐由~100MB/s提升至~155MB/s.*
+*V4.0.5 新增:支持原生Windows(MSVC)构建运行——内置POSIX getopt_long移植(getopt_port),CMake区分MSVC/GCC编译选项(MSVC加/utf-8),源码/测试文件二进制模式与filesystem跨平台修正.*
+*V4.1.0 优化:支持新优化后的WCGP(即WindowsGUI)v1.0,修改了文件头验证逻辑以增强健壮性*

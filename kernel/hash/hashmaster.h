@@ -4,6 +4,18 @@
 #include "hashbuffer.h"
 #include <map>
 
+/*################################
+  模块概述:哈希算法框架(抽象基类 + 三种实现 + 工厂)
+  Hashmaster 定义统一接口:
+    - getFileHash(buffer64*, ...)   : 从缓冲逐64字节块哈希文件(验证路径)。
+    - getStringHash(str, len, ...)  : 哈希内存字符串。
+    - reset_hash/hash_block/hash_final/get_result : 增量哈希(HMAC融合路径)。
+  派生类 sha1hash/md5hash/sha256hash 实现各自的轮函数;
+  硬件加速子类 sha1ni/sha256ni 继承自软件类、仅重写整块哈希(SHA-NI指令)。
+  工厂 HashFactory 按 htype 返回对应实例。
+  长度字段:各实现按块大小64、末尾填充为 0x80+长度(位),与标准一致。
+################################*/
+
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
@@ -55,6 +67,7 @@ public:
 
 class sha1hash : public Hashmaster
 {
+protected:
   u32_t h[5];
   u32_t w[80];
   union
@@ -104,6 +117,7 @@ public:
 
 class sha256hash : public Hashmaster
 {
+protected:
   static const u32_t k[64];
   u32_t h[8];
   u32_t w[64];

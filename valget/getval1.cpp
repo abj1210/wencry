@@ -6,7 +6,6 @@
 #include <filesystem>
 #include <string.h>
 #include <time.h>
-#include <sys/stat.h>
 void strlog(std::string s1, std::string s2, char fill)
 {
   std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
@@ -38,9 +37,14 @@ static std::string getInputFilep(vpak_t *pak)
   std::string path(fn);
   size_t pos = path.find_last_of("/\\");
   std::string filename = (pos == std::string::npos) ? path : path.substr(pos + 1);
-  struct stat buf;
-  stat(fn, &buf);
-  size = buf.st_size;
+  try
+  {
+    size = (size_t)std::filesystem::file_size(path);
+  }
+  catch (std::filesystem::filesystem_error &e)
+  {
+    size = 0;
+  }
   strlog(std::string(filename.c_str()) + " file size: ", std::to_string(((double)size) / ((double)(1024 * 1024))) + "MB");
   pak->fp = fp;
   pak->size = size;

@@ -6,6 +6,16 @@ using namespace std;
 using namespace chrono;
 
 /*################################
+  模块概述:加解密总流程(对外接口层)
+  runcrypt 类编排一次完整的文件加/解密:
+    - 加密:生成IV并写文件头 -> 多线程AES流水线(写线程同时增量计算HMAC) -> 回填HMAC。
+    - 解密:先验证(魔数/模式/HMAC,失败则不写任何输出) -> 按文件头记录的线程数解密 -> 输出。
+    - 验证:仅做魔数/模式/HMAC检查。
+  依赖:cry.h 中的 Settings(runcrypt)/Aesmode/AesFactory/multicry_master/buffergroup/hmac/FileHeader。
+  TIMER_* 宏用于分段计时输出。
+################################*/
+
+/*################################
   宏定义和全局变量
 ################################*/
 #define TIMER_START(timer) auto t_##timer = resultprint->createTimer(#timer);
@@ -82,8 +92,8 @@ return:加密器地址组
 */
 Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, bool cmode)
 {
-  if (!cmode)
-    fseek(fin, FILE_TEXT_MARK(threads_num), SEEK_SET);
+  // 解密时输入指针已由 prepare_IV()->getIV(FILE*) 定位到 FILE_TEXT_MARK,
+  // 此处无需再 fseek(见 execute_decrypt 调用顺序)。
   buffergroup *iobuffer = buffergroup::get_instance();
   iobuffer->set_buffergroup(threads_num, fin, out, cmode);
   Aesmode **mode = new Aesmode *[threads_num];
@@ -120,12 +130,33 @@ return:若为0则检查通过,否则检查不通过
 u8_t runcrypt::verify(size_t fsize)
 {
   resultprint->printtask("Verifying file");
-  if (!header.checkMn())
-    return 4;
-  header.checkType();
+  // 结构校验(魔数/模式/线程数/长度)复用 wencry_check_header
+  int hc = wencry_check_header(fin);
+  if (hc == 1)
+    return 4; // 魔数错误
+  if (hc == 2)
+    return 3; // 加密/哈希模式非法
+  if (hc == 4)
+    return 1; // 文件过短
+  // hc==0 合法; hc==3 线程数越界,交由 checkType 回退处理
+  header.checkType(); // 读取 ctype/htype/线程数(含旧格式回退4)
   resultprint->printctype(header.getctype());
   resultprint->printhtype(header.gethtype());
-  u8_t *hash = header.getHmac(64);
+  // HMAC 长度随 htype 为 16/20/32,只读取实际长度(避免读入填充/IV区)。
+  u8_t hlen = 32;
+  switch (header.gethtype())
+  {
+  case 0:
+    hlen = 20;
+    break;
+  case 1:
+    hlen = 16;
+    break;
+  default:
+    hlen = 32;
+    break;
+  }
+  u8_t *hash = header.getHmac(hlen);
   if (hash == NULL)
     return 1;
   fseek(fin, FILE_IV_MARK, SEEK_SET);
@@ -146,7 +177,7 @@ key:密钥
 settings:加解密参数
 threads_num:线程数
 */
-runcrypt::runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
+runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
     : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num), mode(false),
       header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
       aesfactory(key)
@@ -157,6 +188,15 @@ runcrypt::runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings,
     resultprint = new ResultPrint;
   hmachandle.loadprinter(resultprint);
 };
+/*
+析构函数
+*/
+runcrypt::~runcrypt() {
+	if (resultprint != nullptr) {
+		delete resultprint;
+		resultprint = nullptr;
+	}
+}
 /*
 execute_encrypt:加密执行过程
 fsize:文件大小
@@ -216,6 +256,9 @@ bool runcrypt::execute_decrypt(size_t fsize)
     // 准备初始化
     resultprint->printtask("Preparing decrypt");
     threads_num = header.get_num();
+    // 纵深防御:线程数必须落在 [1, THREAD_MAX],防止越界写 threads[] / IV 缓冲
+    if (threads_num == 0 || threads_num > multicry_master::THREAD_MAX)
+      threads_num = THREAD_NUM;
     u8_t *iv = prepare_IV();
     Aesmode **mode = prepare_AES(header.getctype(), iv, false);
     // 运行解密
@@ -267,3 +310,58 @@ int runcrypt::get_percentage_gui()
     return -1;
   return resultprint->getPercentage();
 };
+
+/*################################
+  分配/释放工厂
+################################*/
+/*
+runcrypt_create:按库自身 sizeof(runcrypt) 分配并构造
+fin:输入文件
+out:输出文件
+key:密钥
+return:新分配的 runcrypt 对象
+*/
+runcrypt *runcrypt_create(FILE *fin, FILE *out, u8_t *key, const Settings& settings)
+{
+  return new runcrypt(fin, out, key, settings);
+}
+/*
+runcrypt_destroy:释放 runcrypt 对象
+r:待释放对象
+*/
+void runcrypt_destroy(runcrypt *r)
+{
+  delete r;
+}
+
+/*################################
+  文件头校验
+################################*/
+/*
+wencry_check_header:校验 .wenc 文件头
+魔数、加密模式(ctype<=4)、哈希模式(htype<=2)、线程数(1..THREAD_MAX)。
+线程数字节为0表示旧格式文件(隐式4线程),视为合法。
+fp:文件指针(函数不改变其读写位置)
+return:0=合法,1=魔数错误,2=加密/哈希模式非法,3=线程数越界(>THREAD_MAX),4=文件过短
+*/
+int wencry_check_header(FILE *fp)
+{
+  if (fp == NULL)
+    return 1;
+  long pos = ftell(fp);
+  rewind(fp);
+  u8_t hdr[48];
+  size_t rd = fread(hdr, 1, sizeof(hdr), fp);
+  fseek(fp, pos, SEEK_SET);
+  if (rd < sizeof(hdr))
+    return 4;
+  // Magic_Num = 0xA5C3A5C3A5C3A5C3,小端写入磁盘的字节序为 C3 A5 C3 A5 C3 A5 C3 A5
+  static const u8_t magic[8] = {0xC3, 0xA5, 0xC3, 0xA5, 0xC3, 0xA5, 0xC3, 0xA5};
+  if (memcmp(hdr, magic, 8) != 0)
+    return 1;
+  if (hdr[8] > 4 || hdr[9] > 2)
+    return 2;
+  if (hdr[47] > multicry_master::THREAD_MAX)
+    return 3;
+  return 0;
+}

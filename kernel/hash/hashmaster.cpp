@@ -1,4 +1,5 @@
 #include "hashmaster.h"
+#include "sha_ni.h"
 #include <string.h>
 /*################################
   哈希算法框架函数
@@ -101,13 +102,13 @@ Hashmaster *HashFactory::getHasher(HashFactory::HASH_TYPE type)
   switch (type)
   {
   case HASH_TYPE::SHA1:
-    return new sha1hash();
+    return new sha1ni();
     break;
   case HASH_TYPE::MD5:
     return new md5hash();
     break;
   case HASH_TYPE::SHA256:
-    return new sha256hash();
+    return new sha256ni();
     break;
   default:
     return NULL;

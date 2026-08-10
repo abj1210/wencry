@@ -8,8 +8,12 @@
 
 #ifdef OPT_ON
 
+#ifdef _WIN32
+#include "getopt_port.h"
+#else
 #include <unistd.h>
 #include <getopt.h>
+#endif
 
 /*################################
   全局变量
