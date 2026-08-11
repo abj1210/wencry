@@ -4,7 +4,7 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-project(Wencry VERSION 4.1.0 LANGUAGES CXX)
+project(Wencry VERSION 4.2.0 LANGUAGES CXX)
 
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
@@ -12,6 +12,12 @@ set(build_time    ${COMPILE_TIME})
 # Debug 配置下定义 DEBUG_ON(version()/verstring() 会在版本串后附加 " Debug" 后缀)。
 # 用生成器表达式兼容单配置(make/ninja,依据 CMAKE_BUILD_TYPE)与多配置(VS)生成器。
 add_compile_definitions($<$<CONFIG:Debug>:DEBUG_ON>)
+
+# 线程事件日志(读/写/工作线程时间线写入 threads.csv),默认关闭。
+option(PROFILE_THREADS "Enable per-thread event logging for pipeline analysis" OFF)
+if (PROFILE_THREADS)
+    add_compile_definitions(PROFILE_THREADS)
+endif ()
 
 IF(MSVC)
     message(STATUS "building for: MSVC")
@@ -50,6 +56,8 @@ configure_file(
 
 add_subdirectory(valget)
 
+add_subdirectory(valhelper)
+
 add_subdirectory(kernel)
 
 add_executable(${PROJECT_NAME}  main.cpp)
@@ -59,6 +67,13 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Wenkernel)
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
                            ${PROJECT_SOURCE_DIR}/kernel
+                           )
+
+target_link_libraries(${PROJECT_NAME} PUBLIC Valhelper)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/valhelper
                            )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC CMDvals)

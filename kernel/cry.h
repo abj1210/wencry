@@ -98,9 +98,9 @@ class runcrypt
 public:
   runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings = default_settings, u8_t threads_num = THREAD_NUM);
   ~runcrypt();
-  bool execute_encrypt(size_t fsize, u8_t *r_buf = NULL);
-  bool execute_decrypt(size_t fsize);
-  bool execute_verify(size_t fsize);
+  void execute_encrypt(size_t fsize, u8_t *r_buf = NULL);
+  unsigned short execute_decrypt(size_t fsize);
+  unsigned short execute_verify(size_t fsize);
   int get_percentage_gui();
 };
 

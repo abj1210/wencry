@@ -1,14 +1,17 @@
-#include "getval.h"
+#include "valhelper.h"
 #include "config.h"
-#include <iostream>
-#include <vector>
-/*################################
-  提示信息
-################################*/
-static std::vector<std::string>
-    ctype = {"ECB", "CBC", "CTR", "CFB", "OFB"},
-    htype = {"sha1", "md5", "sha256"};
-static std::string description = "命令行参数模式的介绍如下\n\n"
+
+
+/*
+构造函数:初始化模式名称表与帮助文本
+ctype:五种AES加密模式名称
+htype:三种哈希模式名称
+*/
+WencryInformation::WencryInformation():
+  ctype({"ECB", "CBC", "CTR", "CFB", "OFB"}),
+  htype({"sha1", "md5", "sha256"})
+{
+  description = "命令行参数模式的介绍如下\n\n"
                                  "### 选择模式\n\n"
                                  "- `-e`/`--encode` 为加密模式\n"
                                  "- `-d`/`--decode` 为解密模式\n"
@@ -25,10 +28,14 @@ static std::string description = "命令行参数模式的介绍如下\n\n"
                                  "### 示例\n\n"
                                  "- 加密: ./Wencry -e -i ../a.mp4 --cmode 2 -o ../a.mp4.wenc\n"
                                  "- 解密: ./Wencry -d -i ../a.mp4.wenc --cmode 2 -o ../aa.mp4 -k Z8Zpc1HSuwpzbqr8vvjRg==\n";
-/*################################
-  信息获取函数
-################################*/
-std::string get_typelist(std::vector<std::string> list)
+
+}
+/*
+get_typelist:将名称表格式化为"编号:名称, "形式的字符串
+list:名称表
+return:格式化后的类型列表
+*/
+std::string WencryInformation::get_typelist(std::vector<std::string> list)
 {
   std::string res = "";
   int cnt = 0;
@@ -37,61 +44,101 @@ std::string get_typelist(std::vector<std::string> list)
   res.erase(res.end() - 2);
   return res;
 }
-std::string get_ctypelist()
+/*
+get_ctypelist:获取加密模式列表
+return:加密模式列表字符串
+*/
+std::string WencryInformation::get_ctypelist()
 {
   return get_typelist(ctype);
 }
-std::string get_htypelist()
+/*
+get_htypelist:获取哈希模式列表
+return:哈希模式列表字符串
+*/
+std::string WencryInformation::get_htypelist()
 {
   return get_typelist(htype);
 }
-bool check_ctype(int ctype_num)
+/*
+check_ctype:校验加密模式编号是否合法
+ctype_num:待校验的编号
+return:合法返回true,否则false
+*/
+bool WencryInformation::check_ctype(int ctype_num)
 {
   return ctype_num >= 0 && (size_t)ctype_num < ctype.size();
 }
-bool check_htype(int htype_num)
+/*
+check_htype:校验哈希模式编号是否合法
+htype_num:待校验的编号
+return:合法返回true,否则false
+*/
+bool WencryInformation::check_htype(int htype_num)
 {
   return htype_num >= 0 && (size_t)htype_num < htype.size();
 }
-std::string get_cname(int ctype_num)
+/*
+get_cname:获取加密模式名称
+ctype_num:模式编号
+return:模式名称(非法编号返回"unknown")
+*/
+std::string WencryInformation::get_cname(int ctype_num)
 {
   if (check_ctype(ctype_num))
     return ctype[ctype_num];
   else
     return "unknown";
 }
-std::string get_hname(int htype_num)
+/*
+get_hname:获取哈希模式名称
+htype_num:模式编号
+return:模式名称(非法编号返回"unknown")
+*/
+std::string WencryInformation::get_hname(int htype_num)
 {
   if (check_htype(htype_num))
     return htype[htype_num];
   else
     return "unknown";
 }
-
 /*
-version:获取版本信息
+get_cname_num:获取加密模式数量
+return:加密模式数量
 */
-void version()
-{
+int WencryInformation::get_cname_num(){
+  return ctype.size();
+}
+/*
+get_hname_num:获取哈希模式数量
+return:哈希模式数量
+*/
+int WencryInformation::get_hname_num(){
+  return htype.size();
+}
+/*
+get_version:获取内核版本号(Debug编译附加" Debug"后缀)
+return:版本号字符串
+*/
+std::string WencryInformation::get_version(){
   std::string ver = PROJECT_VERSION;
 #ifdef DEBUG_ON
   ver += " Debug";
 #endif
-  strlog("Wencry version: ", ver);
-  strlog("Build time: ", V_BUILD_TIME);
-}
-std::string verstring()
-{
-  std::string ver = PROJECT_VERSION;
-#ifdef DEBUG_ON
-  ver += " Debug";
-#endif
-  return "Wencry\r\nKernel version: " + ver + "\r\nBuild time: " + V_BUILD_TIME;
+  return ver;
 }
 /*
-help:获取帮助信息
+get_buildtime:获取编译时间
+return:编译时间字符串
 */
-void help()
+std::string WencryInformation::get_buildtime(){
+  return V_BUILD_TIME;
+}
+/*
+get_help:获取命令行帮助文本
+return:帮助文本字符串
+*/
+std::string WencryInformation::get_help()
 {
-  std::cout << description;
+  return description;
 }

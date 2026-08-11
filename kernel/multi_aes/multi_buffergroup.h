@@ -6,9 +6,66 @@
 #include <string.h>
 #include <string>
 #include <functional>
+#include <thread>
+#include <chrono>
+#include <cstdio>
 typedef unsigned char u8_t;
 typedef unsigned int u32_t;
 typedef unsigned long long u64_t;
+
+/*################################
+  线程事件日志(PROFILE_THREADS 开关)
+  记录读/工作/写线程的关键事件及时间戳到 threads.csv,
+  用于离线分析流水线各线程的活跃/阻塞情况。
+  事件:LOAD_BEGIN/LOAD_END(读线程),AES_BEGIN/AES_END(工作线程),WRITE_BEGIN/WRITE_END(写线程)
+################################*/
+#ifdef PROFILE_THREADS
+extern thread_local const char *g_thread_role;
+class ThreadProfiler
+{
+  FILE *out;
+  std::mutex mtx;
+  u64_t t0;
+
+  static u64_t now_us()
+  {
+    return (u64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+               std::chrono::steady_clock::now().time_since_epoch())
+        .count();
+  }
+
+public:
+  static ThreadProfiler &inst()
+  {
+    static ThreadProfiler p;
+    return p;
+  }
+  ThreadProfiler() : out(fopen("threads.csv", "w")), t0(now_us())
+  {
+    if (out)
+      fprintf(out, "role,event,param,us\n");
+  }
+  ~ThreadProfiler()
+  {
+    if (out)
+      fclose(out);
+  }
+  void log(const char *ev, u32_t param)
+  {
+    std::lock_guard<std::mutex> lk(mtx);
+    if (out)
+      fprintf(out, "%s,%s,%u,%llu\n", g_thread_role ? g_thread_role : "?", ev,
+              (unsigned)param, (unsigned long long)(now_us() - t0));
+  }
+};
+#define PROF_LOG(ev, param) ThreadProfiler::inst().log(ev, (u32_t)(param))
+#else
+#define PROF_LOG(ev, param)
+#endif
+
+/*################################
+  流水线缓冲组
+################################*/
 
 /*
 loadstate_t:加载状态

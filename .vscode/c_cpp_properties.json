@@ -1,0 +1,65 @@
+{
+    "configurations": [
+        {
+            "name": "Win64-MSVC",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools/VC/Tools/MSVC/14.50.35717/bin/Hostx64/x64/cl.exe",
+            "intelliSenseMode": "windows-msvc-x64",
+            "cppStandard": "c++17",
+            "cStandard": "c17",
+            "includePath": [
+                "${workspaceFolder}/kernel",
+                "${workspaceFolder}/kernel/hash",
+                "${workspaceFolder}/kernel/multi_aes",
+                "${workspaceFolder}/kernel/multi_aes/aes",
+                "${workspaceFolder}/valget",
+                "${workspaceFolder}/valget/base64",
+                "${workspaceFolder}/build/vscode/generated",
+                "${workspaceFolder}/build/generated"
+            ],
+            "defines": [
+                "_DEBUG",
+                "_CRT_SECURE_NO_WARNINGS",
+                "WIN32",
+                "_WINDOWS",
+                "__SSE2__",
+                "__AES__",
+                "__SHA__"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        },
+        {
+            "name": "Linux-GCC",
+            "compilerPath": "/usr/bin/g++",
+            "intelliSenseMode": "linux-gcc-x64",
+            "cppStandard": "c++17",
+            "cStandard": "c17",
+            "includePath": [
+                "${workspaceFolder}/kernel",
+                "${workspaceFolder}/kernel/hash",
+                "${workspaceFolder}/kernel/multi_aes",
+                "${workspaceFolder}/kernel/multi_aes/aes",
+                "${workspaceFolder}/valget",
+                "${workspaceFolder}/valget/base64",
+                "${workspaceFolder}/build/generated"
+            ],
+            "defines": [
+                "_DEBUG",
+                "__SSE2__",
+                "__AES__",
+                "__SHA__"
+            ],
+            "browse": {
+                "path": [
+                    "${workspaceFolder}"
+                ],
+                "limitSymbolsToIncludedHeaders": true
+            }
+        }
+    ],
+    "version": 4
+}

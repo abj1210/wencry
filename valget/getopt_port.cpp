@@ -19,6 +19,11 @@ static int last_nonopt = 1;
 /* points at the next option character within the current argv element */
 static char *place = NULL;
 
+/*
+exchange:将argv中前部非选项元素与选项元素交换位置
+(实现选项重排,使非选项参数可出现在选项之后)
+argv:命令行参数数组
+*/
 static void
 exchange(char **argv)
 {
@@ -59,6 +64,12 @@ exchange(char **argv)
   last_nonopt = optind;
 }
 
+/*
+print_err:打印getopt错误信息(受opterr开关控制)
+argv0:程序名
+msg:错误描述
+arg:相关的选项参数(可为NULL)
+*/
 static void
 print_err(const char *argv0, const char *msg, const char *arg)
 {

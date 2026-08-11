@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2026.8.10 (最后修改)  
-版本：v4.1.0
+日期：2026.8.11 (最后修改)  
+版本：v4.2.0
 
 **默认4+2线程,CBC加密模式,SHA1哈希**  
 **Windows原生处理速度可达1000MB/s以上**  
@@ -35,43 +35,34 @@
 ## 文件结构
 
 - **wencry:项目文件夹**  
-  - main.cpp:主函数   
-  - config.h.in:配置文件  
-  - **valget:获取参数包相关文件夹**
-    - getval.h:获取参数包的头文件  
-    - getopts.cpp:负责获取控制台操作参数
-    - getval1.cpp:负责获取用户输入操作参数
-    - information.cpp:负责打印版本信息和帮助信息
-    - **base64:base64转换文件夹**
-      - base64.h:十六进制序列与base64编码的相互转换
-      - base64.cpp:负责进行base64的编码和解码   
-  - **kernel:加解密核心文件夹**  
-    - cry.h:加解密流程相关的头文件  
-    - cry.cpp:负责整体加解密流程  
-    - fheader.cpp:负责文件头的生成和验证流程
-    - **multi_aes:多线程进行aes加解密函数的文件夹**
-      - multicry.h:多线程进行aes加解密的相关头文件
-      - multicry.cpp:多线程进行aes加解密的函数实现
-      - multi_buffergroup.h:多线程缓冲区组的相关头文件 
-      - multi_buffergroup.cpp:多线程缓冲区组的实现
-      - **aesmode:应用多种aes加密模式加密器的文件夹**
-        - aesmode.h:不同模式的aes加密器的相关头文件
-        - aesmode.cpp:不同模式的aes加密器的实现
-        - aes.h:AES加解密相关的头文件  
-        - aes.cpp:负责AES加解密的各流程  
-        - tab.h:加解密所需的数表
+  - main.cpp:程序入口(交互式/命令行两种模式)
+  - config.h.in:编译配置模板(生成config.h)
+  - **valget:命令行参数解析文件夹**
+    - getval.h:参数获取接口声明
+    - getopts.cpp:命令行选项解析(get_v_opt)
+    - getval1.cpp:交互式用户输入解析(get_v_mod1)
+    - getopt_port.cpp/h:POSIX getopt_long 移植(Windows MSVC 使用)
+  - **valhelper:参数包与辅助工具文件夹**
+    - valhelper.h/cpp:vpak_t参数包、base64密钥校验、随机密钥、模式映射
+    - information.cpp:版本/帮助信息与模式名查询(WencryInformation)
+    - base64.h/cpp:base64编码/解码与合法性校验
+  - **kernel:加解密核心文件夹**
+    - cry.h/cry.cpp:整体加解密流程接口(runcrypt/execute_*)
+    - fheader.h/fheader.cpp:加密文件头生成/验证、HMAC计算、结果打印
+    - **multi_aes:多线程AES加解密文件夹**
+      - multicry.h/cpp:多线程调度器(multicry_master)
+      - multi_buffergroup.h/cpp:读--工作--写三级流水线缓冲组
+      - **aes:AES加解密实现文件夹**
+        - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
+        - aes_ni.h/cpp:基于AES-NI指令的AES-128密钥扩展与单块变换
     - **hash:哈希函数文件夹**
-      - sha1.cpp:负责产生sha1哈希的流程  
-      - md5.cpp:负责产生md5哈希的流程 
-      - hashmaster.h:产生不同类型哈希的头文件
-      - hashmaster.cpp:产生不同类型哈希类的实现  
-      - hashbuffer.h:哈希输入缓冲区头文件  
-      - hashbuffer.cpp:哈希输入缓冲区的实现
+      - hashmaster.h/cpp:哈希抽象基类/工厂与文件、字符串哈希
+      - hashbuffer.h/cpp:64字节块哈希输入缓冲(filebuffer64)
+      - sha1.cpp、md5.cpp、sha256.cpp:软件实现
+      - sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256
   - **test:测试文件夹**
-    - testutil.h:基础组件测试相关函数的头文件
-    - testutil.cpp:基础组件测试相关函数的实现
-    - test.h:测试相关函数的头文件
-    - test.cpp:测试相关函数的实现
+    - testutil.h/cpp:测试工具(临时文件名/模式文件/hex解析)
+    - test.h/cpp:复用runcrypt的往返与速度测试函数(exec/cmp_file/makeFullTest等)
     - testutest.cpp:testutil函数测试
     - testsha1.cpp:sha1哈希测试
     - testaes.cpp:单块aes测试
@@ -88,7 +79,7 @@
     - testbig.cpp:大文件加解密测试
     - testspeed.cpp:文件加密速度测试(含吞吐量断言)
     - testvectors.cpp:NIST/标准向量测试(AES各模式、FIPS-197、哈希填充边界、HMAC参考向量、CTR进位、哈希缓冲区重载)
-    - testboundary.cpp:边界尺寸往返、线程数变化、文件头布局、失败路径、CLI参数错误路径测试
+    - testboundary.cpp:边界尺寸往返、线程数变化、文件头布局、失败路径、解密/验证返回值与异常、CLI错误路径测试
     - testinteractive.cpp:交互式模式子进程E2E测试(加密/解密/验证/错误模式/密钥校验重试/随机密钥)
 
 具体函数和结构体作用与解释参阅源代码注释.  
@@ -248,3 +239,6 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.0.4 优化:SHA1/SHA256改用SHA-NI硬件指令(sha_ni.cpp, 移植自Intel ipsec-mb参考实现),软件SHA1 ~210MB/s→~1.8GB/s、SHA256 ~130MB/s→~1.6GB/s;native文件系统加密吞吐由~100MB/s提升至~155MB/s.*  
 *V4.0.5 新增:支持原生Windows(MSVC)构建运行——内置POSIX getopt_long移植(getopt_port),CMake区分MSVC/GCC编译选项(MSVC加/utf-8),源码/测试文件二进制模式与filesystem跨平台修正.*  
 *V4.1.0 优化:支持新优化后的WCGP(即WindowsGUI)v1.0,修改了文件头验证逻辑以增强健壮性*  
+*V4.2.0 接口:execute_encrypt/execute_decrypt/execute_verify 改为异常接口——加密遇到无效文件抛 std::string("Invalid File");解密/验证成功返回 (htype<<8)|ctype(高8位哈希模式、低8位加密模式),失败抛 std::string 错误信息(坏魔数/文件过短/密钥或文件不完整/模式不匹配).*  
+*V4.2.0 测试:测试迁移至新版接口,新增解密/验证返回值(各ctype×htype组合)与异常消息测试(空文件句柄、坏魔数、损坏数据、错误密钥、模式字节非法、文件过短);修复exec对NULL参数包/版本/帮助路径的布尔返回值反转问题.*  
+*V4.2.0 文档:为valhelper、valget、main、test等模块补充函数与类注释,更新README文件结构与更新日志.*

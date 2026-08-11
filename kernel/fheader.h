@@ -72,6 +72,20 @@ public:
   virtual void printhtype(u8_t type) = 0;
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
   virtual void resetPercentage();
+  std::string getResStr(int res){
+    if (res <= 0)
+        return "Verification passed!";
+    else if (res == 1)
+        return "Input file is too short.";
+    else if (res == 2)
+        return "Wrong key or File not complete.";
+    else if (res == 3)
+        return "Aes / hash mode not match.";
+    else if (res == 4)
+        return "Wrong magic number.";
+    else
+        return "Unknown res number: " + std::to_string(res);
+  }
   int getPercentage() const
   {
     size_t t = total_size.load();

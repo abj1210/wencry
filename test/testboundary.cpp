@@ -70,9 +70,16 @@ static int thread_roundtrip(size_t size, u8_t threads, u8_t ctype,
     remove(fname);
     return 0;
   }
+  bool ok1 = true, ok2 = true;
+  unsigned short dret = 0;
   runcrypt r1(fin, fout, (u8_t *)TKEY, s, threads);
-  bool ok1 = r1.execute_encrypt(size, r_buf);
-
+  try{
+    r1.execute_encrypt(size, r_buf);
+  }
+  catch(std::string errlog){
+    std::cout<<errlog;
+    ok1 = false;
+  }
   FILE *fin2 = fopen(wenc, "rb"), *fout2 = fopen(out, "wb+");
   if (!fin2 || !fout2) {
     remove(fname);
@@ -80,8 +87,15 @@ static int thread_roundtrip(size_t size, u8_t threads, u8_t ctype,
     return 0;
   }
   runcrypt r2(fin2, fout2, (u8_t *)TKEY, s, threads);
-  bool ok2 = r2.execute_decrypt(size);
-
+  try{
+    dret = r2.execute_decrypt(size);
+    if (dret != (unsigned short)((htype << 8) | ctype))
+      ok2 = false;
+  }
+  catch(std::string errlog){
+    std::cout<<errlog;
+    ok2 = false;
+  }
   FILE *f1 = fopen(fname, "rb"), *f2 = fopen(out, "rb");
   int r = (ok1 && ok2 && f1 && f2) ? cmp_file(f1, f2) : 0;
   remove(fname);
@@ -149,8 +163,15 @@ static int thread_encrypt_then_cli_decrypt(size_t size, u8_t threads) {
     return 0;
   }
   runcrypt r1(fin, fout, key, s, threads);
-  bool ok1 = r1.execute_encrypt(size, r_buf);
-  if (!ok1) {
+  try {
+    r1.execute_encrypt(size, r_buf);
+  } catch (const char *errlog) {
+    std::cout << errlog << std::endl;
+    remove(fname);
+    remove(wenc);
+    return 0;
+  } catch (std::string errlog) {
+    std::cout << errlog << std::endl;
     remove(fname);
     remove(wenc);
     return 0;
@@ -240,22 +261,120 @@ static bool encrypt_small(const char *fname, const char *wenc, u8_t ctype,
   if (!fin || !fout) return false;
   Settings s(ctype, htype, true);
   runcrypt r(fin, fout, (u8_t *)TKEY, s, 4);
-  bool ok = r.execute_encrypt(strlen(msg), r_buf);
-  return ok;
+  try {
+    r.execute_encrypt(strlen(msg), r_buf);
+    return true;
+  } catch (const char *errlog) {
+    std::cout << errlog << std::endl;
+    return false;
+  } catch (std::string errlog) {
+    std::cout << errlog << std::endl;
+    return false;
+  }
+}
+
+/* 新版接口: execute_verify 成功返回空串, 失败抛异常并返回其消息 */
+static std::string verify_file_key_str(const char *wenc, const u8_t *key) {
+  FILE *fp = fopen(wenc, "rb");
+  if (!fp) return "";
+  Settings s(0, 0, true);
+  runcrypt r(fp, NULL, (u8_t *)key, s, 4);
+  try {
+    r.execute_verify(0);
+    return "";
+  } catch (const char *errlog) {
+    std::cout << errlog << std::endl;
+    return errlog;
+  } catch (std::string errlog) {
+    std::cout << errlog << std::endl;
+    return errlog;
+  }
+}
+
+static std::string verify_file_str(const char *wenc) {
+  return verify_file_key_str(wenc, TKEY);
 }
 
 static bool verify_file(const char *wenc) {
-  FILE *fp = fopen(wenc, "rb");
-  if (!fp) return false;
+  return verify_file_str(wenc).empty();
+}
+
+/* 新版接口: execute_decrypt 成功返回空串并写出明文, 失败抛异常并返回其消息 */
+static std::string decrypt_file_key_str(const char *wenc, const char *out,
+                                        const u8_t *key) {
+  FILE *fin = fopen(wenc, "rb");
+  if (!fin) return "";
+  FILE *fout = fopen(out, "wb+");
+  if (!fout) {
+    fclose(fin);
+    return "";
+  }
   Settings s(0, 0, true);
-  runcrypt r(fp, NULL, (u8_t *)TKEY, s, 4);
-  bool ok = r.execute_verify(0);
-  return ok;
+  runcrypt r(fin, fout, (u8_t *)key, s, 4);
+  try {
+    r.execute_decrypt(0);
+    return "";
+  } catch (const char *errlog) {
+    std::cout << errlog << std::endl;
+    return errlog;
+  } catch (std::string errlog) {
+    std::cout << errlog << std::endl;
+    return errlog;
+  }
+}
+
+/* 新版接口: execute_verify 成功返回 (htype<<8)|ctype; 失败抛异常并填充 out_msg, 返回 0xFFFF */
+static unsigned short verify_ret(const char *wenc, const u8_t *key,
+                                 std::string &out_msg) {
+  FILE *fp = fopen(wenc, "rb");
+  if (!fp) { out_msg = "open failed"; return 0xFFFF; }
+  Settings s(0, 0, true);
+  runcrypt r(fp, NULL, (u8_t *)key, s, 4);
+  try {
+    out_msg.clear();
+    return r.execute_verify(0);
+  } catch (const char *errlog) {
+    std::cout << errlog << std::endl;
+    out_msg = errlog;
+    return 0xFFFF;
+  } catch (std::string errlog) {
+    std::cout << errlog << std::endl;
+    out_msg = errlog;
+    return 0xFFFF;
+  }
+}
+
+/* 新版接口: execute_decrypt 成功返回 (htype<<8)|ctype 并写出明文; 失败抛异常并填充 out_msg, 返回 0xFFFF */
+static unsigned short decrypt_ret(const char *wenc, const char *out,
+                                  const u8_t *key, std::string &out_msg) {
+  FILE *fin = fopen(wenc, "rb");
+  if (!fin) { out_msg = "open failed"; return 0xFFFF; }
+  FILE *fout = fopen(out, "wb+");
+  if (!fout) {
+    fclose(fin);
+    out_msg = "open out failed";
+    return 0xFFFF;
+  }
+  Settings s(0, 0, true);
+  runcrypt r(fin, fout, (u8_t *)key, s, 4);
+  try {
+    out_msg.clear();
+    return r.execute_decrypt(0);
+  } catch (const char *errlog) {
+    std::cout << errlog << std::endl;
+    out_msg = errlog;
+    return 0xFFFF;
+  } catch (std::string errlog) {
+    std::cout << errlog << std::endl;
+    out_msg = errlog;
+    return 0xFFFF;
+  }
 }
 
 TEST(Testboundary, verify_valid) {
   ASSERT_TRUE(encrypt_small("tb_ok.txt", "tb_ok.wenc", 1, 0));
   EXPECT_TRUE(verify_file("tb_ok.wenc"));
+  EXPECT_EQ("", verify_file_str("tb_ok.wenc"));
   remove("tb_ok.txt");
   remove("tb_ok.wenc");
 }
@@ -268,6 +387,7 @@ TEST(Testboundary, verify_bad_magic) {
   fwrite(&z, 1, 1, fp);
   fclose(fp);
   EXPECT_FALSE(verify_file("tb_bm.wenc"));
+  EXPECT_EQ("Wrong magic number.", verify_file_str("tb_bm.wenc"));
   remove("tb_bm.txt");
   remove("tb_bm.wenc");
 }
@@ -284,6 +404,7 @@ TEST(Testboundary, verify_corrupt_data) {
   fwrite(&c, 1, 1, fp);
   fclose(fp);
   EXPECT_FALSE(verify_file("tb_cd.wenc"));
+  EXPECT_EQ("Wrong key or File not complete.", verify_file_str("tb_cd.wenc"));
   remove("tb_cd.txt");
   remove("tb_cd.wenc");
 }
@@ -308,6 +429,7 @@ TEST(Testboundary, verify_truncated) {
   fclose(in);
   fclose(out);
   EXPECT_FALSE(verify_file("tb_tr.short"));
+  EXPECT_EQ("Wrong key or File not complete.", verify_file_str("tb_tr.short"));
   remove("tb_tr.txt");
   remove("tb_tr.wenc");
   remove("tb_tr.short");
@@ -320,7 +442,191 @@ TEST(Testboundary, verify_too_short) {
   fwrite(z, 1, 10, fp);
   fclose(fp);
   EXPECT_FALSE(verify_file("tb_ts.wenc"));
+  EXPECT_EQ("Input file is too short.", verify_file_str("tb_ts.wenc"));
   remove("tb_ts.wenc");
+}
+
+TEST(Testboundary, verify_wrong_key) {
+  ASSERT_TRUE(encrypt_small("tb_vwk.txt", "tb_vwk.wenc", 1, 0));
+  static const u8_t BADKEY[16] = {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x',
+                                  'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'};
+  EXPECT_FALSE(verify_file_key_str("tb_vwk.wenc", BADKEY).empty());
+  EXPECT_EQ("Wrong key or File not complete.",
+            verify_file_key_str("tb_vwk.wenc", BADKEY));
+  remove("tb_vwk.txt");
+  remove("tb_vwk.wenc");
+}
+
+TEST(Testboundary, verify_bad_mode_byte) {
+  ASSERT_TRUE(encrypt_small("tb_vmd.txt", "tb_vmd.wenc", 1, 0));
+  FILE *fp = fopen("tb_vmd.wenc", "rb+");
+  ASSERT_TRUE(fp != NULL);
+  u8_t h = 9; /* htype 9 > 2 */
+  fseek(fp, 9, SEEK_SET);
+  fwrite(&h, 1, 1, fp);
+  fclose(fp);
+  EXPECT_FALSE(verify_file("tb_vmd.wenc"));
+  EXPECT_EQ("Aes / hash mode not match.", verify_file_str("tb_vmd.wenc"));
+  remove("tb_vmd.txt");
+  remove("tb_vmd.wenc");
+}
+
+/*################################
+  新版解密异常路径 (execute_decrypt)
+################################*/
+
+/*################################
+  新版解密/验证返回值 (execute_decrypt/execute_verify)
+################################*/
+
+TEST(Testboundary, verify_returns_mode_combo) {
+  static const u8_t combos[][2] = {{0, 0}, {1, 0}, {2, 0}, {3, 0},
+                                   {4, 0}, {1, 1}, {1, 2}, {2, 2}};
+  char txt[64], wenc[64];
+  for (size_t k = 0; k < sizeof(combos) / sizeof(combos[0]); ++k) {
+    u8_t ctype = combos[k][0], htype = combos[k][1];
+    snprintf(txt, sizeof txt, "tb_vr_%zu.txt", k);
+    snprintf(wenc, sizeof wenc, "tb_vr_%zu.wenc", k);
+    ASSERT_TRUE(encrypt_small(txt, wenc, ctype, htype))
+        << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    std::string msg;
+    unsigned short ret = verify_ret(wenc, TKEY, msg);
+    EXPECT_EQ("", msg) << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    EXPECT_EQ((unsigned short)((htype << 8) | ctype), ret)
+        << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    remove(txt);
+    remove(wenc);
+  }
+}
+
+TEST(Testboundary, decrypt_returns_mode_combo) {
+  static const u8_t combos[][2] = {{0, 0}, {1, 0}, {2, 0}, {3, 0},
+                                   {4, 0}, {1, 1}, {1, 2}, {2, 2}};
+  char txt[64], wenc[64], out[64];
+  for (size_t k = 0; k < sizeof(combos) / sizeof(combos[0]); ++k) {
+    u8_t ctype = combos[k][0], htype = combos[k][1];
+    snprintf(txt, sizeof txt, "tb_dr_%zu.txt", k);
+    snprintf(wenc, sizeof wenc, "tb_dr_%zu.wenc", k);
+    snprintf(out, sizeof out, "tb_dr_%zu.out", k);
+    ASSERT_TRUE(encrypt_small(txt, wenc, ctype, htype))
+        << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    std::string msg;
+    unsigned short ret = decrypt_ret(wenc, out, TKEY, msg);
+    EXPECT_EQ("", msg) << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    EXPECT_EQ((unsigned short)((htype << 8) | ctype), ret)
+        << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    FILE *f1 = fopen(txt, "rb"), *f2 = fopen(out, "rb");
+    EXPECT_EQ(1, cmp_file(f1, f2))
+        << "ctype=" << (int)ctype << " htype=" << (int)htype;
+    remove(txt);
+    remove(wenc);
+    remove(out);
+  }
+}
+
+TEST(Testboundary, decrypt_bad_magic) {
+  ASSERT_TRUE(encrypt_small("tb_dbm.txt", "tb_dbm.wenc", 1, 0));
+  FILE *fp = fopen("tb_dbm.wenc", "rb+");
+  ASSERT_TRUE(fp != NULL);
+  u8_t z = 0;
+  fwrite(&z, 1, 1, fp);
+  fclose(fp);
+  EXPECT_EQ("Wrong magic number.",
+            decrypt_file_key_str("tb_dbm.wenc", "tb_dbm.out", TKEY));
+  remove("tb_dbm.txt");
+  remove("tb_dbm.wenc");
+  remove("tb_dbm.out");
+}
+
+TEST(Testboundary, decrypt_corrupt_data) {
+  ASSERT_TRUE(encrypt_small("tb_dcd.txt", "tb_dcd.wenc", 1, 0));
+  FILE *fp = fopen("tb_dcd.wenc", "rb+");
+  ASSERT_TRUE(fp != NULL);
+  fseek(fp, FILE_TEXT_MARK(4) + 5, SEEK_SET);
+  u8_t c;
+  fread(&c, 1, 1, fp);
+  fseek(fp, -1, SEEK_CUR);
+  c ^= 0xff;
+  fwrite(&c, 1, 1, fp);
+  fclose(fp);
+  EXPECT_EQ("Wrong key or File not complete.",
+            decrypt_file_key_str("tb_dcd.wenc", "tb_dcd.out", TKEY));
+  remove("tb_dcd.txt");
+  remove("tb_dcd.wenc");
+  remove("tb_dcd.out");
+}
+
+TEST(Testboundary, decrypt_wrong_key) {
+  ASSERT_TRUE(encrypt_small("tb_dwk.txt", "tb_dwk.wenc", 1, 0));
+  static const u8_t BADKEY[16] = {'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x',
+                                  'x', 'x', 'x', 'x', 'x', 'x', 'x', 'x'};
+  EXPECT_EQ("Wrong key or File not complete.",
+            decrypt_file_key_str("tb_dwk.wenc", "tb_dwk.out", BADKEY));
+  remove("tb_dwk.txt");
+  remove("tb_dwk.wenc");
+  remove("tb_dwk.out");
+}
+
+TEST(Testboundary, decrypt_bad_mode_byte) {
+  ASSERT_TRUE(encrypt_small("tb_dmd.txt", "tb_dmd.wenc", 1, 0));
+  FILE *fp = fopen("tb_dmd.wenc", "rb+");
+  ASSERT_TRUE(fp != NULL);
+  u8_t h = 9; /* htype 9 > 2 */
+  fseek(fp, 9, SEEK_SET);
+  fwrite(&h, 1, 1, fp);
+  fclose(fp);
+  EXPECT_EQ("Aes / hash mode not match.",
+            decrypt_file_key_str("tb_dmd.wenc", "tb_dmd.out", TKEY));
+  remove("tb_dmd.txt");
+  remove("tb_dmd.wenc");
+  remove("tb_dmd.out");
+}
+
+TEST(Testboundary, decrypt_too_short) {
+  FILE *fp = fopen("tb_dts.wenc", "wb");
+  ASSERT_TRUE(fp != NULL);
+  u8_t z[10] = {0};
+  fwrite(z, 1, 10, fp);
+  fclose(fp);
+  EXPECT_EQ("Input file is too short.",
+            decrypt_file_key_str("tb_dts.wenc", "tb_dts.out", TKEY));
+  remove("tb_dts.wenc");
+  remove("tb_dts.out");
+}
+
+/*################################
+  新版异常接口 (void + throw)
+################################*/
+
+TEST(Testboundary, exec_null_fin_throws) {
+  Settings s(1, 0, true);
+  runcrypt r_enc(NULL, NULL, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r_enc.execute_encrypt(0, NULL), std::string);
+  runcrypt r_dec(NULL, NULL, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r_dec.execute_decrypt(0), std::string);
+  runcrypt r_ver(NULL, NULL, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r_ver.execute_verify(0), std::string);
+}
+
+TEST(Testboundary, exec_decrypt_bad_file_throws) {
+  ASSERT_TRUE(encrypt_small("tb_dc.txt", "tb_dc.wenc", 1, 0));
+  FILE *fp = fopen("tb_dc.wenc", "rb+");
+  ASSERT_TRUE(fp != NULL);
+  fseek(fp, FILE_TEXT_MARK(4) + 3, SEEK_SET);
+  u8_t c;
+  fread(&c, 1, 1, fp);
+  fseek(fp, -1, SEEK_CUR);
+  c ^= 0xff;
+  fwrite(&c, 1, 1, fp);
+  fclose(fp);
+  FILE *fin = fopen("tb_dc.wenc", "rb"), *fout = fopen("tb_dc.out", "wb+");
+  ASSERT_TRUE(fin != NULL && fout != NULL);
+  Settings s(0, 0, true);
+  runcrypt r(fin, fout, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r.execute_decrypt(0), std::string);
+  remove("tb_dc.txt");
+  remove("tb_dc.wenc");
+  remove("tb_dc.out");
 }
 
 /*################################

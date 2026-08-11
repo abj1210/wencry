@@ -1,5 +1,6 @@
 #include "cry.h"
 #include "getval.h"
+#include "valhelper.h"
 #include "testutil.h"
 
 #include <stdio.h>
@@ -8,42 +9,68 @@
 #include <cstdio>
 
 bool exec(int argc, char *argv[]) {
-  //初始化
+  // 初始化
+  srand(time(NULL));
   unsigned char *vals = NULL;
-  //获取参数
+  // 获取参数
+
   if (argc == 1)
     vals = get_v_mod1();
-  else {
+  else
+  {
     vals = get_v_opt(argc, argv);
-    if(vals == NULL)
+    WencryInformation wif;
+    if (vals == NULL)
       return false;
-    if(((vpak_t *)vals)->mode == 'V'){
-      version();
+    if (((vpak_t *)vals)->mode == 'V')
+    {
+      strlog("Kernel version:", wif.get_version(), '.');
+      strlog("Build time:", wif.get_buildtime(), '.');
       return true;
     }
-    else if(((vpak_t *)vals)->mode == 'h'){
-      help();
+    else if (((vpak_t *)vals)->mode == 'h')
+    {
+      std::cout<<wif.get_help();
       return true;
     }
   }
-  Settings settings;
-  settings.set_ctype(((vpak_t *)vals)->ctype);
-  settings.set_htype(((vpak_t *)vals)->htype);
-  settings.set_no_echo(((vpak_t *)vals)->no_echo);
-  bool flag;
-  //执行任务
+  Settings settings(((vpak_t *)vals)->ctype, ((vpak_t *)vals)->htype, ((vpak_t *)vals)->no_echo);
+  // 执行任务
   runcrypt runner(((vpak_t *)vals)->fp, ((vpak_t *)vals)->out, ((vpak_t *)vals)->key, settings);
-  if(((vpak_t *)vals)->mode == 'e' || ((vpak_t *)vals)->mode == 'E')
-    flag = runner.execute_encrypt(((vpak_t *)vals)->size, ((vpak_t *)vals)->r_buf);
-  else if(((vpak_t *)vals)->mode == 'd' || ((vpak_t *)vals)->mode == 'D')
-    flag = runner.execute_decrypt(((vpak_t *)vals)->size);
-  else if(((vpak_t *)vals)->mode == 'v')
-    flag = runner.execute_verify(((vpak_t *)vals)->size);
-  else 
+  try{
+    switch (getProcessMode(((vpak_t *)vals)->mode))
+    {
+      case 0:
+        runner.execute_encrypt(((vpak_t *)vals)->size, ((vpak_t *)vals)->r_buf);
+        break;
+      case 1:
+        runner.execute_decrypt(((vpak_t *)vals)->size);
+        break;
+      case 2:
+        runner.execute_verify(((vpak_t *)vals)->size);
+        break;
+      default:
+        return false;
+        break;
+    }
+  }
+  catch(const char *errlog){
+    std::cout<<"Error occured:"<<errlog<<std::endl;
     return false;
-  return flag;
+  }
+  catch(std::string errlog){
+    std::cout<<"Error occured:"<<errlog<<std::endl;
+    return false;
+  }
+  return true;
 }
 #define BUFFER_SIZE 0x10000
+/*
+cmp_file:逐块比较两个文件内容是否一致
+x:文件1(函数会关闭)
+y:文件2(函数会关闭)
+return:一致返回1,不一致返回0
+*/
 int cmp_file(FILE *x, FILE *y) {
   unsigned char buffer1[BUFFER_SIZE + 2], buffer2[BUFFER_SIZE + 2];
   int read1, read2;
@@ -69,6 +96,12 @@ int cmp_file(FILE *x, FILE *y) {
   else
     return 0;
 }
+/*
+makeFullTest:对字符串str执行"加密->解密->比对"完整往返测试
+str:测试内容
+type:type低4位=加密模式,高4位=哈希模式
+return:往返一致返回1,失败返回0
+*/
 int makeFullTest(const char *str, u8_t type) {
   char fname[128], fwenc[160], fout[160];
   make_tmp_name(fname, sizeof(fname), "ft");
@@ -109,12 +142,23 @@ int makeFullTest(const char *str, u8_t type) {
   return r;
 }
 char buf[0x2000010];
+/*
+makeBigTest:对约32MB大文件进行往返测试
+offset:文件末尾置0的偏移位置
+type:type低4位=加密模式,高4位=哈希模式
+return:往返一致返回1,失败返回0
+*/
 int makeBigTest(int offset, u8_t type = 0) {
   srand(time(NULL));
   memset(buf, 'a', sizeof(buf));
   buf[0x2000000 + offset] = 0;
   return makeFullTest(buf, type);
 }
+/*
+makeSpeedTest:测量指定加密模式的加密吞吐量
+type:加密模式
+return:成功返回吞吐量(MB/s),失败返回0
+*/
 double makeSpeedTest(u8_t type) {
   char fname[128], fwenc[160], ctype[32];
   make_tmp_name(fname, sizeof(fname), "spd");

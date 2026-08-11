@@ -75,6 +75,11 @@
         "iomanip": "cpp"
     },
     "cmake.sourceDirectory": "/mnt/d/code/wencry",
+    "cmake.buildDirectory": "${workspaceFolder}/build/vscode",
+    "cmake.configureArgs": [
+        "-DBUILD_TEST=OFF"
+    ],
+    "cmake.buildType": "Debug",
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     "C_Cpp.errorSquiggles": "enabled"
 }

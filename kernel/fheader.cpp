@@ -366,19 +366,7 @@ res: 解密结果
 */
 void ResultPrint::printresv(int res)
 {
-    std::string resstr = "Result:";
-    if (res <= 0)
-        strlog(resstr, "Verification passed!");
-    else if (res == 1)
-        strlog(resstr, "Input file is too short.");
-    else if (res == 2)
-        strlog(resstr, "Wrong key or File not complete.");
-    else if (res == 3)
-        strlog(resstr, "Aes / hash mode not match.");
-    else if (res == 4)
-        strlog(resstr, "Wrong magic number.");
-    else
-        strlog(resstr, "Unknown res number: " + std::to_string(res));
+    strlog("Result:", this->getResStr(res));
     over.store(true);
 }
 void ResultPrint::printresd(int res)

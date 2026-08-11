@@ -2,6 +2,14 @@
 #include <string>
 #include <iostream>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+#ifdef PROFILE_THREADS
+thread_local const char *g_thread_role = NULL;
+#endif
+
 /*################################
   模块概述:读线程--工作线程--写线程三级流水线
   本文件实现文件加解密的多线程数据管道。对每个 chunk(一次装载,最大16MB):
@@ -137,16 +145,21 @@ void buffergroup::set_buffergroup(u32_t size, FILE *fin, FILE *fout, bool ispadd
 /*################################
   工作线程接口
 ################################*/
+
+
 /*
 wait_loaded:等待缓冲区被装载
 id:工作线程标号
 */
+
 void buffergroup::wait_loaded(const u8_t id)
 {
   std::unique_lock<std::mutex> locker(mtx);
   cv_loaded.wait(locker, [&] { return state[id] == LOADED || read_done; });
   locker.unlock();
 }
+
+
 /*
 stop_worker:判断工作线程是否应退出
 id:工作线程标号
@@ -189,6 +202,12 @@ printload:过程打印函数
 void buffergroup::run_read(const std::function<void(std::string, size_t)> &printload)
 {
   (void)printload;
+#ifdef _WIN32
+  SetThreadDescription(GetCurrentThread(), L"ReadThread");
+#endif
+#ifdef PROFILE_THREADS
+  g_thread_role = "read";
+#endif
   u32_t next = 0;
   while (true)
   {
@@ -199,7 +218,9 @@ void buffergroup::run_read(const std::function<void(std::string, size_t)> &print
       if (over)
         break;
     }
+    PROF_LOG("LOAD_BEGIN", next);
     loadstate_t ls = buflst[id].load_buffer(fin, ispadding);
+    PROF_LOG("LOAD_END", next);
     {
       std::lock_guard<std::mutex> locker(mtx);
       if (ls == FULL)
@@ -235,6 +256,12 @@ printload:过程打印函数
 */
 void buffergroup::run_write(const std::function<void(std::string, size_t)> &printload)
 {
+#ifdef _WIN32
+  SetThreadDescription(GetCurrentThread(), L"WriteThread");
+#endif
+#ifdef PROFILE_THREADS
+  g_thread_role = "write";
+#endif
   u32_t next = 0;
   while (true)
   {
@@ -247,7 +274,9 @@ void buffergroup::run_write(const std::function<void(std::string, size_t)> &prin
       if (read_done && next == total_chunks)
         break;
     }
+    PROF_LOG("WRITE_BEGIN", next);
     u32_t n = buflst[id].export_buffer(fout, ispadding);
+    PROF_LOG("WRITE_END", next);
     if (hash_feed)
       hash_feed(buflst[id].get_data(), n);
     printload("Chunk " + std::to_string(next), n);

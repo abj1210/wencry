@@ -179,13 +179,18 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
  
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
                            ${PROJECT_SOURCE_DIR}/../valget
+                           )
+                        
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valhelper
                            )
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
@@ -199,19 +204,24 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../valget
-                            )
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valget
+                           )
+                        
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valhelper
+                           )
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../kernel
-                            )
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           )
 
 set(SUBNAME shash)
 
@@ -219,19 +229,24 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../valget
-                            )
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valget
+                           )
+                        
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valhelper
+                           )
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../kernel
-                            )
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           )
 
 set(SUBNAME big)
 
@@ -239,19 +254,24 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../valget
-                            )
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valget
+                           )
+                        
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valhelper
+                           )
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
-                            ${PROJECT_BINARY_DIR}
-                            ${PROJECT_SOURCE_DIR}/../kernel
-                            )
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           )
                             
 set(SUBNAME speed)
 
@@ -259,13 +279,18 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
  
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
                            ${PROJECT_SOURCE_DIR}/../valget
+                           )
+                        
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_BINARY_DIR}
+                           ${PROJECT_SOURCE_DIR}/../valhelper
                            )
 
 target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
@@ -294,7 +319,7 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
 
@@ -302,6 +327,7 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
                            ${PROJECT_SOURCE_DIR}/../kernel
                            ${PROJECT_SOURCE_DIR}/../valget
+                           ${PROJECT_SOURCE_DIR}/../valhelper
                            )
 
 set(SUBNAME interactive)
@@ -310,7 +336,7 @@ add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp test.cpp testutil.cp
 
 target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
 
-target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel CMDvals)
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel Valhelper CMDvals)
 
 target_compile_definitions(${PROJECT_NAME}${SUBNAME} PRIVATE
                            WENCRY_BIN="$<TARGET_FILE:Wencry>")
@@ -321,4 +347,5 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_BINARY_DIR}
                            ${PROJECT_SOURCE_DIR}/../kernel
                            ${PROJECT_SOURCE_DIR}/../valget
+                           ${PROJECT_SOURCE_DIR}/../valhelper
                            )

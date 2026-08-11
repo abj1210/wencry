@@ -1,12 +1,8 @@
 #include "getval.h"
-#include "base64.h"
+#include "valhelper.h"
 #include <filesystem>
 #include <iostream>
 #include <string.h>
-#include <stdlib.h>
-#include <time.h>
-
-#ifdef OPT_ON
 
 #ifdef _WIN32
 #include "getopt_port.h"
@@ -19,7 +15,11 @@
   全局变量
 ################################*/
 /*
-长选项设置
+longOpts:长选项表
+--encode/--decode/--verify/--version/--help 对应短选项e/d/v/V/h
+--input/--output/--key 需参数,分别对应短选项i/o/k
+--cmode/--hmode 需参数,无短选项,返回值1/2
+--no_echo 无参数,对应短选项n
 */
 const struct option longOpts[] = {
     {"encode", no_argument, NULL, 'e'},
@@ -35,51 +35,34 @@ const struct option longOpts[] = {
     {"no_echo", no_argument, NULL, 'n'},
     {0, 0, 0, 0}};
 /*
-短选项设置
+shortOpts:短选项字符串(带':'的选项需参数)
 */
 const char shortOpts[] = "edvVhni:o:k:";
+/*
+fout:加密模式下的默认输出文件名(输入文件名+".wenc")
+*/
 char fout[128];
 /*################################
   辅助函数
 ################################*/
 /*
-getArgsKey:从参数中获取密钥
-arg:参数
-return:获取的密钥
-*/
-static u8_t *getArgsKey(const char *arg)
-{
-    u8_t *keyout = new u8_t[16];
-    base64_to_hex((const u8_t *)arg, 24, keyout);
-    return keyout;
-}
-/*
-getRandomBuffer:获取随机的缓冲数组
-r_buf:缓冲数组地址
-*/
-static void getRandomBuffer(u8_t *r_buf)
-{
-    for (int i = 0; i < 256; ++i)
-        r_buf[i] = rand();
-}
-/*
 printCryptMode:打印AES模式
 mode:模式
 */
-static void printCryptMode(u8_t mode)
+static void printCryptMode(u8_t mode, WencryInformation wif)
 {
     std::string cm = "Crypt mode :";
-    std::string cry = get_cname(mode);
+    std::string cry = wif.get_cname(mode);
     strlog(cm, cry);
 }
 /*
 printCryptMode:打印Hash模式
 mode:模式
 */
-static void printHashMode(u8_t mode)
+static void printHashMode(u8_t mode, WencryInformation wif)
 {
     std::string hm = "Hash mode :";
-    std::string hash = get_hname(mode);
+    std::string hash = wif.get_hname(mode);
     strlog(hm, hash);
 }
 /*
@@ -88,7 +71,7 @@ c:选项字符
 res:参数包指针
 return:是否解析成功
 */
-bool parseOpts(char c, vpak_t *res)
+bool parseOpts(char c, vpak_t *res, WencryInformation wif)
 {
     size_t fsize = 0;
     switch (c)
@@ -149,9 +132,9 @@ bool parseOpts(char c, vpak_t *res)
         }
         break;
     case 'k':
-        if (is_valid_b64((unsigned char *)optarg, strlen(optarg)))
+        res->key = new u8_t[16];
+        if (checkB64Key((u8_t *)optarg, res->key))
         {
-            res->key = getArgsKey(optarg);
             strlog("Key :", "Using specific key");
         }
         else
@@ -167,7 +150,7 @@ bool parseOpts(char c, vpak_t *res)
         if (res->ctype == -1)
         {
             res->ctype = atoi(optarg);
-            printCryptMode(res->ctype);
+            printCryptMode(res->ctype, wif);
         }
         else
         {
@@ -179,7 +162,7 @@ bool parseOpts(char c, vpak_t *res)
         if (res->htype == -1)
         {
             res->htype = atoi(optarg);
-            printHashMode(res->htype);
+            printHashMode(res->htype, wif);
         }
         else
         {
@@ -222,9 +205,10 @@ argc:命令行参数个数
 argv:命令行参数数组
 return:vpak_t结构体指针x
 */
+
 u8_t *get_v_opt(int argc, char *argv[])
 {
-    srand((unsigned)time(NULL));
+    WencryInformation wif;
     memset(fout, 0, sizeof(fout));
     int option_index = 0;
     optind = 1;
@@ -241,7 +225,7 @@ u8_t *get_v_opt(int argc, char *argv[])
         int c = getopt_long(argc, argv, shortOpts, longOpts, &option_index);
         if (c == -1)
             break;
-        if (!parseOpts(c, res))
+        if (!parseOpts(c, res, wif))
         {
             delete res;
             return NULL;
@@ -257,10 +241,10 @@ u8_t *get_v_opt(int argc, char *argv[])
     {
         if (res->ctype == -1)
         {
-            printCryptMode(0);
+            printCryptMode(0, wif);
             res->ctype = 0;
         }
-        else if (!check_ctype(res->ctype))
+        else if (!wif.check_ctype(res->ctype))
         {
             strlog("Error :", "Wrong ctype");
             delete res;
@@ -268,10 +252,10 @@ u8_t *get_v_opt(int argc, char *argv[])
         }
         if (res->htype == -1)
         {
-            printHashMode(0);
+            printHashMode(0, wif);
             res->htype = 0;
         }
-        else if (!check_htype(res->htype))
+        else if (!wif.check_htype(res->htype))
         {
             strlog("Error :", "Wrong htype");
             delete res;
@@ -294,17 +278,7 @@ u8_t *get_v_opt(int argc, char *argv[])
             res->out = fopen(fout, "wb+");
         }
         getRandomBuffer(res->r_buf);
-        printkey(res->key);
+        strlog("Key is:", printkey(res->key));
     }
     return res->buf;
 }
-
-#else
-
-u8_t *get_v_opt(int argc, char *argv[])
-{
-    strlog("Note :", "CMDLine option is not supported");
-    return get_v_mod1();
-}
-
-#endif

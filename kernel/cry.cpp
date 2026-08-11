@@ -202,10 +202,10 @@ execute_encrypt:加密执行过程
 fsize:文件大小
 r_buf:随机缓冲数组
 */
-bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
+void runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
 {
   if (fin == NULL)
-    return resultprint->printinv(0);
+    throw std::string("Invalid File");
   TIMER_START(Total_Time);
   // 准备初始化
   resultprint->printtask("Preparing encrypt");
@@ -223,28 +223,26 @@ bool runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   buffergroup::del_instance();
   TIMER_END(AES_Encryption_Time)
   // 完成hmac并写入
-  TIMER_START(Hashing_Time)
-  resultprint->printtask("Calculating hmac");
+  resultprint->printtask("Writing hmac");
   hmachandle.final_hash();
   hmachandle.write_hmac(out, FILE_HMAC_MARK);
   resultprint->resetPercentage();
-  TIMER_END(Hashing_Time)
   // 释放空间
   resultprint->printtask("Releasing allocated memory");
   release(iv, mode);
   resultprint->printenc(); // 打印结果
   over();                  // 关闭文件
   TIMER_END(Total_Time);   // 打印时间
-  return true;
 }
 /*
 execute_decrypt:解密执行过程
 fsize:文件大小
+return:高8位-哈希模式 低8位-加密模式
 */
-bool runcrypt::execute_decrypt(size_t fsize)
+unsigned short runcrypt::execute_decrypt(size_t fsize)
 {
   if (fin == NULL)
-    return resultprint->printinv(0);
+    throw std::string("Invalid File");
   TIMER_START(Total_Time);
   // 验证文件
   TIMER_START(Verify_Time);
@@ -276,16 +274,19 @@ bool runcrypt::execute_decrypt(size_t fsize)
   resultprint->printresd(res); // 打印结果
   over();                      // 关闭文件
   TIMER_END(Total_Time);       // 打印时间
-  return res == 0;
+  if(res!=0)
+    throw resultprint->getResStr(res);
+  return header.gethtype()<<8 | header.getctype();
 }
 /*
 execute_verify:验证执行过程
 fsize:文件大小
+return:高8位-哈希模式 低8位-加密模式
 */
-bool runcrypt::execute_verify(size_t fsize)
+unsigned short runcrypt::execute_verify(size_t fsize)
 {
   if (fin == NULL)
-    return resultprint->printinv(0);
+    throw std::string("Invalid File");
   TIMER_START(Total_Time);
   // 验证文件
   TIMER_START(Verify_Time);
@@ -295,10 +296,10 @@ bool runcrypt::execute_verify(size_t fsize)
   resultprint->printresv(res); // 打印结果
   over();                      // 关闭文件
   TIMER_END(Total_Time);       // 打印时间
-  return res == 0;
+  if(res!= 0)
+    throw resultprint->getResStr(res);
+  return header.gethtype()<<8 | header.getctype();
 }
-
-
 /*
 get_percentage:获取进度
 return: -1表示已完成, 0-100表示进度
