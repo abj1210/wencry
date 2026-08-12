@@ -125,6 +125,13 @@ Windows 兼容说明:
    ```
 生成 `build\vs\Wencry.slnx`(VS 2026 新解决方案格式,含 Wencry/Wenkernel/Multiaes/Hash/Aes/Base64/CMDvals 各工程),可直接用 Visual Studio 打开编译、调试。若需传统 `.sln`,可改用 `-G "Visual Studio 17 2022"`。
 
+> **MSB8070 工具集缺失**:若机器装有多个 VS 实例,CMake 可能把生成器实例选到缺少目标 MSVC 工具集的那个(报错形如`找不到 MSVC 工具集版本"14.50.35717"`)。此时用 `-DCMAKE_GENERATOR_INSTANCE` 显式指定装有该工具集的实例即可,例如:
+>    ```bat
+>    cmake -G "Visual Studio 18 2026" -A x64 -S . -B build_vs -DBUILD_TEST=OFF -DCMAKE_GENERATOR_INSTANCE="C:/Program Files (x86)/Microsoft Visual Studio/18/BuildTools"
+>    cmake --build build_vs --config Release
+>    ```
+
+
 **以下操作均在./build目录下进行**  
 
 **若在无参数下执行，则可根据提示完成操作**  
@@ -254,4 +261,5 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.2.0 文档:为valhelper、valget、main、test等模块补充函数与类注释,更新README文件结构与更新日志.*  
 *V4.2.1 流水线:加密/解密/验证三模式统一到"读--HASH--AES--写"多线程流水线——新增独立HASH线程按块序增量计算HMAC;解密融合HMAC验证(消除单独整读密文验HMAC的一遍I/O,由3遍降为2遍),失败时删除输出文件(从FILE*反推路径,Windows/POSIX);验证(-v)复用同一读+HASH流水线,不做AES与写出.*  
 *V4.2.1 清理:删除filebuffer64/hashbuffer(64字节块文件哈希缓冲)与Hashmaster::getFileHash,统一改用增量哈希;hmac::getres改用增量分块计算(测试兼容).*  
-*V4.2.1 性能:原生Windows缓存态吞吐——加密~1.26GB/s、解密~1.0-1.6GB/s、验证~1.45-1.7GB/s(较融合前显著提升).*
+*V4.2.1 性能:原生Windows缓存态吞吐——加密~1.26GB/s、解密~1.0-1.6GB/s、验证~1.45-1.7GB/s(较融合前显著提升).*  
+*V4.2.1 构建:修复VS生成器多实例环境下MSB8070工具集缺失(CMake默认实例缺目标MSVC工具集)——README补充用 -DCMAKE_GENERATOR_INSTANCE 显式指定装有该工具集的VS实例.*

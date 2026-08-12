@@ -189,7 +189,6 @@ class buffergroup
   FILE *fin, *fout;
   pipe_mode mode;               // 流水线模式
   bool ispadding;               // 加密为true, 解密/验证为false
-
   bool over;             // 读线程已到达EOF
   bool read_done;        // 读线程已结束
   u32_t total_chunks;    // 装载的总块数
