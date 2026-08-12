@@ -630,6 +630,20 @@ TEST(Testboundary, exec_decrypt_bad_file_throws) {
 }
 
 /*################################
+  多块流水线:冗余缓冲排空收尾路径
+  单个 chunk 为 16MB,≥5 块(>64MB)文件会迫使同一工作线程在 read_done 后
+  仍需排空多个同时 LOADED 的块。此路径修复前会因 worker 处理完一块即提前
+  退出,将名下剩余块遗弃,导致写线程在 judge_buffer_full 上永久死锁。
+################################*/
+
+TEST(Testboundary, multi_chunk_pipeline) {
+  // 65MB ≈ 5 个 16MB chunk:线程 0 名下至少两块同时在读线程 EOF 时处于 LOADED
+  static const size_t SIZE = 0x4100000;
+  EXPECT_EQ(1, thread_roundtrip(SIZE, 2, 1, 0)) << "threads=2 cbc";
+  EXPECT_EQ(1, thread_roundtrip(SIZE, 4, 1, 0)) << "threads=4 cbc";
+}
+
+/*################################
   CLI 参数错误路径
 ################################*/
 

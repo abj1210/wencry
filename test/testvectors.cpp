@@ -1,7 +1,6 @@
 #include "cry.h"
 #include "aesmode.h"
 #include "hashmaster.h"
-#include "hashbuffer.h"
 #include "testutil.h"
 #include "gtest/gtest.h"
 
@@ -330,37 +329,21 @@ TEST(Testvectors, hmac_sha256_reference) {
 }
 
 /*################################
-  filebuffer64 重载路径 (>32MB 文件)
+  大缓冲重载路径 (>32MB, getStringHash 分块哈希)
 ################################*/
 
 TEST(Testvectors, hashfile_refill) {
   const size_t N = (size_t)32 * 1024 * 1024 + 64;
-  FILE *fp = fopen("tb_refill.bin", "wb");
-  ASSERT_TRUE(fp != NULL);
-  u8_t buf[4096];
-  size_t left = N, off = 0;
-  while (left) {
-    size_t n = left < sizeof(buf) ? left : sizeof(buf);
-    for (size_t i = 0; i < n; ++i)
-      buf[i] = (u8_t)((off + i) % 251);
-    fwrite(buf, 1, n, fp);
-    off += n;
-    left -= n;
-  }
-  fclose(fp);
-  fp = fopen("tb_refill.bin", "rb");
-  ASSERT_TRUE(fp != NULL);
+  std::vector<u8_t> data(N);
+  for (size_t i = 0; i < N; ++i)
+    data[i] = (u8_t)(i % 251);
   HashFactory hf;
   Hashmaster *h = hf.getHasher(HashFactory::SHA256);
   u8_t dig[32], cmp[32];
-  buffer64 *b = new filebuffer64(fp);
-  h->getFileHash(b, dig);
+  h->getStringHash(data.data(), (u32_t)N, dig);
   gethex("51a5ccc7f50b8ed811ce37d6049aacb5caef6629f17e33f0c952a4e0ed693bfd", cmp);
   EXPECT_TRUE(cmpstr(dig, cmp, 32));
-  delete b;
   delete h;
-  fclose(fp);
-  remove("tb_refill.bin");
 }
 
 /*################################

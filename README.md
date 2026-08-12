@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2026.8.11 (最后修改)  
-版本：v4.2.0
+日期：2026.8.12 (最后修改)  
+版本：v4.2.1
 
 **默认4+2线程,CBC加密模式,SHA1哈希**  
 **Windows原生处理速度可达1000MB/s以上**  
@@ -17,11 +17,13 @@
 得到最终的加密文件  
 
 **解密**  
-先检查魔数,确定为正确加密后的文件  
-再提取文件的HMAC与计算的HMAC比较,确保文件完整  
-提取IV  
-最后根据加密模式对文件进行AES128解密  
-得到解密后的文件  
+先检查魔数、加密/哈希模式与线程数等文件头结构,确定为正确加密后的文件  
+提取IV与文件头存储的HMAC  
+读取密文的同时由独立HASH线程增量计算HMAC(解密融合,不再单独整读一遍密文验证),AES128解密并写出明文  
+解密完成后再比对HMAC,不匹配则删除输出文件并报错  
+
+**验证**  
+与解密共用同一读+HASH流水线,仅计算并比对HMAC,不做AES解密与写出
 
 **加密文件结构**  
 加密后的文件带有后缀.wenc,其结构如下:
@@ -47,17 +49,16 @@
     - information.cpp:版本/帮助信息与模式名查询(WencryInformation)
     - base64.h/cpp:base64编码/解码与合法性校验
   - **kernel:加解密核心文件夹**
-    - cry.h/cry.cpp:整体加解密流程接口(runcrypt/execute_*)
-    - fheader.h/fheader.cpp:加密文件头生成/验证、HMAC计算、结果打印
+    - cry.h/cry.cpp:整体加解密流程接口(runcrypt/execute_*,check_header,file_path)
+    - fheader.h/fheader.cpp:加密文件头生成/验证、增量HMAC计算、结果打印
     - **multi_aes:多线程AES加解密文件夹**
-      - multicry.h/cpp:多线程调度器(multicry_master)
-      - multi_buffergroup.h/cpp:读--工作--写三级流水线缓冲组
+      - multicry.h/cpp:多线程调度器(multicry_master,按模式启动读/HASH/AES/写线程)
+      - multi_buffergroup.h/cpp:统一读--HASH--AES--写流水线缓冲组(加密/解密/验证三模式)
       - **aes:AES加解密实现文件夹**
         - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
         - aes_ni.h/cpp:基于AES-NI指令的AES-128密钥扩展与单块变换
     - **hash:哈希函数文件夹**
-      - hashmaster.h/cpp:哈希抽象基类/工厂与文件、字符串哈希
-      - hashbuffer.h/cpp:64字节块哈希输入缓冲(filebuffer64)
+      - hashmaster.h/cpp:哈希抽象基类/工厂与字符串哈希、增量哈希接口
       - sha1.cpp、md5.cpp、sha256.cpp:软件实现
       - sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256
   - **test:测试文件夹**
@@ -78,7 +79,7 @@
     - testshash.cpp:不同哈希模式下文件加解密测试  
     - testbig.cpp:大文件加解密测试
     - testspeed.cpp:文件加密速度测试(含吞吐量断言)
-    - testvectors.cpp:NIST/标准向量测试(AES各模式、FIPS-197、哈希填充边界、HMAC参考向量、CTR进位、哈希缓冲区重载)
+    - testvectors.cpp:NIST/标准向量测试(AES各模式、FIPS-197、哈希填充边界、HMAC参考向量、CTR进位、大缓冲哈希)
     - testboundary.cpp:边界尺寸往返、线程数变化、文件头布局、失败路径、解密/验证返回值与异常、CLI错误路径测试
     - testinteractive.cpp:交互式模式子进程E2E测试(加密/解密/验证/错误模式/密钥校验重试/随机密钥)
 
@@ -159,9 +160,18 @@ Windows 兼容说明:
 **线程数写入文件头**:自v4.0.1起,加密文件头的offset 47字节记录了加密时的线程数,解密/验证时自动从文件读取(旧格式文件该字节为0,按4线程处理).因此不同线程数构建的程序可以互相解密文件,修改`THREAD_NUM`不再破坏已有文件.
 
 - **多线程流水线原理**  
-加解密采用"读线程--工作线程--写线程"三级流水线:读线程按顺序`fread`装载数据块,多个工作线程就地AES加解密,写线程按序号`fwrite`导出,读写两个方向可重叠,不再由单一维护线程串行承担全部文件I/O.  
+加解密/验证采用统一"读线程--HASH线程--工作线程--写线程"流水线:读线程按顺序`fread`装载数据块,独立的HASH线程按块序增量计算HMAC,多个工作线程就地AES加解密,写线程按序号`fwrite`导出,各段可重叠,不再由单一维护线程串行承担全部文件I/O.  
+加密时HASH线程读AES后的密文;解密/验证时HASH线程先于AES读密文(密文被就地覆盖前),解密因此融合了HMAC验证,无需再单独整读一遍.  
 每个工作线程有唯一`id`,chunk k固定由线程`k%N`处理,以保持各线程AES的IV链一致.  
 详细协作逻辑见`multi_buffergroup.cpp`注释.
+
+- **冗余缓冲对工作线程并发的影响**  
+`cry.h`中`REDUNDANCY_BUFFER`(默认2)使缓冲总数 = 线程数 + 冗余(默认4+2=6个16MB缓冲),即缓冲数大于工作线程数.其对并发的影响:
+  - **加深流水线**:读线程可把多个块预读到不同缓冲,工作线程不至于因读线程忙而空等;流水线在途深度 = 缓冲总数,最多 6×16MB=96MB 数据同时处于读/HASH/AES/写各段。
+  - **工作线程名下出现多个在途块**:块 k 装入 buf[k%size]、由线程 k%total_threads 处理,因 size>total_threads,同一工作线程名下会同时存在多个块(如4线程6缓冲时,线程0拥有块0、4,对应缓冲0、4)。工作线程须按块序(`thread_seq_tag`)逐个排空名下各块,才能维持链式模式(如CBC/CTR)的IV链连续——这也是"收尾排空"逻辑存在的根本原因。
+  - **有界背压**:读线程受"目标缓冲须为EMPTY"限制,冗余再多也不会无界预读,内存上界 = 缓冲数×16MB。
+  - **HASH线程按块号顺序消费**:HASH线程独立按块序读密文喂HMAC,与工作线程处理顺序解耦,保证HMAC严格按文件序。
+  - **调节权衡**:增大`REDUNDANCY_BUFFER`可加深流水线、提升I/O与计算重叠(尤其慢盘/高延迟I/O),但内存线性增加(每块16MB);减小则更省内存、流水线更浅,线程密集时易因等待缓冲而停顿。默认4+2在吞吐与内存(<90MB)间平衡。
 
 ## WSL运行提速建议
 
@@ -172,7 +182,7 @@ Windows 兼容说明:
   options = "metadata,umask=22,fmask=11,cache=mmap"
   ```
 - 处理大文件时,将数据放在WSL原生ext4(如`/tmp`或`~/`)上再加密,通常比`/mnt/d`快数倍.
-- 实测单次加解密的速度上限主要受文件I/O总吞吐限制(加密需读明文+写密文共两遍,解密需回读密文验HMAC+读密文解密共两遍),I/O越快吞吐越高.
+- 实测单次加解密的速度上限主要受文件I/O总吞吐限制(加密需读明文+写密文共两遍;解密HMAC随读取融合,读密文+写明文共两遍),I/O越快吞吐越高.
 
 详细过程参阅相关代码.  
 
@@ -241,4 +251,7 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.1.0 优化:支持新优化后的WCGP(即WindowsGUI)v1.0,修改了文件头验证逻辑以增强健壮性*  
 *V4.2.0 接口:execute_encrypt/execute_decrypt/execute_verify 改为异常接口——加密遇到无效文件抛 std::string("Invalid File");解密/验证成功返回 (htype<<8)|ctype(高8位哈希模式、低8位加密模式),失败抛 std::string 错误信息(坏魔数/文件过短/密钥或文件不完整/模式不匹配).*  
 *V4.2.0 测试:测试迁移至新版接口,新增解密/验证返回值(各ctype×htype组合)与异常消息测试(空文件句柄、坏魔数、损坏数据、错误密钥、模式字节非法、文件过短);修复exec对NULL参数包/版本/帮助路径的布尔返回值反转问题.*  
-*V4.2.0 文档:为valhelper、valget、main、test等模块补充函数与类注释,更新README文件结构与更新日志.*
+*V4.2.0 文档:为valhelper、valget、main、test等模块补充函数与类注释,更新README文件结构与更新日志.*  
+*V4.2.1 流水线:加密/解密/验证三模式统一到"读--HASH--AES--写"多线程流水线——新增独立HASH线程按块序增量计算HMAC;解密融合HMAC验证(消除单独整读密文验HMAC的一遍I/O,由3遍降为2遍),失败时删除输出文件(从FILE*反推路径,Windows/POSIX);验证(-v)复用同一读+HASH流水线,不做AES与写出.*  
+*V4.2.1 清理:删除filebuffer64/hashbuffer(64字节块文件哈希缓冲)与Hashmaster::getFileHash,统一改用增量哈希;hmac::getres改用增量分块计算(测试兼容).*  
+*V4.2.1 性能:原生Windows缓存态吞吐——加密~1.26GB/s、解密~1.0-1.6GB/s、验证~1.45-1.7GB/s(较融合前显著提升).*

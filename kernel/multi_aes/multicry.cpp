@@ -26,15 +26,18 @@ void multiruncrypt_file(u8_t id, Aesmode &mode)
   buffergroup *iobuffer = buffergroup::get_instance();
   while (true)
   {
-    iobuffer->wait_loaded(id);
-    if (iobuffer->stop_worker(id))
+    u8_t buffer_id = iobuffer->wait_loaded(id);
+    // 哨兵(size 及以上的非法值)表示本线程已无任务,退出。
+    if (iobuffer->stop_worker(buffer_id))
       break;
     PROF_LOG("AES_BEGIN", id);
-    for (u8_t *block = iobuffer->get_entry(id); block != NULL; block = iobuffer->get_entry(id))
+    for (u8_t *block = iobuffer->get_entry(buffer_id); block != NULL; block = iobuffer->get_entry(buffer_id))
       mode.runcry(block);
     PROF_LOG("AES_END", id);
-    if (iobuffer->finish_chunk(id))
-      break;
+    // 处理完当前块后继续循环排空本线程名下剩余的 LOADED 块,
+    // 收尾统一由 wait_loaded/stop_worker 的哨兵判定;不能因 read_done 提前退出,
+    // 否则冗余缓冲中尚未处理的块会被遗弃,导致写线程在 judge_buffer_full 上死锁。
+    iobuffer->finish_chunk(buffer_id);
   }
 };
 /*
@@ -45,11 +48,22 @@ printload:过程打印函数
 */
 void multicry_master::run_multicry(u8_t threads_num, Aesmode **mode, const std::function<void(std::string, size_t)> &printload)
 {
+  buffergroup *bg = buffergroup::get_instance();
+  bool is_verify = (bg->get_mode() == PIPE_VERIFY);
+  // HASH线程在三种模式下都运行
+  std::thread hash_thread(&buffergroup::run_hash, bg, printload);
+  std::thread write_thread;
+  if (!is_verify)
+  {
+    for (u8_t i = 0; i < threads_num; ++i)
+      threads[i] = std::thread(multiruncrypt_file, i, std::ref(*mode[i]));
+    write_thread = std::thread(&buffergroup::run_write, bg, printload);
+  }
+  bg->run_read(printload);
+  hash_thread.join();
+  if (write_thread.joinable())
+    write_thread.join();
   for (u8_t i = 0; i < threads_num; ++i)
-    threads[i] = std::thread(multiruncrypt_file, i, std::ref(*mode[i]));
-  std::thread write_thread(&buffergroup::run_write, buffergroup::get_instance(), printload);
-  buffergroup::get_instance()->run_read(printload);
-  write_thread.join();
-  for (u8_t i = 0; i < threads_num; ++i)
-    threads[i].join();
+    if (threads[i].joinable())
+      threads[i].join();
 };

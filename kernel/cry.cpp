@@ -2,6 +2,12 @@
 #include <chrono>
 #include <iostream>
 #include <functional>
+#ifdef _WIN32
+#include <windows.h>
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
 using namespace std;
 using namespace chrono;
 
@@ -62,6 +68,40 @@ void Settings::set_htype(char h)
 };
 
 /*
+file_path:由FILE*反推文件路径(供解密失败删除输出文件)
+fp:文件指针
+return:文件路径(失败返回空串)
+*/
+static std::string file_path(FILE *fp)
+{
+#ifdef _WIN32
+  HANDLE h = (HANDLE)_get_osfhandle(_fileno(fp));
+  if (h == INVALID_HANDLE_VALUE)
+    return "";
+  wchar_t buf[4096];
+  DWORD n = GetFinalPathNameByHandleW(h, buf, 4096, 0);
+  if (n == 0 || n >= 4096)
+    return "";
+  int len = WideCharToMultiByte(CP_UTF8, 0, buf, (int)n, NULL, 0, NULL, NULL);
+  std::string s((size_t)len, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, buf, (int)n, &s[0], len, NULL, NULL);
+  // 去掉 "\\?\" 前缀,便于 CRT remove()
+  if (s.compare(0, 4, "\\\\?\\") == 0)
+    s = s.substr(4);
+  return s;
+#else
+  char buf[4096];
+  char link[64];
+  snprintf(link, sizeof(link), "/proc/self/fd/%d", fileno(fp));
+  ssize_t n = readlink(link, buf, sizeof(buf) - 1);
+  if (n <= 0)
+    return "";
+  buf[n] = '\0';
+  return std::string(buf);
+#endif
+}
+
+/*
 prepare_IV:准备初始向量
 r_buf:随机缓冲数组
 return:初始向量地址
@@ -95,7 +135,7 @@ Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, bool cmode)
   // 解密时输入指针已由 prepare_IV()->getIV(FILE*) 定位到 FILE_TEXT_MARK,
   // 此处无需再 fseek(见 execute_decrypt 调用顺序)。
   buffergroup *iobuffer = buffergroup::get_instance();
-  iobuffer->set_buffergroup(threads_num, fin, out, cmode);
+  iobuffer->set_buffergroup(buffers_num, threads_num, fin, out, cmode ? PIPE_ENCRYPT : PIPE_DECRYPT);
   Aesmode **mode = new Aesmode *[threads_num];
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(cmode, ctype, iv + 20 * i);
@@ -124,12 +164,14 @@ void runcrypt::over()
     fclose(out);
 }
 /*
-verify:验证密钥和文件
-return:若为0则检查通过,否则检查不通过
+check_header:校验文件头结构与读取存储的HMAC(不读密文)
+hlen_out:输出HMAC长度
+hash_out:输出存储HMAC指针(指向FileHeader内部缓冲,在解密/验证期间保持有效)
+return:0=通过,1=文件过短,3=加密/哈希模式非法,4=魔数错误
 */
-u8_t runcrypt::verify(size_t fsize)
+u8_t runcrypt::check_header(u8_t &hlen_out, u8_t *&hash_out)
 {
-  resultprint->printtask("Verifying file");
+  resultprint->printtask("Checking file header");
   // 结构校验(魔数/模式/线程数/长度)复用 wencry_check_header
   int hc = wencry_check_header(fin);
   if (hc == 1)
@@ -159,11 +201,9 @@ u8_t runcrypt::verify(size_t fsize)
   u8_t *hash = header.getHmac(hlen);
   if (hash == NULL)
     return 1;
-  fseek(fin, FILE_IV_MARK, SEEK_SET);
-  if (!hmachandle.cmphmac(header.gethtype(), key, fin, hash, fsize))
-    return 2;
-  else
-    return 0;
+  hlen_out = hlen;
+  hash_out = hash;
+  return 0;
 }
 
 /*################################
@@ -177,8 +217,8 @@ key:密钥
 settings:加解密参数
 threads_num:线程数
 */
-runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
-    : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num), mode(false),
+runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num, u8_t r_buffers_num)
+    : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num), buffers_num(threads_num+r_buffers_num), mode(false),
       header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
       aesfactory(key)
 {
@@ -244,39 +284,55 @@ unsigned short runcrypt::execute_decrypt(size_t fsize)
   if (fin == NULL)
     throw std::string("Invalid File");
   TIMER_START(Total_Time);
-  // 验证文件
-  TIMER_START(Verify_Time);
-  int res = verify(fsize);
+  // 结构校验(魔数/模式/线程数/长度,不读密文)
+  u8_t hlen = 0;
+  u8_t *stored = NULL;
+  int res = check_header(hlen, stored);
   resultprint->resetPercentage();
-  TIMER_END(Verify_Time);
-  if (res == 0)
+  if (res != 0)
   {
-    // 准备初始化
-    resultprint->printtask("Preparing decrypt");
-    threads_num = header.get_num();
-    // 纵深防御:线程数必须落在 [1, THREAD_MAX],防止越界写 threads[] / IV 缓冲
-    if (threads_num == 0 || threads_num > multicry_master::THREAD_MAX)
-      threads_num = THREAD_NUM;
-    u8_t *iv = prepare_IV();
-    Aesmode **mode = prepare_AES(header.getctype(), iv, false);
-    // 运行解密
-    TIMER_START(AES_Decryption_Time)
-    resultprint->printtask("Decrypting");
-    auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
-    crym.run_multicry(threads_num, mode, boundfunc);
-    resultprint->resetPercentage();
-    TIMER_END(AES_Decryption_Time)
-    // 释放空间
-    resultprint->printtask("Releasing allocated memory");
-    buffergroup::del_instance();
-    release(iv, mode);
-  }
-  resultprint->printresd(res); // 打印结果
-  over();                      // 关闭文件
-  TIMER_END(Total_Time);       // 打印时间
-  if(res!=0)
+    resultprint->printresd(res);
+    over();
+    TIMER_END(Total_Time);
     throw resultprint->getResStr(res);
-  return header.gethtype()<<8 | header.getctype();
+  }
+  // 准备初始化
+  resultprint->printtask("Preparing decrypt");
+  threads_num = header.get_num();
+  // 纵深防御:线程数必须落在 [1, THREAD_MAX],防止越界写 threads[] / IV 缓冲
+  if (threads_num == 0 || threads_num > multicry_master::THREAD_MAX)
+    threads_num = THREAD_NUM;
+  u8_t *iv = prepare_IV();
+  Aesmode **mode = prepare_AES(header.getctype(), iv, false);
+  // 融合解密:读密文时HASH线程增量计算HMAC(消除独立验证读)
+  TIMER_START(AES_Decryption_Time)
+  resultprint->printtask("Decrypting & verifying");
+  hmachandle.init_hash(header.gethtype(), key, iv, 20 * threads_num);
+  buffergroup::get_instance()->set_hash_feed([this](const u8_t *d, size_t n) { hmachandle.feed_hash(d, n); });
+  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
+  crym.run_multicry(threads_num, mode, boundfunc);
+  buffergroup::get_instance()->set_hash_feed(nullptr);
+  resultprint->resetPercentage();
+  buffergroup::del_instance();
+  TIMER_END(AES_Decryption_Time)
+  // 完成HMAC并与文件头存储值比对
+  hmachandle.final_hash();
+  bool hmac_ok = hmachandle.match_result(stored, hlen);
+  release(iv, mode);
+  if (!hmac_ok)
+  {
+    std::string outpath = file_path(out);
+    resultprint->printresd(2);
+    over();
+    TIMER_END(Total_Time);
+    if (!outpath.empty())
+      remove(outpath.c_str()); // 失败删除输出文件
+    throw resultprint->getResStr(2);
+  }
+  resultprint->printresd(0); // 打印结果
+  over();                     // 关闭文件
+  TIMER_END(Total_Time);      // 打印时间
+  return header.gethtype() << 8 | header.getctype();
 }
 /*
 execute_verify:验证执行过程
@@ -288,17 +344,44 @@ unsigned short runcrypt::execute_verify(size_t fsize)
   if (fin == NULL)
     throw std::string("Invalid File");
   TIMER_START(Total_Time);
-  // 验证文件
-  TIMER_START(Verify_Time);
-  int res = verify(fsize);
+  // 结构校验
+  u8_t hlen = 0;
+  u8_t *stored = NULL;
+  int res = check_header(hlen, stored);
   resultprint->resetPercentage();
-  TIMER_END(Verify_Time);
+  if (res != 0)
+  {
+    resultprint->printresv(res);
+    over();
+    TIMER_END(Total_Time);
+    throw resultprint->getResStr(res);
+  }
+  // 用统一流水线读+哈希(不AES不写)
+  resultprint->printtask("Verifying file");
+  threads_num = header.get_num();
+  // 纵深防御:线程数必须落在 [1, THREAD_MAX]
+  if (threads_num == 0 || threads_num > multicry_master::THREAD_MAX)
+    threads_num = THREAD_NUM;
+  u8_t *iv = prepare_IV(); // 读IV,fin定位到FILE_TEXT_MARK
+  buffergroup *iobuffer = buffergroup::get_instance();
+  iobuffer->set_buffergroup(buffers_num, threads_num, fin, NULL, PIPE_VERIFY);
+  hmachandle.init_hash(header.gethtype(), key, iv, 20 * threads_num);
+  iobuffer->set_hash_feed([this](const u8_t *d, size_t n) { hmachandle.feed_hash(d, n); });
+  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
+  crym.run_multicry(threads_num, NULL, boundfunc);
+  iobuffer->set_hash_feed(nullptr);
+  iobuffer->del_instance();
+  hmachandle.final_hash();
+  bool hmac_ok = hmachandle.match_result(stored, hlen);
+  delete[] iv;
+  if (!hmac_ok)
+    res = 2;
   resultprint->printresv(res); // 打印结果
   over();                      // 关闭文件
   TIMER_END(Total_Time);       // 打印时间
-  if(res!= 0)
+  if (res != 0)
     throw resultprint->getResStr(res);
-  return header.gethtype()<<8 | header.getctype();
+  return header.gethtype() << 8 | header.getctype();
 }
 /*
 get_percentage:获取进度

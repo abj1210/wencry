@@ -1,13 +1,12 @@
 #ifndef HSM
 #define HSM
 
-#include "hashbuffer.h"
+#include <string>
 #include <map>
 
 /*################################
   模块概述:哈希算法框架(抽象基类 + 三种实现 + 工厂)
   Hashmaster 定义统一接口:
-    - getFileHash(buffer64*, ...)   : 从缓冲逐64字节块哈希文件(验证路径)。
     - getStringHash(str, len, ...)  : 哈希内存字符串。
     - reset_hash/hash_block/hash_final/get_result : 增量哈希(HMAC融合路径)。
   派生类 sha1hash/md5hash/sha256hash 实现各自的轮函数;
@@ -31,7 +30,6 @@ typedef unsigned long long u64_t;
 class Hashmaster
 {
   u8_t hashblock[64];
-  buffer64 *hashbuf;
 
 protected:
   u32_t totalsize;
@@ -50,7 +48,6 @@ public:
   virtual ~Hashmaster() {};
   virtual u8_t gethlen() = 0;
   virtual u8_t getblen() = 0;
-  void getFileHash(buffer64 *buffer, u8_t *hashres, const std::function<void(std::string, size_t)> &printload = [](std::string, size_t) -> void {});
   void getStringHash(const u8_t *string, u32_t length, u8_t *hashres);
   /*
   增量哈希接口(供HMAC融合等场景使用)

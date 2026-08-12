@@ -1,5 +1,4 @@
 #include "hashmaster.h"
-#include "hashbuffer.h"
 #include "testutil.h"
 #include "gtest/gtest.h"
 #define TNAME Testsha256
@@ -25,9 +24,10 @@ TEST(TNAME, TSNAME(2)) {
 
 TEST(TNAME, TSNAME(3)) {
   FILE *fp = genfile("abcd");
+  unsigned char buf[64] = {0};
+  size_t n = fread(buf, 1, sizeof(buf), fp);
   unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
-  buffer64 * buf = new filebuffer64(fp); 
-  htest->getFileHash(buf, hash);
+  htest->getStringHash(buf, (unsigned int)n, hash);
   gethex("88d4266fd4e6338d13b845fcf289579d209c897823b9217da3e161936f031589", hashcmp);
   EXPECT_TRUE(cmpstr(hash, hashcmp, htest->gethlen()));
   fclose(fp);
@@ -46,14 +46,13 @@ TEST(TNAME, TSNAME(4)) {
 TEST(TNAME, TSNAME(5)) {
   FILE *fp1 = genfile("asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesf");
   FILE *fp2 = genfile("asdsfgfgdfgdfgdfgdfgfdggdssssssdddddddddddddwdfrgthyjghgfdfefsfefesfesd");
+  unsigned char b1[256] = {0}, b2[256] = {0};
+  size_t n1 = fread(b1, 1, sizeof(b1), fp1);
+  size_t n2 = fread(b2, 1, sizeof(b2), fp2);
   unsigned char hash[htest->gethlen()], hashcmp[htest->gethlen()];
-  buffer64 * buf1 = new filebuffer64(fp1); 
-  htest->getFileHash(buf1, hash);
-  buffer64 * buf2 = new filebuffer64(fp2);
-  htest->getFileHash(buf2, hashcmp);
+  htest->getStringHash(b1, (unsigned int)n1, hash);
+  htest->getStringHash(b2, (unsigned int)n2, hashcmp);
   EXPECT_FALSE(cmpstr(hash, hashcmp, htest->gethlen()));
-  delete buf1;
-  delete buf2;
   fclose(fp1);
   fclose(fp2);
 }

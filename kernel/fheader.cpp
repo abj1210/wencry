@@ -1,5 +1,4 @@
 #include "cry.h"
-#include "hashbuffer.h"
 #include <chrono>
 #include <string>
 #include <iostream>
@@ -18,11 +17,11 @@ using namespace chrono;
     偏移 10  38字节 HMAC区(加密后写入,长度取决于htype;offset47恒空闲,用于记录线程数num)
     偏移 48  20*num字节 每线程IV
     之后    密文(含PKCS7填充)
-  HMAC 结构(标准 RFC 2104):
-    HMAC = H( (K xor opad) || H( (K xor ipad) || 数据 ) ),其中 ipad=0x36,opad=0x5c。
-  本文件同时提供两套HMAC计算路径:
-    - getres/gethmac/cmphmac:基于 FILE* 回读文件计算(解密验证路径)。
-    - init_hash/feed_hash/final_hash:增量喂入(加密写线程融合计算,避免回读)。
+   HMAC 结构(标准 RFC 2104):
+     HMAC = H( (K xor opad) || H( (K xor ipad) || 数据 ) ),其中 ipad=0x36,opad=0x5c。
+   本文件提供两套HMAC计算路径:
+     - getres/gethmac/cmphmac:基于 FILE* 分块增量计算(测试/独立验证兼容)。
+     - init_hash/feed_hash/final_hash:增量喂入(统一流水线HASH线程融合计算,避免回读)。
 ################################*/
 
 /*################################
@@ -134,38 +133,21 @@ void hmac::write_hmac(FILE *fp, u8_t writeMark)
 }
 
 /*
-getres:计算HMAC值
+getres:计算HMAC值(基于FILE*当前位置逐块增量计算,不再使用filebuffer64)
 hashtype:哈希模式
 key:密钥序列
 fp:需验证文件指针
-fsize:文件大小
+fsize:文件大小(仅用于进度,可忽略)
 */
 void hmac::getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize)
 {
-    // 准备数据
-    Hashmaster *hashmaster = hf.getHasher(hf.getType(hashtype));
-    const u8_t block = hashmaster->getblen();
-    length = hashmaster->gethlen();
-    hmac_res = new u8_t[length];
-    u8_t *key1 = new u8_t[block], *h1 = new u8_t[block], *h2 = new u8_t[block + length];
-    memset(key1, 0, sizeof(u8_t) * block);
-    memcpy(key1, key, 16);
-    // 计算hmac
-    for (int i = 0; i < block; ++i)
-        h1[i] = key1[i] ^ ipad;
-    auto boundfunc = bind(&AbsResultPrint::printpercentage, res_printer, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
-    buf = new filebuffer64(fp, boundfunc, h1);
-    hashmaster->getFileHash(buf, &h2[block], boundfunc);
-    for (int i = 0; i < block; ++i)
-        h2[i] = key1[i] ^ opad;
-    hashmaster->getStringHash(h2, block + length, hmac_res);
-    // 清理数据
-    delete[] key1;
-    delete[] h1;
-    delete[] h2;
-    delete buf;
-    delete hashmaster;
-    buf = NULL;
+    (void)fsize;
+    init_hash(hashtype, key, NULL, 0); // 喂入ipad块,无前缀
+    u8_t chunk[0x10000];
+    size_t n;
+    while ((n = fread(chunk, 1, sizeof(chunk), fp)) > 0)
+        feed_hash(chunk, (u32_t)n);
+    final_hash();
 }
 /*
 gethmac:获取HMAC值
@@ -204,6 +186,18 @@ bool hmac::cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, siz
     delete[] hmac_res;
     hmac_res = NULL;
     return same;
+}
+/*
+match_result:final_hash 后与给定摘要比较
+expected:待比较摘要
+len:摘要长度
+return:一致返回true
+*/
+bool hmac::match_result(const u8_t *expected, u8_t len) const
+{
+    if (hmac_res == NULL || len != length)
+        return false;
+    return memcmp(expected, hmac_res, len) == 0;
 }
 /*################################
   文件头辅助函数

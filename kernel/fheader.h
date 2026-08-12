@@ -156,7 +156,6 @@ class hmac
   HashFactory hf;
   AbsResultPrint *res_printer;
   u8_t *hmac_res, length;
-  buffer64 *buf = NULL;
   void getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize);
 
   // 增量HMAC(加密融合路径)使用的状态
@@ -174,16 +173,18 @@ public:
   void gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
   bool cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
   /*
-  增量HMAC(加密时融合计算,避免回读密文)
+  增量HMAC(加密/解密/验证融合时计算,避免回读密文)
   init_hash:初始化,喂入ipad块与prefix(文件头IV区)
   feed_hash:喂入密文块
   final_hash:完成计算,结果存于hmac_res
   write_hmac:将hmac_res写入文件指定偏移
+  match_result:final_hash 后与给定摘要比较
   */
   void init_hash(u8_t hashtype, u8_t *key, const u8_t *prefix, size_t prefix_len);
   void feed_hash(const u8_t *data, size_t len);
   void final_hash();
   void write_hmac(FILE *fp, u8_t writeMark);
+  bool match_result(const u8_t *expected, u8_t len) const;
 };
 
 #endif

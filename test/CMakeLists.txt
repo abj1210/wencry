@@ -349,3 +349,9 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_SOURCE_DIR}/../valget
                            ${PROJECT_SOURCE_DIR}/../valhelper
                            )
+
+# 为全部测试设置超时,避免并发回归(死锁/挂起)导致 ctest 无限阻塞。
+get_property(_all_tests DIRECTORY PROPERTY TESTS)
+foreach(_t IN LISTS _all_tests)
+  set_tests_properties(${_t} PROPERTIES TIMEOUT 600)
+endforeach()
