@@ -60,7 +60,7 @@ TEST(TNAME, TSNAME(5)) {
 
 int main(int argc, char **argv) {
   HashFactory hf;
-  htest = hf.getHasher(HashFactory::HASH_TYPE::MD5);
+  htest = hf.getHasher(HT_MD5);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

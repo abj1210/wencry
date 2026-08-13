@@ -246,7 +246,7 @@ static const hv_t hv_bounds[] = {
 
 TEST(Testvectors, sha1_padding_boundaries) {
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HashFactory::SHA1);
+  Hashmaster *h = hf.getHasher(HT_SHA1);
   u8_t in[1000], dig[20], cmp[20];
   for (size_t k = 0; k < sizeof(hv_bounds) / sizeof(hv_bounds[0]); ++k) {
     fill_pattern(in, hv_bounds[k].len);
@@ -258,7 +258,7 @@ TEST(Testvectors, sha1_padding_boundaries) {
 }
 TEST(Testvectors, md5_padding_boundaries) {
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HashFactory::MD5);
+  Hashmaster *h = hf.getHasher(HT_MD5);
   u8_t in[1000], dig[16], cmp[16];
   for (size_t k = 0; k < sizeof(hv_bounds) / sizeof(hv_bounds[0]); ++k) {
     fill_pattern(in, hv_bounds[k].len);
@@ -270,7 +270,7 @@ TEST(Testvectors, md5_padding_boundaries) {
 }
 TEST(Testvectors, sha256_padding_boundaries) {
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HashFactory::SHA256);
+  Hashmaster *h = hf.getHasher(HT_SHA256);
   u8_t in[1000], dig[32], cmp[32];
   for (size_t k = 0; k < sizeof(hv_bounds) / sizeof(hv_bounds[0]); ++k) {
     fill_pattern(in, hv_bounds[k].len);
@@ -338,7 +338,7 @@ TEST(Testvectors, hashfile_refill) {
   for (size_t i = 0; i < N; ++i)
     data[i] = (u8_t)(i % 251);
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HashFactory::SHA256);
+  Hashmaster *h = hf.getHasher(HT_SHA256);
   u8_t dig[32], cmp[32];
   h->getStringHash(data.data(), (u32_t)N, dig);
   gethex("51a5ccc7f50b8ed811ce37d6049aacb5caef6629f17e33f0c952a4e0ed693bfd", cmp);
@@ -352,7 +352,7 @@ TEST(Testvectors, hashfile_refill) {
 ################################*/
 
 TEST(Testvectors, getPercentage_logic) {
-  ResultPrint rp;
+  ConsoleDisplay rp;
   rp.printpercentage("t", 50, 100);
   EXPECT_EQ(50, rp.getPercentage());
   rp.printpercentage("t", 50, 100);
@@ -362,11 +362,46 @@ TEST(Testvectors, getPercentage_logic) {
   rp.resetPercentage();
   EXPECT_EQ(0, rp.getPercentage());
 
-  NullResPrint np;
+  SilentDisplay np;
   np.printpercentage("t", 25, 100);
   EXPECT_EQ(25, np.getPercentage());
   np.resetPercentage();
   EXPECT_EQ(0, np.getPercentage());
+}
+
+/*
+  类型列表一致性回归测试:
+  遍历共享枚举 kCryptModeCount/kHashModeCount,断言
+  1) 显示类名称表对每个类型返回有效名称(非 "unknown");
+  2) 内核工厂对每个类型都真正实现了加解密器/哈希器(非 NULL);
+  3) 越界哨兵(COUNT)被工厂拒绝(返回 NULL),证明列表两端闭合。
+  防止"枚举新增成员但工厂/名称表漏加"的漂移。
+*/
+TEST(Testvectors, mode_table_factory_consistency) {
+  u8_t key[16] = {0};
+  u8_t iv[16] = {0};
+  AesFactory af(key);
+
+  for (int i = 0; i < kCryptModeCount; ++i) {
+    EXPECT_STRNE(crypt_mode_name((u8_t)i), "unknown") << "crypt name missing for mode " << i;
+    Aesmode *enc = af.createCryMaster(true, (u8_t)i, iv);
+    Aesmode *dec = af.createCryMaster(false, (u8_t)i, iv);
+    EXPECT_NE(enc, nullptr) << "AES encrypt factory missing mode " << i;
+    EXPECT_NE(dec, nullptr) << "AES decrypt factory missing mode " << i;
+    delete enc;
+    delete dec;
+  }
+  EXPECT_EQ(af.createCryMaster(true, (u8_t)kCryptModeCount, iv), nullptr);
+  EXPECT_EQ(af.createCryMaster(false, (u8_t)kCryptModeCount, iv), nullptr);
+
+  HashFactory hf;
+  for (int i = 0; i < kHashModeCount; ++i) {
+    EXPECT_STRNE(hash_mode_name((u8_t)i), "unknown") << "hash name missing for type " << i;
+    Hashmaster *h = hf.getHasher((HashType)i);
+    EXPECT_NE(h, nullptr) << "hash factory missing type " << i;
+    delete h;
+  }
+  EXPECT_EQ(hf.getHasher((HashType)kHashModeCount), nullptr);
 }
 
 int main(int argc, char **argv) {

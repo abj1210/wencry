@@ -1,7 +1,7 @@
 #ifndef VHP
 #define VHP
 
-#include <vector>
+#include "display.h"
 #include <string.h>
 #include <string>
 #include <stdio.h>
@@ -39,9 +39,8 @@ WencryInformation:程序信息与参数校验类
 并校验用户输入的 ctype/htype 是否合法。
 */
 class WencryInformation{
-    std::vector<std::string> ctype, htype;
     std::string description;
-    std::string get_typelist(std::vector<std::string> list);
+    std::string get_typelist(int count, const char *(*name)(u8_t));
 public:
     WencryInformation();
     std::string get_ctypelist();
@@ -57,13 +56,6 @@ public:
     std::string get_help();
 };
 
-/*
-strlog:格式化打印两段信息(左对齐/右对齐填充)
-s1:左侧信息
-s2:右侧信息
-fill:填充字符
-*/
-void strlog(std::string s1, std::string s2, char fill = ' ');
 /*
 printkey:将16字节密钥转为base64字符串
 key:16字节密钥

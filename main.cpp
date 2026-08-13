@@ -29,8 +29,8 @@ int main(int argc, char *argv[])
       return 1;
     if (((vpak_t *)vals)->mode == 'V')
     {
-      strlog("Kernel version:", wif.get_version(), '.');
-      strlog("Build time:", wif.get_buildtime(), '.');
+      strlog("Kernel version", wif.get_version());
+      strlog("Build time", wif.get_buildtime());
       return 0;
     }
     else if (((vpak_t *)vals)->mode == 'h')

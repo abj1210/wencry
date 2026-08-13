@@ -32,7 +32,7 @@ using namespace chrono;
 构造函数
 no_echo:是否隐藏输出
 */
-hmac::hmac() : res_printer(new NullResPrint), hmac_res(NULL), hashmaster(NULL), key1(NULL), h1(NULL), block_len(0), accum_len(0) {};
+hmac::hmac() : res_printer(new SilentDisplay), hmac_res(NULL), hashmaster(NULL), key1(NULL), h1(NULL), block_len(0), accum_len(0) {};
 
 /*
 析构函数:清理增量HMAC状态
@@ -209,7 +209,7 @@ iv:初始向量数组
 */
 void FileHeader::getIV(const u8_t *r_buf, u8_t *iv)
 {
-    Hashmaster *hm = hf.getHasher(HashFactory::SHA1);
+    Hashmaster *hm = hf.getHasher(HT_SHA1);
     size_t len = strnlen((const char *)r_buf, 256);
     hm->getStringHash(r_buf, len, iv);
     for (int i = 1; i < num; ++i)
@@ -288,134 +288,4 @@ u8_t *FileHeader::getHmac(u8_t len)
     if (sum != len)
         return NULL;
     return hash;
-}
-
-/*################################
-  结果打印辅助函数
-################################*/
-void AbsResultPrint::resetPercentage()
-{
-    acc_size.store(0);
-}
-/*
-ResultPrint::resetPercentage:重置进度并结束当前进度行(\r换行)
-*/
-void ResultPrint::resetPercentage()
-{
-    AbsResultPrint::resetPercentage();
-    std::cout << "\r\n";
-}
-/*
-printtask:打印任务
-name:任务名
-*/
-void ResultPrint::printtask(std::string name)
-{
-    strlog("Task:", name);
-}
-/*
-printinv: 打印非法
-return: 返回值
-*/
-u8_t ResultPrint::printinv(const u8_t ret)
-{
-    strlog("Invalid values:", std::to_string(ret));
-    return ret;
-}
-/*
-createTimer:创建定时器
-name:定时器名
-return:返回的定时器
-*/
-Timer *ResultPrint::createTimer(string name)
-{
-    Timer *timer = new Timer;
-    timer->name = name;
-    timer->start = system_clock::now();
-    return timer;
-}
-
-/*
-printtime: 打印时间
-totalTime: 总时间
-*/
-void ResultPrint::printTimer(Timer *timer)
-{
-    auto end = system_clock::now();
-    auto totalTime = duration_cast<microseconds>(end - timer->start);
-    strlog(timer->name + " : ", std::to_string(double(totalTime.count()) * microseconds::period::num / microseconds::period::den) + "s");
-    delete timer;
-}
-/*
-printenc: 打印加密结果
-*/
-void ResultPrint::printenc()
-{
-    strlog("Result:", "Encryption is over!");
-    over.store(true);
-}
-/*
-printres: 打印解密结果
-res: 解密结果
-*/
-void ResultPrint::printresv(int res)
-{
-    strlog("Result:", this->getResStr(res));
-    over.store(true);
-}
-void ResultPrint::printresd(int res)
-{
-    if (res <= 0)
-    {
-        strlog("Result:", "Decryption is over!");
-        over.store(true);
-    }
-    else
-        printresv(res);
-}
-/*
-printctype:打印加密模式
-type:模式码
-*/
-void ResultPrint::printctype(u8_t type)
-{
-    std::string name = to_string(type) + "/" + AesFactory::getName(type);
-    strlog("Crypt Mode:", name);
-}
-/*
-printctype:打印哈希模式
-type:模式码
-*/
-void ResultPrint::printhtype(u8_t type)
-{
-    std::string name = to_string(type) + "/" + HashFactory::getName(type);
-    strlog("Hash Mode:", name);
-}
-/*
-printpercentage:打印加载进度
-name:进度名
-percent:百分比
-*/
-void ResultPrint::printpercentage(std::string name, size_t now_size, size_t total_size)
-{
-    acc_size.fetch_add(now_size);
-    this->total_size.store(total_size);
-#ifndef GUI_ON
-    std::cout << std::setw(5) << name << " loaded ";
-    double percentage = 100 * ((double)acc_size / (double)total_size);
-    const int barWidth = 50; // 进度条的总宽度
-    std::cout << "[";
-    int pos = round(barWidth * percentage / 100.0);
-    for (int i = 0; i < barWidth; ++i)
-    {
-        if (i < pos)
-            std::cout << "=";
-        else if (i == pos)
-            std::cout << ">";
-        else
-            std::cout << " ";
-    }
-    std::cout << "] " << std::setw(12) << std::fixed << std::setprecision(2) << percentage << " %\r";
-    std::cout.flush();
-#endif
 }

@@ -9,7 +9,6 @@ typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
 
 #define THREAD_NUM 4
-#define REDUNDANCY_BUFFER 2
 #define FILE_MN_MARK 0
 #define FILE_MODE_MARK 8
 #define FILE_HMAC_MARK 10
@@ -63,7 +62,6 @@ out:输出文件
 key:密钥
 settings:加解密参数
 threads_num:线程数
-buffers_num:缓冲区总数
 mode:是否为加密模式
 */
 class runcrypt
@@ -72,7 +70,6 @@ class runcrypt
   u8_t *key;
   Settings settings;
   u8_t threads_num;
-  u8_t buffers_num;
   bool mode;
 
   // 文件头构造器
@@ -89,7 +86,7 @@ class runcrypt
   hmac hmachandle;
   // 结果打印器
 
-  AbsResultPrint *resultprint;
+  Display *resultprint;
 
   u8_t *prepare_IV(const u8_t *r_buf);
   u8_t *prepare_IV();
@@ -99,7 +96,7 @@ class runcrypt
   void over();
 
 public:
-  runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings = default_settings, u8_t threads_num = THREAD_NUM, u8_t r_buffers_num = REDUNDANCY_BUFFER);
+  runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings = default_settings, u8_t threads_num = THREAD_NUM);
   ~runcrypt();
   void execute_encrypt(size_t fsize, u8_t *r_buf = NULL);
   unsigned short execute_decrypt(size_t fsize);

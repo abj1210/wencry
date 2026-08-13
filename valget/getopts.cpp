@@ -51,9 +51,7 @@ mode:模式
 */
 static void printCryptMode(u8_t mode, WencryInformation wif)
 {
-    std::string cm = "Crypt mode :";
-    std::string cry = wif.get_cname(mode);
-    strlog(cm, cry);
+    strlog("Crypt mode", std::to_string(mode) + "/" + wif.get_cname(mode));
 }
 /*
 printCryptMode:打印Hash模式
@@ -61,9 +59,7 @@ mode:模式
 */
 static void printHashMode(u8_t mode, WencryInformation wif)
 {
-    std::string hm = "Hash mode :";
-    std::string hash = wif.get_hname(mode);
-    strlog(hm, hash);
+    strlog("Hash mode", std::to_string(mode) + "/" + wif.get_hname(mode));
 }
 /*
 parseOpts:解析选项
@@ -81,7 +77,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
             res->mode = 'e';
         else
         {
-            strlog("Error :", "Only one mode can be specified");
+            strerr("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -90,7 +86,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
             res->mode = 'd';
         else
         {
-            strlog("Error :", "Only one mode can be specified");
+            strerr("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -99,7 +95,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
             res->mode = 'v';
         else
         {
-            strlog("Error :", "Only one mode can be specified");
+            strerr("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -110,7 +106,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         {
             auto fileSize = std::filesystem::file_size(optarg);
             fsize = fileSize;
-            strlog("File size: ", std::to_string(((double)fileSize) / ((double)(1024 * 1024))) + "MB");
+            strlog("File size", format_size((size_t)fileSize));
         }
         catch (std::filesystem::filesystem_error &e)
         {
@@ -118,7 +114,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         }
         if (res->fp == NULL)
         {
-            strlog("Error :", "Could not open file " + std::string(optarg));
+            strerr("Error", "Could not open file " + std::string(optarg));
             return false;
         }
         res->size = fsize;
@@ -127,19 +123,15 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         res->out = fopen(optarg, "wb+");
         if (res->out == NULL)
         {
-            strlog("Error :", "Could not open file " + std::string(optarg));
+            strerr("Error", "Could not open file " + std::string(optarg));
             return false;
         }
         break;
     case 'k':
         res->key = new u8_t[16];
-        if (checkB64Key((u8_t *)optarg, res->key))
+        if (!checkB64Key((u8_t *)optarg, res->key))
         {
-            strlog("Key :", "Using specific key");
-        }
-        else
-        {
-            strlog("Error :", "Invalid base64 key");
+            strerr("Error", "Invalid base64 key");
             return false;
         }
         break;
@@ -150,11 +142,10 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         if (res->ctype == -1)
         {
             res->ctype = atoi(optarg);
-            printCryptMode(res->ctype, wif);
         }
         else
         {
-            strlog("Error :", "Only one ctype can be specified");
+            strerr("Error", "Only one ctype can be specified");
             return false;
         }
         break;
@@ -162,11 +153,10 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         if (res->htype == -1)
         {
             res->htype = atoi(optarg);
-            printHashMode(res->htype, wif);
         }
         else
         {
-            strlog("Error :", "Only one htype can be specified");
+            strerr("Error", "Only one htype can be specified");
             return false;
         }
         break;
@@ -175,7 +165,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
             res->mode = 'V';
         else
         {
-            strlog("Error :", "Only one mode can be specified");
+            strerr("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -185,13 +175,13 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
             res->mode = 'h';
         else
         {
-            strlog("Error :", "Only one mode can be specified");
+            strerr("Error", "Only one mode can be specified");
             return false;
         }
 
         break;
     default:
-        strlog("Error :", "Unknown option");
+        strerr("Error", "Unknown option");
         return false;
     }
     return true;
@@ -233,7 +223,7 @@ u8_t *get_v_opt(int argc, char *argv[])
     }
     if (res->mode == 'u')
     {
-        strlog("Error :", "Wrong Mode");
+        strerr("Error", "Wrong Mode");
         delete res;
         return NULL;
     }
@@ -241,44 +231,58 @@ u8_t *get_v_opt(int argc, char *argv[])
     {
         if (res->ctype == -1)
         {
-            printCryptMode(0, wif);
             res->ctype = 0;
         }
         else if (!wif.check_ctype(res->ctype))
         {
-            strlog("Error :", "Wrong ctype");
+            strerr("Error", "Wrong ctype");
             delete res;
             return NULL;
         }
+        printCryptMode(res->ctype, wif);
         if (res->htype == -1)
         {
-            printHashMode(0, wif);
             res->htype = 0;
         }
         else if (!wif.check_htype(res->htype))
         {
-            strlog("Error :", "Wrong htype");
+            strerr("Error", "Wrong htype");
             delete res;
             return NULL;
         }
+        printHashMode(res->htype, wif);
         if (res->key == NULL)
         {
-            strlog("Key :", "Using random key");
             res->key = getRandomKey();
         }
         if (res->fp == NULL)
         {
-            strlog("Error :", "No file specified");
+            strerr("Error", "No file specified");
             delete res;
             return NULL;
         }
         if (res->out == NULL)
         {
-            strlog("Note :", "Using default output file name");
+            strlog("Note", "Using default output file name");
             res->out = fopen(fout, "wb+");
         }
         getRandomBuffer(res->r_buf);
-        strlog("Key is:", printkey(res->key));
+        strlog("Key", printkey(res->key));
+    }
+    else if (res->mode == 'd' || res->mode == 'v')
+    {
+        if (res->key == NULL)
+        {
+            strerr("Error", "No key specified");
+            delete res;
+            return NULL;
+        }
+        if (res->fp == NULL)
+        {
+            strerr("Error", "No file specified");
+            delete res;
+            return NULL;
+        }
     }
     return res->buf;
 }

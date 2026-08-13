@@ -41,7 +41,6 @@ class AesFactory {
 public:
   explicit AesFactory(u8_t *key): key(key) {};
   AesFactory(u8_t *key, const u8_t * iv): key(key), iv(iv) {};
-  static std::string getName(u8_t type);
   Aesmode * createCryMaster(bool isenc, u8_t type);
   Aesmode * createCryMaster(bool isenc, u8_t type, const u8_t * iv);
 };

@@ -61,7 +61,7 @@ TEST(TNAME, TSNAME(5)) {
 
 int main(int argc, char **argv) {
   HashFactory hf;
-  htest = hf.getHasher(HashFactory::HASH_TYPE::SHA1);
+  htest = hf.getHasher(HT_SHA1);
   testing::InitGoogleTest(&argc, argv);
   return RUN_ALL_TESTS();
 }

@@ -2,6 +2,9 @@
 #define FHD
 
 #include "hashmaster.h"
+#include "display.h"
+#include "display/console_display.h"
+#include "display/silent_display.h"
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
@@ -38,115 +41,6 @@ public:
 };
 
 /*
-计时器类
-*/
-
-struct Timer
-{
-  std::chrono::system_clock::time_point start;
-  std::string name;
-};
-
-/*
-结果打印类
-*/
-
-class AbsResultPrint
-{
-protected:
-  std::atomic<size_t> acc_size;
-  std::atomic<size_t> total_size;
-  std::atomic<bool> over;
-
-public:
-  AbsResultPrint() : acc_size(0), total_size(1), over(false) {};
-  virtual ~AbsResultPrint() {};
-  virtual void printtask(std::string name) = 0;
-  virtual u8_t printinv(const u8_t ret) = 0;
-  virtual Timer *createTimer(std::string name) = 0;
-  virtual void printTimer(Timer *timer) = 0;
-  virtual void printenc() = 0;
-  virtual void printresd(int res) = 0;
-  virtual void printresv(int res) = 0;
-  virtual void printctype(u8_t type) = 0;
-  virtual void printhtype(u8_t type) = 0;
-  virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
-  virtual void resetPercentage();
-  std::string getResStr(int res){
-    if (res <= 0)
-        return "Verification passed!";
-    else if (res == 1)
-        return "Input file is too short.";
-    else if (res == 2)
-        return "Wrong key or File not complete.";
-    else if (res == 3)
-        return "Aes / hash mode not match.";
-    else if (res == 4)
-        return "Wrong magic number.";
-    else
-        return "Unknown res number: " + std::to_string(res);
-  }
-  int getPercentage() const
-  {
-    size_t t = total_size.load();
-    size_t a = acc_size.load();
-    if (t == 0)
-      return 0;
-    int p = (int)(100 * ((double)a / (double)t));
-    if (p < 0)
-      p = 0;
-    if (p > 100)
-      p = 100;
-    return p;
-  };
-  bool isOver() const { return over.load(); };
-};
-
-class NullResPrint : public AbsResultPrint
-{
-public:
-    NullResPrint() : AbsResultPrint() {};
-  virtual void printtask(std::string) {};
-  virtual u8_t printinv(const u8_t ret) { return ret; };
-  virtual Timer *createTimer(std::string) { return NULL; };
-  virtual void printTimer(Timer *) {};
-  virtual void printenc() { over.store(true); };
-  virtual void printresd(int) { over.store(true); };
-  virtual void printresv(int) { over.store(true); };
-  virtual void printctype(u8_t) {};
-  virtual void printhtype(u8_t) {};
-  virtual void resetPercentage() override { acc_size.store(0); };
-  virtual void printpercentage(std::string, size_t now_size, size_t total_size)
-  {
-    this->total_size.store(total_size);
-    this->acc_size.fetch_add(now_size);
-  };
-};
-
-class ResultPrint : public AbsResultPrint
-{
-
-  void strlog(std::string s1, std::string s2, char fill = ' ')
-  {
-    std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << "\r\n";
-  }
-
-public:
-    ResultPrint() : AbsResultPrint() {};
-  virtual void printtask(std::string name);
-  virtual u8_t printinv(const u8_t ret);
-  virtual Timer *createTimer(std::string name);
-  virtual void printTimer(Timer *timer);
-  virtual void printenc();
-  virtual void printresd(int res);
-  virtual void printresv(int res);
-  virtual void printctype(u8_t type);
-  virtual void printhtype(u8_t type);
-  virtual void resetPercentage() override;
-  virtual void printpercentage(std::string name, size_t now_size, size_t total_size);
-};
-
-/*
 计算HMAC类
 */
 
@@ -154,7 +48,7 @@ class hmac
 {
   static const u8_t ipad = 0x36, opad = 0x5c;
   HashFactory hf;
-  AbsResultPrint *res_printer;
+  Display *res_printer;
   u8_t *hmac_res, length;
   void getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize);
 
@@ -169,7 +63,7 @@ class hmac
 public:
   hmac();
   ~hmac();
-  void loadprinter(AbsResultPrint *res_printer) { this->res_printer = res_printer; };
+  void loadprinter(Display *res_printer) { this->res_printer = res_printer; };
   void gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
   bool cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
   /*

@@ -1,4 +1,5 @@
 #include "aesmode.h"
+#include "modes.h"
 
 /*################################
   AES算法子类实现
@@ -190,15 +191,15 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type, const u8_t *iv)
   {
     switch (type)
     {
-    case 0:
+    case CM_ECB:
       return new AesECB_Enc(key, iv);
-    case 1:
+    case CM_CBC:
       return new AesCBC_Enc(key, iv);
-    case 2:
+    case CM_CTR:
       return new AesCTR(key, iv);
-    case 3:
+    case CM_CFB:
       return new AesCFB_Enc(key, iv);
-    case 4:
+    case CM_OFB:
       return new AesOFB(key, iv);
     default:
       return NULL;
@@ -208,15 +209,15 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type, const u8_t *iv)
   {
     switch (type)
     {
-    case 0:
+    case CM_ECB:
       return new AesECB_Dec(key, iv);
-    case 1:
+    case CM_CBC:
       return new AesCBC_Dec(key, iv);
-    case 2:
+    case CM_CTR:
       return new AesCTR(key, iv);
-    case 3:
+    case CM_CFB:
       return new AesCFB_Dec(key, iv);
-    case 4:
+    case CM_OFB:
       return new AesOFB(key, iv);
     default:
       return NULL;
@@ -226,26 +227,4 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type, const u8_t *iv)
 Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
 {
   return createCryMaster(isenc, type, iv);
-}
-/*
-getName:获取模式名称
-type:模式码
-return:模式名称
-*/
-std::string AesFactory::getName(u8_t type){
-  switch (type)
-  {
-  case 0:
-    return "ECB";
-  case 1:
-    return "CBC";
-  case 2:
-    return "CTR";
-  case 3:
-    return "CFB";
-  case 4:
-    return "OFB";
-  default:
-    return "Unknown";
-  }
 }

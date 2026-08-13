@@ -1,20 +1,8 @@
 #include "valhelper.h"
 #include "base64.h"
-#include <iostream>
-#include <iomanip>
 #include <stdlib.h>
+#include <time.h>
 
-
-/*
-strlog:格式化打印两段信息(左侧40字符宽左对齐,右侧40字符宽右对齐)
-s1:左侧信息
-s2:右侧信息
-fill:填充字符(默认空格)
-*/
-void strlog(std::string s1, std::string s2, char fill)
-{
-  std::cout << std::setw(40) << std::setfill(fill) << std::left << s1 << std::setfill(fill) << std::setw(40) << std::right << s2 << std::endl;
-}
 /*
 printkey:将16字节密钥转换为base64字符串
 key:16字节密钥

@@ -24,8 +24,8 @@ bool exec(int argc, char *argv[]) {
       return false;
     if (((vpak_t *)vals)->mode == 'V')
     {
-      strlog("Kernel version:", wif.get_version(), '.');
-      strlog("Build time:", wif.get_buildtime(), '.');
+      strlog("Kernel version", wif.get_version());
+      strlog("Build time", wif.get_buildtime());
       return true;
     }
     else if (((vpak_t *)vals)->mode == 'h')

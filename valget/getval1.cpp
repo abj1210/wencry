@@ -22,7 +22,7 @@ static std::string getInputFilep(vpak_t *pak)
     fp = fopen(fn, "rb");
     if (fp != NULL)
       break;
-    strlog("Error :", "File not found");
+    strerr("Error", "File not found");
   }
   std::string path(fn);
   size_t pos = path.find_last_of("/\\");
@@ -35,7 +35,7 @@ static std::string getInputFilep(vpak_t *pak)
   {
     size = 0;
   }
-  strlog(std::string(filename.c_str()) + " file size: ", std::to_string(((double)size) / ((double)(1024 * 1024))) + "MB");
+  strlog("File size", format_size((size_t)size));
   pak->fp = fp;
   pak->size = size;
   return filename;
@@ -48,11 +48,11 @@ static u8_t *getInputKey()
 {
   u8_t kn[128] = "";
   u8_t *keyout = new u8_t[16];
-  printf("Enter 128 bits (16 bytes) key in base64 mod:\n");
+  printf("Enter 128 bits (16 bytes) key in base64 mode:\n");
   scanf("%127s", kn);
   while (!checkB64Key(kn, keyout))
   {
-    printf("Sorry, please enter 128 bits (16 bytes) key in base64 mod:\n");
+    printf("Sorry, please enter 128 bits (16 bytes) key in base64 mode:\n");
     scanf("%127s", kn);
   }
   return keyout;
@@ -72,7 +72,7 @@ static u8_t selectCMode(WencryInformation wif)
     printf("Sorry, please enter a valid mode(%s).\n", wif.get_ctypelist().c_str());
     scanf("%d", &c);
   }
-  printf("Cmode is : %s\n", wif.get_cname(c).c_str());
+  strlog("Crypt mode", wif.get_cname(c));
   return (u8_t)c;
 }
 /*
@@ -90,7 +90,7 @@ static u8_t selectHMode(WencryInformation wif)
     printf("Sorry, please enter a valid mode(%s).\n", wif.get_htypelist().c_str());
     scanf("%d", &h);
   }
-  printf("Hmode is : %s\n", wif.get_hname(h).c_str());
+  strlog("Hash mode", wif.get_hname(h));
   return (u8_t)h;
 }
 /*
@@ -104,8 +104,8 @@ u8_t *get_v_mod1()
   WencryInformation wif;
   vpak_t *res = new vpak_t;
   res->no_echo = false;
-  strlog("Kernel version:", wif.get_version(), '.');
-  strlog("Build time:", wif.get_buildtime(), '.');
+  strlog("Kernel version", wif.get_version());
+  strlog("Build time", wif.get_buildtime());
   printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
   scanf("%c", &res->mode);
   printf("File name:\n");
@@ -119,9 +119,9 @@ u8_t *get_v_mod1()
     else
       res->key = getInputKey();
     sprintf(outn, "%s.wenc", fname.c_str());
-    strlog("Output File: ", outn);
+    strlog("Output file", outn);
     res->out = fopen(outn, "wb+");
-    strlog("Key is:", printkey(res->key));
+    strlog("Key", printkey(res->key));
     res->ctype = selectCMode(wif);
     res->htype = selectHMode(wif);
     if (res->ctype != 0)
@@ -140,13 +140,13 @@ u8_t *get_v_mod1()
       scanf("%*[\n]");
       scanf("%127s", decn);
       res->out = fopen(decn, "wb+");
-      strlog("Output File: ", decn);
+      strlog("Output file", decn);
     }
     else
     {
       sprintf(outn, "%s.wdec", fname.c_str());
       res->out = fopen(outn, "wb+");
-      strlog("Output File: ", outn);
+      strlog("Output file", outn);
     }
     res->key = getInputKey();
     res->ctype = -1;
@@ -160,7 +160,7 @@ u8_t *get_v_mod1()
     res->htype = -1;
   }
   else if (res->mode == 'h')
-    wif.get_help();
+    std::cout << wif.get_help();
   else
     res->fp = NULL;
   return res->buf;

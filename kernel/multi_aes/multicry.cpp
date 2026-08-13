@@ -23,21 +23,21 @@ void multiruncrypt_file(u8_t id, Aesmode &mode)
 #ifdef PROFILE_THREADS
   g_thread_role = "worker";
 #endif
-  buffergroup *iobuffer = buffergroup::get_instance();
+  buffergroup *bg = buffergroup::get_instance();
   while (true)
   {
-    u8_t buffer_id = iobuffer->wait_loaded(id);
-    // 哨兵(size 及以上的非法值)表示本线程已无任务,退出。
-    if (iobuffer->stop_worker(buffer_id))
+    iobuffer *buffer = bg->wait_loaded(id);
+    // 哨兵(NULL)表示本线程已无任务,退出。
+    if (bg->stop_worker(buffer))
       break;
     PROF_LOG("AES_BEGIN", id);
-    for (u8_t *block = iobuffer->get_entry(buffer_id); block != NULL; block = iobuffer->get_entry(buffer_id))
+    for (u8_t *block = bg->get_entry(buffer); block != NULL; block = bg->get_entry(buffer))
       mode.runcry(block);
     PROF_LOG("AES_END", id);
-    // 处理完当前块后继续循环排空本线程名下剩余的 LOADED 块,
-    // 收尾统一由 wait_loaded/stop_worker 的哨兵判定;不能因 read_done 提前退出,
-    // 否则冗余缓冲中尚未处理的块会被遗弃,导致写线程在 judge_buffer_full 上死锁。
-    iobuffer->finish_chunk(buffer_id);
+    // 处理完当前块后继续循环排空本线程名下剩余的就绪块,
+    // 收尾统一由 wait_loaded/stop_worker 的 NULL 哨兵判定;不能因 read_done 提前退出,
+    // 否则工作池中尚未处理的块会被遗弃,导致写线程死锁。
+    bg->finish_chunk(buffer);
   }
 };
 /*

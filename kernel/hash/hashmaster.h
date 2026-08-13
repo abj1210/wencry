@@ -1,6 +1,7 @@
 #ifndef HSM
 #define HSM
 
+#include "modes.h"
 #include <string>
 #include <map>
 
@@ -146,20 +147,12 @@ public:
   virtual u8_t getblen() { return 64; };
 };
 /*
-哈希函数工厂类
+哈希函数工厂类(类型列表单源见 valhelper/modes.h 的 HashType 枚举)
 */
 class HashFactory
 {
 public:
-  enum HASH_TYPE
-  {
-    SHA1,
-    MD5,
-    SHA256,
-    Unknown = -1
-  };
-  static std::string getName(u8_t type);
-  static HASH_TYPE getType(u8_t type);
-  Hashmaster *getHasher(HASH_TYPE type);
+  static HashType getType(u8_t type);
+  Hashmaster *getHasher(HashType type);
 };
 #endif

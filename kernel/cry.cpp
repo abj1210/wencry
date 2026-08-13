@@ -35,12 +35,12 @@ Settings default_settings;
 */
 Settings::Settings(char ctype, char htype, bool no_echo) : ctype(ctype), htype(htype), no_echo(no_echo)
 {
-  if (ctype < -1 || ctype > 4)
+  if (ctype < -1 || ctype >= kCryptModeCount)
   {
     fprintf(stderr, "Invalid crypt type: %d\n", ctype);
     exit(1);
   }
-  if (htype < -1 || htype > 2)
+  if (htype < -1 || htype >= kHashModeCount)
   {
     fprintf(stderr, "Invalid hash type: %d\n", htype);
     exit(1);
@@ -48,7 +48,7 @@ Settings::Settings(char ctype, char htype, bool no_echo) : ctype(ctype), htype(h
 }
 void Settings::set_ctype(char c)
 {
-  if (c < -1 || c > 4)
+  if (c < -1 || c >= kCryptModeCount)
   {
     fprintf(stderr, "Invalid crypt type: %d\n", c);
     exit(1);
@@ -58,7 +58,7 @@ void Settings::set_ctype(char c)
 };
 void Settings::set_htype(char h)
 {
-  if (h < -1 || h > 2)
+  if (h < -1 || h >= kHashModeCount)
   {
     fprintf(stderr, "Invalid hash type: %d\n", h);
     exit(1);
@@ -135,7 +135,7 @@ Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, bool cmode)
   // 解密时输入指针已由 prepare_IV()->getIV(FILE*) 定位到 FILE_TEXT_MARK,
   // 此处无需再 fseek(见 execute_decrypt 调用顺序)。
   buffergroup *iobuffer = buffergroup::get_instance();
-  iobuffer->set_buffergroup(buffers_num, threads_num, fin, out, cmode ? PIPE_ENCRYPT : PIPE_DECRYPT);
+  iobuffer->set_buffergroup(threads_num, fin, out, cmode ? PIPE_ENCRYPT : PIPE_DECRYPT);
   Aesmode **mode = new Aesmode *[threads_num];
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(cmode, ctype, iv + 20 * i);
@@ -217,15 +217,15 @@ key:密钥
 settings:加解密参数
 threads_num:线程数
 */
-runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num, u8_t r_buffers_num)
-    : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num), buffers_num(threads_num+r_buffers_num), mode(false),
+runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
+    : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num), mode(false),
       header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
       aesfactory(key)
 {
   if (settings.get_no_echo())
-    resultprint = new NullResPrint;
+    resultprint = new SilentDisplay;
   else
-    resultprint = new ResultPrint;
+    resultprint = new ConsoleDisplay;
   hmachandle.loadprinter(resultprint);
 };
 /*
@@ -256,7 +256,7 @@ void runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf)
   resultprint->printtask("Encrypting");
   hmachandle.init_hash(settings.get_htype(), key, iv, 20 * threads_num);
   buffergroup::get_instance()->set_hash_feed([this](const u8_t *d, size_t n) { hmachandle.feed_hash(d, n); });
-  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
+  auto boundfunc = std::bind(&Display::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
   crym.run_multicry(threads_num, mode, boundfunc);
   buffergroup::get_instance()->set_hash_feed(nullptr);
   resultprint->resetPercentage();
@@ -283,6 +283,8 @@ unsigned short runcrypt::execute_decrypt(size_t fsize)
 {
   if (fin == NULL)
     throw std::string("Invalid File");
+  if (key == NULL)
+    throw std::string("Invalid Key");
   TIMER_START(Total_Time);
   // 结构校验(魔数/模式/线程数/长度,不读密文)
   u8_t hlen = 0;
@@ -309,7 +311,7 @@ unsigned short runcrypt::execute_decrypt(size_t fsize)
   resultprint->printtask("Decrypting & verifying");
   hmachandle.init_hash(header.gethtype(), key, iv, 20 * threads_num);
   buffergroup::get_instance()->set_hash_feed([this](const u8_t *d, size_t n) { hmachandle.feed_hash(d, n); });
-  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
+  auto boundfunc = std::bind(&Display::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
   crym.run_multicry(threads_num, mode, boundfunc);
   buffergroup::get_instance()->set_hash_feed(nullptr);
   resultprint->resetPercentage();
@@ -343,6 +345,8 @@ unsigned short runcrypt::execute_verify(size_t fsize)
 {
   if (fin == NULL)
     throw std::string("Invalid File");
+  if (key == NULL)
+    throw std::string("Invalid Key");
   TIMER_START(Total_Time);
   // 结构校验
   u8_t hlen = 0;
@@ -364,10 +368,10 @@ unsigned short runcrypt::execute_verify(size_t fsize)
     threads_num = THREAD_NUM;
   u8_t *iv = prepare_IV(); // 读IV,fin定位到FILE_TEXT_MARK
   buffergroup *iobuffer = buffergroup::get_instance();
-  iobuffer->set_buffergroup(buffers_num, threads_num, fin, NULL, PIPE_VERIFY);
+  iobuffer->set_buffergroup(threads_num, fin, NULL, PIPE_VERIFY);
   hmachandle.init_hash(header.gethtype(), key, iv, 20 * threads_num);
   iobuffer->set_hash_feed([this](const u8_t *d, size_t n) { hmachandle.feed_hash(d, n); });
-  auto boundfunc = std::bind(&AbsResultPrint::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
+  auto boundfunc = std::bind(&Display::printpercentage, resultprint, std::placeholders::_1, std::placeholders::_2, fsize == 0 ? 1 : fsize);
   crym.run_multicry(threads_num, NULL, boundfunc);
   iobuffer->set_hash_feed(nullptr);
   iobuffer->del_instance();
