@@ -103,13 +103,13 @@ DecryAes::aes128_inverse_keys:生成"等价逆密码"的解密轮密钥。
   invkey[i]  = AESIMC(key[10-i])  (i=1..9)
 */
 void DecryAes::aes128_inverse_keys(){
-        // 第一个和最后一个轮密钥相同（白化密钥）
+        // 第一个和最后一个轮密钥相同(白化密钥)
     invkey[0] = key[10];
     invkey[10] = key[0];
 
     // 中间的9个密钥需要经过 InvMixColumns 变换
     for (int i = 1; i <= 9; i++) {
-        // 使用 AESIMC 指令（InvMixColumns）处理轮密钥
+        // 使用 AESIMC 指令(InvMixColumns)处理轮密钥
         invkey[i] = _mm_aesimc_si128(key[10 - i]);
     }
 
@@ -120,15 +120,15 @@ DecryAes::runaes_128bit:AES-128 单块解密(等价逆密码)。
 结构:AddRoundKey(invkey[0]) -> 9 轮 AESDEC -> 1 轮 AESDECLAST。
 */
 __m128i DecryAes::runaes_128bit(__m128i w){
-    // 第1轮：AddRoundKey（使用第10个轮密钥）
+    // 第1轮: AddRoundKey(使用第10个轮密钥)
     w = _mm_xor_si128(w, invkey[0]);
 
-    // 中间9轮：AESDEC
+    // 中间9轮: AESDEC
     for (int i = 1; i <= 9; i++) {
         w = _mm_aesdec_si128(w, invkey[i]);
     }
 
-    // 最后一轮：AESDECLAST
+    // 最后一轮: AESDECLAST
     w = _mm_aesdeclast_si128(w, invkey[10]);
 
     return w;

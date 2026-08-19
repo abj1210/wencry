@@ -9,12 +9,13 @@ ConsoleDisplay:终端输出子类
 */
 class ConsoleDisplay : public Display
 {
-  bool progress_active;
+  bool progress_active; // 进度条是否处于活动状态(决定 resetPercentage 是否换行)
 
 public:
+  /* ConsoleDisplay:构造,初始无活动进度条 */
   ConsoleDisplay() : Display(), progress_active(false) {};
+  /* 以下方法实现 Display 接口(终端输出),实现见 console_display.cpp */
   virtual void printtask(std::string name) override;
-  virtual u8_t printinv(const u8_t ret) override;
   virtual Timer *createTimer(std::string name) override;
   virtual void printTimer(Timer *timer) override;
   virtual void printenc() override;

@@ -13,6 +13,7 @@ fp:输入文件指针
 out:输出文件指针
 key:16字节解密密钥(由base64输入解码得到)
 r_buf:随机缓冲数组(加密时生成IV用)
+r_len:r_buf 的有效字节数(随机缓冲=256,用户字符串=strlen;0 表示回退按字符串处理)
 size:输入文件大小
 mode:任务模式('e'加密/'d'解密/'v'验证/'V'版本/'h'帮助)
 ctype:加密模式(0=ECB..4=OFB)
@@ -26,6 +27,7 @@ typedef union
     FILE *fp, *out;
     u8_t *key;
     u8_t r_buf[256];
+    size_t r_len;
     size_t size;
     char mode, ctype, htype;
     bool no_echo;
@@ -39,7 +41,7 @@ WencryInformation:程序信息与参数校验类
 并校验用户输入的 ctype/htype 是否合法。
 */
 class WencryInformation{
-    std::string description;
+    std::string description; // 帮助/说明文本(版本、编译时间与帮助信息)
     std::string get_typelist(int count, const char *(*name)(u8_t));
 public:
     WencryInformation();

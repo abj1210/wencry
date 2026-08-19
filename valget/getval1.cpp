@@ -104,6 +104,8 @@ u8_t *get_v_mod1()
   WencryInformation wif;
   vpak_t *res = new vpak_t;
   res->no_echo = false;
+  res->r_len = 0;
+  memset(res->r_buf, 0, sizeof(res->r_buf));
   strlog("Kernel version", wif.get_version());
   strlog("Build time", wif.get_buildtime());
   printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
@@ -128,6 +130,7 @@ u8_t *get_v_mod1()
     {
       printf("Please input some random characters.\n");
       scanf("%255s", res->r_buf);
+      res->r_len = strlen((char *)res->r_buf);
     }
   }
   else if (res->mode == 'd' || res->mode == 'D')

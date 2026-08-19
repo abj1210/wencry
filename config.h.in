@@ -1,3 +1,5 @@
+/* config.h.in:编译期配置模板,CMake configure_file 生成 generated/config.h。
+   提供版本号(PROJECT_VERSION*)与编译时间(V_BUILD_TIME)宏。 */
 #pragma once
 #define V_BUILD_TIME "@build_time@" 
 

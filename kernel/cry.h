@@ -1,6 +1,7 @@
 #ifndef CRY
 #define CRY
 #include "multicry.h"
+#include "aesmode.h"
 #include "fheader.h"
 
 #include <stdio.h>
@@ -27,6 +28,7 @@ class Settings
   bool no_echo;
 
 public:
+  /* Settings:默认构造,缺省 CBC(1)+SHA1(0)+显示输出 */
   Settings() : ctype(1), htype(0), no_echo(false) {};
   Settings(char ctype, char htype, bool no_echo);
   /*
@@ -49,56 +51,48 @@ public:
   set_no_echo:设置回显模式
   */
   void set_no_echo(bool no_echo) { this->no_echo = no_echo; };
+  /* get_ctype:获取加密模式 */
   char get_ctype() const { return ctype; };
+  /* get_htype:获取哈希模式 */
   char get_htype() const { return htype; };
+  /* get_no_echo:获取是否隐藏输出 */
   bool get_no_echo() const { return no_echo; };
 };
 extern Settings default_settings;
 
 /*
-整体加密类
-fin:输入文件
-out:输出文件
-key:密钥
-settings:加解密参数
-threads_num:线程数
-mode:是否为加密模式
+runcrypt:文件加解密和验证整体处理类
+runcrypt整合了文件头解析、AES加解密工厂、并发调度器、hmac计算器和结果打印器。其接口函数将参数准备、并发处理、hmac处理和释放空间四个任务线性地执行。
 */
 class runcrypt
 {
-  FILE *fin, *out;
-  u8_t *key;
-  Settings settings;
-  u8_t threads_num;
-  bool mode;
+  FILE *fin, *out;        // 输入输出文件指针
+  u8_t *key;              // 密钥
+  Settings settings;      // 加解密模式设置类
+  u8_t threads_num;       // 工作线程数
 
-  // 文件头构造器
+  FileHeader header;      // 文件头构造器
+  AesFactory aesfactory;  // aes加解密工厂
+  multicry_master crym;   // 并发加解密器
+  hmac hmachandle;        // hmac计算器
+  Display *resultprint;   // 结果打印器
 
-  FileHeader header;
-  // aes加解密工厂
-
-  AesFactory aesfactory;
-  // 并发加解密器
-
-  multicry_master crym;
-  // hmac计算器
-
-  hmac hmachandle;
-  // 结果打印器
-
-  Display *resultprint;
-
-  u8_t *prepare_IV(const u8_t *r_buf);
+  u8_t *prepare_IV(const u8_t *r_buf, size_t r_len);
   u8_t *prepare_IV();
-  Aesmode **prepare_AES(u8_t ctype, u8_t *iv, bool mode);
-  void release(u8_t *iv, Aesmode **mode);
   u8_t check_header(u8_t &hlen, u8_t *&hash);
+  Aesmode **prepare_AES(u8_t ctype, u8_t *iv, bool mode);
+  void prepare_cryption_master(Aesmode ** aesmode, size_t file_size, pipe_mode pipemode);
+  void release(u8_t *iv, Aesmode **mode);
   void over();
+  
 
-public:
   runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings = default_settings, u8_t threads_num = THREAD_NUM);
   ~runcrypt();
-  void execute_encrypt(size_t fsize, u8_t *r_buf = NULL);
+
+public:
+  friend runcrypt *runcrypt_create(FILE *fin, FILE *out, u8_t *key, const Settings& settings, u8_t threads_num);
+  friend void runcrypt_destroy(runcrypt *r);
+  void execute_encrypt(size_t fsize, u8_t *r_buf = NULL, size_t r_len = 0);
   unsigned short execute_decrypt(size_t fsize);
   unsigned short execute_verify(size_t fsize);
   int get_percentage_gui();
@@ -109,16 +103,7 @@ public:
 GUI 等外部模块只持有 runcrypt* 指针,不直接 new/delete,
 避免头文件版本不一致导致的对象尺寸不匹配(越界写穿)。
 */
-runcrypt *runcrypt_create(FILE *fin, FILE *out, u8_t *key, const Settings& settings);
+runcrypt *runcrypt_create(FILE *fin, FILE *out, u8_t *key, const Settings& settings, u8_t threads_num = THREAD_NUM);
 void runcrypt_destroy(runcrypt *r);
-
-/*
-wencry_check_header:校验 .wenc 文件头
-魔数、加密模式(ctype<=4)、哈希模式(htype<=2)、线程数(1..THREAD_MAX)。
-线程数字节为0表示旧格式文件(隐式4线程),视为合法。
-fp:文件指针(函数不改变其读写位置)
-return:0=合法,1=魔数错误,2=加密/哈希模式非法,3=线程数越界(>THREAD_MAX),4=文件过短
-*/
-int wencry_check_header(FILE *fp);
 
 #endif

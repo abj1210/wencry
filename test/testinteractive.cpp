@@ -19,6 +19,7 @@
   辅助函数
 ################################*/
 
+/* file_exists:判断文件是否存在 */
 static bool file_exists(const char *p) {
   FILE *f = fopen(p, "rb");
   if (f) {
@@ -28,6 +29,7 @@ static bool file_exists(const char *p) {
   return false;
 }
 
+/* bin_path:定位 Wencry 可执行文件路径(优先编译期宏 WENCRY_BIN,再探测 ../Wencry[.exe]) */
 static std::string bin_path() {
 #ifdef WENCRY_BIN
   return std::string(WENCRY_BIN);

@@ -72,23 +72,24 @@ static int thread_roundtrip(size_t size, u8_t threads, u8_t ctype,
   }
   bool ok1 = true, ok2 = true;
   unsigned short dret = 0;
-  runcrypt r1(fin, fout, (u8_t *)TKEY, s, threads);
+  runcrypt *r1 = runcrypt_create(fin, fout, (u8_t *)TKEY, s, threads);
   try{
-    r1.execute_encrypt(size, r_buf);
+    r1->execute_encrypt(size, r_buf);
   }
   catch(std::string errlog){
     std::cout<<errlog;
     ok1 = false;
   }
+  runcrypt_destroy(r1);
   FILE *fin2 = fopen(wenc, "rb"), *fout2 = fopen(out, "wb+");
   if (!fin2 || !fout2) {
     remove(fname);
     remove(wenc);
     return 0;
   }
-  runcrypt r2(fin2, fout2, (u8_t *)TKEY, s, threads);
+  runcrypt *r2 = runcrypt_create(fin2, fout2, (u8_t *)TKEY, s, threads);
   try{
-    dret = r2.execute_decrypt(size);
+    dret = r2->execute_decrypt(size);
     if (dret != (unsigned short)((htype << 8) | ctype))
       ok2 = false;
   }
@@ -96,6 +97,7 @@ static int thread_roundtrip(size_t size, u8_t threads, u8_t ctype,
     std::cout<<errlog;
     ok2 = false;
   }
+  runcrypt_destroy(r2);
   FILE *f1 = fopen(fname, "rb"), *f2 = fopen(out, "rb");
   int r = (ok1 && ok2 && f1 && f2) ? cmp_file(f1, f2) : 0;
   remove(fname);
@@ -162,20 +164,23 @@ static int thread_encrypt_then_cli_decrypt(size_t size, u8_t threads) {
     remove(fname);
     return 0;
   }
-  runcrypt r1(fin, fout, key, s, threads);
+  runcrypt *r1 = runcrypt_create(fin, fout, key, s, threads);
   try {
-    r1.execute_encrypt(size, r_buf);
+    r1->execute_encrypt(size, r_buf);
   } catch (const char *errlog) {
+    runcrypt_destroy(r1);
     std::cout << errlog << std::endl;
     remove(fname);
     remove(wenc);
     return 0;
   } catch (std::string errlog) {
+    runcrypt_destroy(r1);
     std::cout << errlog << std::endl;
     remove(fname);
     remove(wenc);
     return 0;
   }
+  runcrypt_destroy(r1);
   const char *name = "./wencry";
   const char *a[] = {name, "-d", "-i", wenc, "-o", out, "-k",
                      "ABEiM0RVZneImaq7zN3u/w==", "-n"};
@@ -247,6 +252,7 @@ TEST(Testboundary, file_header_layout) {
   失败路径 (execute_verify)
 ################################*/
 
+/* encrypt_small:加密一个小文件到 .wenc,返回是否成功 */
 static bool encrypt_small(const char *fname, const char *wenc, u8_t ctype,
                           u8_t htype) {
   FILE *fp = fopen(fname, "wb");
@@ -260,14 +266,17 @@ static bool encrypt_small(const char *fname, const char *wenc, u8_t ctype,
   FILE *fin = fopen(fname, "rb"), *fout = fopen(wenc, "wb+");
   if (!fin || !fout) return false;
   Settings s(ctype, htype, true);
-  runcrypt r(fin, fout, (u8_t *)TKEY, s, 4);
+  runcrypt *r = runcrypt_create(fin, fout, (u8_t *)TKEY, s, 4);
   try {
-    r.execute_encrypt(strlen(msg), r_buf);
+    r->execute_encrypt(strlen(msg), r_buf);
+    runcrypt_destroy(r);
     return true;
   } catch (const char *errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     return false;
   } catch (std::string errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     return false;
   }
@@ -278,23 +287,28 @@ static std::string verify_file_key_str(const char *wenc, const u8_t *key) {
   FILE *fp = fopen(wenc, "rb");
   if (!fp) return "";
   Settings s(0, 0, true);
-  runcrypt r(fp, NULL, (u8_t *)key, s, 4);
+  runcrypt *r = runcrypt_create(fp, NULL, (u8_t *)key, s, 4);
   try {
-    r.execute_verify(0);
+    r->execute_verify(0);
+    runcrypt_destroy(r);
     return "";
   } catch (const char *errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     return errlog;
   } catch (std::string errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     return errlog;
   }
 }
 
+/* verify_file_str:用默认密钥验证 .wenc,返回空串表示通过,否则返回错误消息 */
 static std::string verify_file_str(const char *wenc) {
   return verify_file_key_str(wenc, TKEY);
 }
 
+/* verify_file:用默认密钥验证 .wenc,通过返回 true */
 static bool verify_file(const char *wenc) {
   return verify_file_str(wenc).empty();
 }
@@ -310,14 +324,17 @@ static std::string decrypt_file_key_str(const char *wenc, const char *out,
     return "";
   }
   Settings s(0, 0, true);
-  runcrypt r(fin, fout, (u8_t *)key, s, 4);
+  runcrypt *r = runcrypt_create(fin, fout, (u8_t *)key, s, 4);
   try {
-    r.execute_decrypt(0);
+    r->execute_decrypt(0);
+    runcrypt_destroy(r);
     return "";
   } catch (const char *errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     return errlog;
   } catch (std::string errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     return errlog;
   }
@@ -329,15 +346,19 @@ static unsigned short verify_ret(const char *wenc, const u8_t *key,
   FILE *fp = fopen(wenc, "rb");
   if (!fp) { out_msg = "open failed"; return 0xFFFF; }
   Settings s(0, 0, true);
-  runcrypt r(fp, NULL, (u8_t *)key, s, 4);
+  runcrypt *r = runcrypt_create(fp, NULL, (u8_t *)key, s, 4);
   try {
     out_msg.clear();
-    return r.execute_verify(0);
+    unsigned short ret = r->execute_verify(0);
+    runcrypt_destroy(r);
+    return ret;
   } catch (const char *errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     out_msg = errlog;
     return 0xFFFF;
   } catch (std::string errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     out_msg = errlog;
     return 0xFFFF;
@@ -356,15 +377,19 @@ static unsigned short decrypt_ret(const char *wenc, const char *out,
     return 0xFFFF;
   }
   Settings s(0, 0, true);
-  runcrypt r(fin, fout, (u8_t *)key, s, 4);
+  runcrypt *r = runcrypt_create(fin, fout, (u8_t *)key, s, 4);
   try {
     out_msg.clear();
-    return r.execute_decrypt(0);
+    unsigned short ret = r->execute_decrypt(0);
+    runcrypt_destroy(r);
+    return ret;
   } catch (const char *errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     out_msg = errlog;
     return 0xFFFF;
   } catch (std::string errlog) {
+    runcrypt_destroy(r);
     std::cout << errlog << std::endl;
     out_msg = errlog;
     return 0xFFFF;
@@ -600,12 +625,15 @@ TEST(Testboundary, decrypt_too_short) {
 
 TEST(Testboundary, exec_null_fin_throws) {
   Settings s(1, 0, true);
-  runcrypt r_enc(NULL, NULL, (u8_t *)TKEY, s, 4);
-  EXPECT_THROW(r_enc.execute_encrypt(0, NULL), std::string);
-  runcrypt r_dec(NULL, NULL, (u8_t *)TKEY, s, 4);
-  EXPECT_THROW(r_dec.execute_decrypt(0), std::string);
-  runcrypt r_ver(NULL, NULL, (u8_t *)TKEY, s, 4);
-  EXPECT_THROW(r_ver.execute_verify(0), std::string);
+  runcrypt *r_enc = runcrypt_create(NULL, NULL, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r_enc->execute_encrypt(0, NULL), std::string);
+  runcrypt_destroy(r_enc);
+  runcrypt *r_dec = runcrypt_create(NULL, NULL, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r_dec->execute_decrypt(0), std::string);
+  runcrypt_destroy(r_dec);
+  runcrypt *r_ver = runcrypt_create(NULL, NULL, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r_ver->execute_verify(0), std::string);
+  runcrypt_destroy(r_ver);
 }
 
 TEST(Testboundary, exec_decrypt_bad_file_throws) {
@@ -622,8 +650,9 @@ TEST(Testboundary, exec_decrypt_bad_file_throws) {
   FILE *fin = fopen("tb_dc.wenc", "rb"), *fout = fopen("tb_dc.out", "wb+");
   ASSERT_TRUE(fin != NULL && fout != NULL);
   Settings s(0, 0, true);
-  runcrypt r(fin, fout, (u8_t *)TKEY, s, 4);
-  EXPECT_THROW(r.execute_decrypt(0), std::string);
+  runcrypt *r = runcrypt_create(fin, fout, (u8_t *)TKEY, s, 4);
+  EXPECT_THROW(r->execute_decrypt(0), std::string);
+  runcrypt_destroy(r);
   remove("tb_dc.txt");
   remove("tb_dc.wenc");
   remove("tb_dc.out");

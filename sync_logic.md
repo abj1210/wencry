@@ -1,7 +1,9 @@
-# 缓冲池同步逻辑说明
+# 缓冲池与多线程调度同步逻辑说明
 
-本文档描述 `buffergroup` 重构后的缓冲池工作流程与多线程同步逻辑。
-代码位于 `kernel/multi_aes/multi_buffergroup.h` 与 `kernel/multi_aes/multi_buffergroup.cpp`。
+本文档描述重构后的多线程加解密流水线：调度层 `multicry_master` 与缓冲池层 `buffergroup` 的协作过程与同步逻辑。
+- 编排层 `kernel/cry.cpp`：`runcrypt` 通过 `prepare_cryption_master` 统一装配流水线，`execute_*` 只保留「准备 → 装配 → 运行 → 回收」主线。
+- 调度层 `kernel/multi_pipeline/multicry.h/.cpp`：`multicry_master` 持有输入/输出文件与三类回调，负责线程的创建与汇合。
+- 缓冲池层 `kernel/multi_pipeline/buffergroup/multi_buffergroup.h/.cpp`（iobuffer 拆分为 `iobuffer.cpp`）：维护空闲池/工作池与全局序号，提供加锁的状态机原语。
 
 ## 1. 设计目标
 
@@ -13,19 +15,19 @@
 ## 2. 数据流
 
 ```
-          ┌─────────────── 空闲池 idle_pool ───────────────┐
-          │ (可复用的空 buffer, 容量上限 IDLE_POOL_MAX)     │
+          ┌─────────────── 空闲池  idle_pool ───────────────┐
+          │ (可复用的空 buffer, 容量上限 IDLE_POOL_MAX)      │
           └──────────────┬────────────────────▲────────────┘
                  读线程取(空则 new)          写线程回收(满/超时则释放)
                          │                    │
                          ▼                    │
               ┌───────────────────────────────┴────────────┐
               │              工作池 work_pool               │
-              │  (在途 buffer, 键 = 全局序号 seq,            │
+              │  (在途 buffer, 键 = 全局序号 seq,           │
               │   容量上限 WORK_POOL_MAX, 满则读线程阻塞)    │
-              └──────┬──────────────┬───────────────┬───────┘
-                     │HASH按seq消费  │工作线程按        │写线程按seq写出
-                     │(喂HMAC)       │seq%N领取AES     │并回收/释放
+              └──────┬──────────────┬───────────────┬──────┘
+                     │HASH按seq消费  │工作线程按      │写线程按seq写出
+                     │(喂HMAC)      │seq%N领取AES    │并回收/释放
 ```
 
 - 读线程从空闲池请求 buffer（空闲池空则动态 `new` 一个），装满后以全局序号 `seq` 加入工作池。
@@ -108,3 +110,73 @@
 - **有界背压**：读线程在工作池满时阻塞，内存上界 = `(WORK_POOL_MAX + IDLE_POOL_MAX) × 16MB`。
 - **无死锁**：流水线为 `读 → HASH → AES → 写` 单向 DAG；写线程回收时「空闲池满即释放、永不阻塞」，
   保证工作池始终能排空；读线程仅等下游（写/HASH）腾出工作池空间，无环。
+
+## 7. 调度编排 (multicry_master 与 runcrypt::prepare_cryption_master)
+
+流水线分三层协作：编排层 `runcrypt`、调度层 `multicry_master`、缓冲池层 `buffergroup`。
+
+- `runcrypt`（编排层）在 `execute_encrypt/decrypt/verify` 中依次调用 `prepare_cryption_master` → `run_multicry` → `release`，负责装配与回收流水线。
+- `multicry_master`（调度层）持有输入/输出文件 `fin/fout` 与三类回调，负责线程的创建与汇合。
+- `buffergroup`（缓冲池层）提供加锁的状态机原语（见第 4、5 节），不感知文件与回调。
+
+### 7.1 三类回调
+
+`multicry_master` 内部持有三类回调，由编排层通过 setter 注入，实现「调度」与「业务」解耦：
+
+| 回调 | setter | 消费线程 | 作用 |
+| --- | --- | --- | --- |
+| `hash_feed` | `set_hash_feed(fn)` | HASH 线程 | 将密文块喂入 HMAC（`hmachandle.feed_hash`） |
+| `printload` | `set_print_load(fn)` | 写线程 | 打印进度（`resultprint->printpercentage`） |
+| `aes_func[i]` | `set_aes_mode(fn, id)` | 工作线程 i | 对16字节块执行 AES（`aesmode[i]->runcry`） |
+
+验证模式 `aes_func[i]` 注入 `nullptr`（无 AES、无写线程）。
+
+### 7.2 prepare_cryption_master：统一装配
+
+`runcrypt::prepare_cryption_master(aesmode, file_size, pipemode)` 集中完成流水线装配：
+
+1. `buffergroup::get_instance()->set_buffergroup(threads_num, pipemode)` 配置缓冲池与流水线模式（不再传入 fin/fout，文件归 `multicry_master` 持有）。
+2. `crym.set_hash_feed(...)` 绑定 HMAC 喂入回调。
+3. `crym.set_print_load(...)` 绑定进度打印回调（把 `file_size` 捕获进闭包）。
+4. 对每个工作线程 `crym.set_aes_mode(...)` 绑定 AES 回调（验证模式传 `nullptr`）。
+
+相较旧版（在 `execute_*` 内用 `std::bind` 内联装配、`set_hash_feed` 直接挂在 `buffergroup` 上、`fin/fout` 经 `set_buffergroup` 传入），装配逻辑收敛到单一函数，调度器职责更清晰。
+
+### 7.3 run_multicry：线程创建与汇合
+
+`run_multicry(threads_num, mode)` 的线程编排：
+
+```cpp
+//启动:
+  hash_thread = spawn run_hash                  // 恒启动(三模式共用)
+  if (!verify) {                                // 加密/解密:
+    threads[i]  = spawn multiruncrypt_file(i)   //   N 个工作线程
+    write_thread = spawn run_write              //   1 个写线程
+  }
+  run_read(mode)                                // 读线程 = 当前调用线程(不额外 spawn)
+
+//汇合(join):
+  hash_thread.join()    // HASH 先汇合(按 seq 消费到 read_done && next == total_chunks 退出并兜底清理空闲池)
+  write_thread.join()   // 写线程次之(写完 total_chunks 后退出)
+  threads[i].join()     // 工作线程最后(wait_loaded 返回 NULL 哨兵退出)
+```
+
+关键点：
+
+- **读线程复用调用线程**：`run_read` 直接在当前线程执行（阻塞读到 EOF），不额外 spawn，少一次线程上下文切换。
+- **汇合顺序 = `读 → HASH → 写 → 工作`**：调用线程读完后先等 HASH，再等写线程，最后等各工作线程，保证所有 buffer 依序消费完毕。
+- 验证模式不 spawn 工作线程与写线程，`write_thread` 为空（`joinable()` 判断跳过）。
+
+### 7.4 回调生命周期
+
+- **装配期**：`prepare_cryption_master` 注入三类回调。
+- **运行期**：各线程按角色消费对应回调。
+- **回收期**：`release()` 先 `set_hash_feed(nullptr)/set_print_load(nullptr)/set_aes_mode(nullptr, i)` 清空全部回调，再 `resetPercentage()` 复位进度、`del_instance()` 释放缓冲池单例，避免回调悬挂/复用。
+
+## 8. 本次改进点（相对旧版）
+
+1. **职责分层**：调度（线程/回调/文件）收敛到 `multicry_master`，缓冲池 `buffergroup` 只管状态机与内存，`runcrypt` 只管编排。`fin/fout` 从 `buffergroup::set_buffergroup` 移到 `multicry_master` 构造持有。
+2. **回调显式化**：`set_hash_feed`/`set_print_load`/`set_aes_mode` 三个 setter 取代旧版内联 `std::bind` 与作为 `run_multicry` 参数的进度回调。
+3. **装配收敛**：新增 `prepare_cryption_master` 统一完成 `set_buffergroup` 与三类回调注入，`execute_*` 只保留「准备 → 装配 → 运行 → 回收」四步主线。
+4. **回收对称**：`release()` 对称地清空三类回调并释放缓冲池单例。
+5. **接口简化**：`run_multicry(threads_num, mode)` 去掉进度回调参数；`set_buffergroup(threads_num, mode)` 去掉 fin/fout 参数。

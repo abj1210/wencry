@@ -29,67 +29,7 @@ thread_local const char *g_thread_role = NULL;
   死锁安全:流水线为读->HASH->AES->写单向 DAG,各线程等待的是下游进展,无环。
 ################################*/
 
-/*################################
-  单缓冲区函数
-################################*/
-/*
-load_buffer:更新缓冲区
-fin:输入文件
-ispadding:是否填充
-return:返回装载状态
-*/
-loadstate_t iobuffer::load_buffer(FILE *fin, bool ispadding)
-{
-  u32_t load = fread(b, 1, sum, fin);
-  bool readover = feof(fin);
-  if (!ispadding && !readover && load == sum)
-  {
-    int c = fgetc(fin);
-    readover = (c == EOF);
-    if (!readover)
-      fseek(fin, -1, SEEK_CUR);
-  }
-  tail = load & 0xf;
-  total = load >> 4;
-  now = 0;
-  if (ispadding && (load != sum))
-  {
-    u8_t padding = 16 - tail;
-    memset(b[total++] + tail, padding, padding);
-    isfinal = true;
-    return FINAL;
-  }
-  if ((!ispadding) && readover)
-  {
-    if (load == 0)
-      return NODATA;
-    isfinal = true;
-    return FINAL;
-  }
-  return load == 0 ? NODATA : FULL;
-}
-/*
-export_buffer:将缓冲区内容保存到文件
-fout:输出文件
-ispadding:是否填充
-return:写出的字节数
-*/
-u32_t iobuffer::export_buffer(FILE *fout, bool ispadding)
-{
-  if (now == 0)
-    return 0;
-  if (isfinal)
-  {
-    u8_t padding = ispadding ? 0 : b[now - 1][15];
-    if (padding > (now << 4))
-      padding = (u8_t)(now << 4);
-    u32_t n = (now << 4) - padding;
-    fwrite(b, 1, n, fout);
-    return n;
-  }
-  fwrite(b, 1, sum, fout);
-  return sum;
-}
+
 
 /*################################
   缓冲组管理
@@ -100,6 +40,7 @@ std::mutex buffergroup::mtx_singleton;
 
 /*
 steady_us:steady_clock 微秒时间戳(用于空闲池超时判定)
+return:自进程启动以来的微秒数
 */
 u64_t buffergroup::steady_us()
 {
@@ -109,7 +50,8 @@ u64_t buffergroup::steady_us()
 }
 
 /*
-get_instance:获取实例
+get_instance:获取单例实例(双重检查锁定,线程安全)
+return:全局唯一的 buffergroup 实例
 */
 buffergroup *buffergroup::get_instance()
 {
@@ -143,14 +85,11 @@ fin:输入文件
 fout:输出文件(验证模式可为NULL)
 mode:流水线模式(加密/解密/验证)
 */
-void buffergroup::set_buffergroup(u32_t total_threads, FILE *fin, FILE *fout, pipe_mode mode)
+void buffergroup::set_buffergroup(u32_t total_threads, pipe_mode mode)
 {
   std::lock_guard<std::mutex> lock(mtx);
   this->total_threads = total_threads;
-  this->fin = fin;
-  this->fout = fout;
   this->mode = mode;
-  this->ispadding = (mode == PIPE_ENCRYPT);
   this->total_chunks = 0;
   this->read_done = false;
   sweep_idle_locked();
@@ -217,6 +156,9 @@ iobuffer *buffergroup::claim_locked(u8_t thread_id, bufstate_t ready)
 }
 /*
 chunk_ready_locked:指定序号的块是否已处于目标状态(HASH/写线程按序消费用)
+seq:块序号
+ready:目标状态
+return:该块存在且状态为 ready 返回 true
 */
 bool buffergroup::chunk_ready_locked(u64_t seq, bufstate_t ready) const
 {
@@ -280,192 +222,141 @@ iobuffer *buffergroup::wait_loaded(const u8_t thread_id)
   });
   return claim_locked(thread_id, ready);
 }
-/*
-get_entry:获取缓冲区下一个表项
-buffer:缓冲
-return:表项地址,若缓冲区已经读取完毕返回NULL
-*/
-u8_t *buffergroup::get_entry(iobuffer *buffer)
-{
-  if (buffer == NULL)
-    return NULL;
-  return buffer->get_entry();
-}
+
 /*
 finish_chunk:标记本块已处理完毕(AES完成)
 buffer:缓冲
 */
 void buffergroup::finish_chunk(iobuffer *buffer)
 {
-  if (buffer == NULL)
-    return;
+  std::lock_guard<std::mutex> locker(mtx);
+  buffer->state = PROCESSED;
+  cv.notify_all();
+}
+
+/*
+wait_unhashed:HASH线程等待指定序号的块进入目标状态
+next:块序号
+return:该块 buffer;读取完成且无更多块返回 NULL(退出哨兵)
+目标状态:加密 PROCESSED(AES后密文),解密/验证 LOADED(AES前密文)
+*/
+iobuffer *buffergroup::wait_unhashed(u64_t next){
+  std::unique_lock<std::mutex> locker(mtx);
+  bufstate_t target = (mode == PIPE_ENCRYPT) ? PROCESSED : LOADED;
+  cv.wait(locker, [&] { return chunk_ready_locked(next, target) || (read_done && next == total_chunks); });
+  if (read_done && next == total_chunks)
   {
-    std::lock_guard<std::mutex> locker(mtx);
-    buffer->state = PROCESSED;
+    sweep_idle_locked(); // 读取已完成,清理空闲池残留(验证模式无写线程,由此兜底)
+    return NULL;
+  }
+  return work_pool[next];
+}
+
+/*
+finish_hashing:HASH线程消费完一个块的密文后推进其状态
+buffer:该块
+验证模式:从工作池移除并回收(读完即释放);
+加密/解密:置 HASHED 交给下一级(AES 或写)。
+*/
+void buffergroup::finish_hashing(iobuffer *buffer){
+  std::lock_guard<std::mutex> locker(mtx);
+  u64_t next = buffer->seq;
+  if (mode == PIPE_VERIFY)
+  {
+    work_pool.erase(next);
+    recycle_locked(buffer); // 验证读完即回收
+  }
+  else
+  {
+    buffer->state = HASHED;
   }
   cv.notify_all();
 }
 
-/*################################
-  读线程
-################################*/
 /*
-run_read:读线程,按序装载chunk并分配全局序号
-printload:过程打印函数
-工作池满则阻塞(背压);空闲池空则动态 new 一个 buffer。
+wait_idle_buffer:读线程获取一个空闲 buffer(空闲池空则动态 new)
+return:空闲 buffer
+读线程在工作池满(WORK_POOL_MAX)时阻塞,实现有界背压。
 */
-void buffergroup::run_read(const std::function<void(std::string, size_t)> &printload)
-{
-  (void)printload;
-#ifdef _WIN32
-  SetThreadDescription(GetCurrentThread(), L"ReadThread");
-#endif
-#ifdef PROFILE_THREADS
-  g_thread_role = "read";
-#endif
-  u64_t next = 0;
-  while (true)
+iobuffer *buffergroup::wait_idle_buffer(){
+  std::unique_lock<std::mutex> locker(mtx);
+  iobuffer *buf;
+  cv.wait(locker, [&] { return work_pool.size() < WORK_POOL_MAX; });
+  if (idle_pool.empty())
+    buf = new iobuffer;
+  else
   {
-    iobuffer *buf;
-    {
-      std::unique_lock<std::mutex> locker(mtx);
-      cv.wait(locker, [&] { return work_pool.size() < WORK_POOL_MAX; });
-      if (idle_pool.empty())
-        buf = new iobuffer;
-      else
-      {
-        buf = idle_pool.front();
-        idle_pool.pop_front();
-      }
-    }
-    PROF_LOG("LOAD_BEGIN", next);
-    loadstate_t ls = buf->load_buffer(fin, ispadding);
-    PROF_LOG("LOAD_END", next);
-    {
-      std::lock_guard<std::mutex> locker(mtx);
-      if (ls == FULL)
-      {
-        buf->seq = next;
-        buf->state = LOADED;
-        work_pool[next++] = buf;
-        cv.notify_all();
-      }
-      else
-      {
-        // FINAL:最后一个数据块(含填充); NODATA:无数据
-        if (ls == FINAL)
-        {
-          buf->seq = next;
-          buf->state = LOADED;
-          work_pool[next++] = buf;
-        }
-        else
-        {
-          delete buf; // NODATA:空缓冲直接释放
-        }
-        total_chunks = next;
-        read_done = true;
-        cv.notify_all();
-        break;
-      }
-    }
+    buf = idle_pool.front();
+    idle_pool.pop_front();
   }
+  return buf;
 }
 
-/*################################
-  HASH线程
-################################*/
 /*
-run_hash:HASH线程,按全局序号顺序消费密文并喂入HMAC
-printload:过程打印函数
-加密读 AES 后的 PROCESSED 密文;解密/验证读 LOADED 密文(先于AES覆盖)。
-验证模式读完即回收(回收逻辑由 recycle_locked 处理);加密/解密置 HASHED 交给下一级。
+finish_reading:读线程装入完成后把 buffer 注册进工作池
+buffer:刚装入的 buffer
+ls:装载状态(FULL/FINAL/NODATA)
+next:本块全局序号
+return:true 表示已读到末尾(FINAL/NODATA),读线程应退出;false 继续读
+FULL:置 LOADED 入工作池;FINAL:入工作池并记录 total_chunks = next+1;
+NODATA:空 buffer 直接释放,total_chunks = next。
 */
-void buffergroup::run_hash(const std::function<void(std::string, size_t)> &printload)
-{
-  (void)printload;
-#ifdef _WIN32
-  SetThreadDescription(GetCurrentThread(), L"HashThread");
-#endif
-#ifdef PROFILE_THREADS
-  g_thread_role = "hash";
-#endif
-  u64_t next = 0;
-  bufstate_t target = (mode == PIPE_ENCRYPT) ? PROCESSED : LOADED;
-  while (true)
-  {
-    iobuffer *buf;
+bool buffergroup::finish_reading(iobuffer *buffer, loadstate_t ls, u64_t next){
+  std::lock_guard<std::mutex> locker(mtx);
+    if (ls == FULL)
     {
-      std::unique_lock<std::mutex> locker(mtx);
-      cv.wait(locker, [&] { return chunk_ready_locked(next, target) || (read_done && next == total_chunks); });
-      if (read_done && next == total_chunks)
-      {
-        sweep_idle_locked(); // 读取已完成,清理空闲池残留(验证模式无写线程,由此兜底)
-        break;
-      }
-      buf = work_pool[next];
-    }
-    if (hash_feed)
-      hash_feed(buf->get_data(), buf->data_len());
-    {
-      std::lock_guard<std::mutex> locker(mtx);
-      if (mode == PIPE_VERIFY)
-      {
-        work_pool.erase(next);
-        recycle_locked(buf); // 验证读完即回收
-      }
-      else
-      {
-        buf->state = HASHED;
-      }
-      ++next;
+      buffer->seq = next;
+      buffer->state = LOADED;
+      work_pool[next] = buffer;
       cv.notify_all();
+      return false;
     }
-  }
+    else
+    {
+      // FINAL:最后一个数据块(含填充); NODATA:无数据
+      if (ls == FINAL)
+      {
+        buffer->seq = next;
+        buffer->state = LOADED;
+        work_pool[next] = buffer;
+        total_chunks = next + 1; // 已装入块号为 next,块总数 = next + 1
+      }
+      else
+      {
+        delete buffer; // NODATA:空缓冲直接释放
+        total_chunks = next; // 未装入新块,块总数 = next
+      }
+      read_done = true;
+      cv.notify_all();
+      return true;
+    }
 }
 
-/*################################
-  写线程
-################################*/
 /*
-run_write:写线程,按全局序号顺序导出
-printload:过程打印函数
-加密等 HASHED(哈希线程已读密文);解密等 PROCESSED(AES完成)。
-写出后回收 buffer:读取完成后直接释放并清空空闲池,否则归还空闲池(满/超时则释放)。
+wait_processed_buffer:写线程等待指定序号的块进入可写状态
+next:块序号
+return:该块 buffer;读取完成且无更多块返回 NULL(退出哨兵)
+可写状态:加密 HASHED(HASH读完密文),解密 PROCESSED(AES完成)
 */
-void buffergroup::run_write(const std::function<void(std::string, size_t)> &printload)
-{
-#ifdef _WIN32
-  SetThreadDescription(GetCurrentThread(), L"WriteThread");
-#endif
-#ifdef PROFILE_THREADS
-  g_thread_role = "write";
-#endif
-  u64_t next = 0;
+iobuffer *buffergroup::wait_processed_buffer(u64_t next){
+  std::unique_lock<std::mutex> locker(mtx);
   bufstate_t ready = (mode == PIPE_ENCRYPT) ? HASHED : PROCESSED;
-  while (true)
+  cv.wait(locker, [&] { return chunk_ready_locked(next, ready) || (read_done && next == total_chunks); });
+  if (read_done && next == total_chunks)
   {
-    iobuffer *buf;
-    {
-      std::unique_lock<std::mutex> locker(mtx);
-      cv.wait(locker, [&] { return chunk_ready_locked(next, ready) || (read_done && next == total_chunks); });
-      if (read_done && next == total_chunks)
-      {
-        sweep_idle_locked(); // 兜底:读取完成后清空空闲池
-        break;
-      }
-      buf = work_pool[next];
-    }
-    PROF_LOG("WRITE_BEGIN", next);
-    u32_t n = buf->export_buffer(fout, ispadding);
-    PROF_LOG("WRITE_END", next);
-    printload("Chunk " + std::to_string(next), n);
-    {
-      std::lock_guard<std::mutex> locker(mtx);
-      work_pool.erase(next);
-      recycle_locked(buf);
-      ++next;
-      cv.notify_all();
-    }
+    sweep_idle_locked(); // 兜底:读取完成后清空空闲池
+    return NULL;
   }
+  return work_pool[next];
+}
+
+/*
+finish_writing:写线程写出一个块后,从工作池移除并回收
+buffer:已写出的块
+*/
+void buffergroup::finish_writing(iobuffer *buffer){
+  std::lock_guard<std::mutex> locker(mtx);
+  work_pool.erase(buffer->seq);
+  recycle_locked(buffer);
+  cv.notify_all();
 }

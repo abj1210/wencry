@@ -38,10 +38,6 @@ const struct option longOpts[] = {
 shortOpts:短选项字符串(带':'的选项需参数)
 */
 const char shortOpts[] = "edvVhni:o:k:";
-/*
-fout:加密模式下的默认输出文件名(输入文件名+".wenc")
-*/
-char fout[128];
 /*################################
   辅助函数
 ################################*/
@@ -67,7 +63,7 @@ c:选项字符
 res:参数包指针
 return:是否解析成功
 */
-bool parseOpts(char c, vpak_t *res, WencryInformation wif)
+bool parseOpts(char c, vpak_t *res, std::string &fout)
 {
     size_t fsize = 0;
     switch (c)
@@ -101,7 +97,7 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         break;
     case 'i':
         res->fp = fopen(optarg, "rb");
-        snprintf(fout, sizeof(fout), "%s.wenc", optarg);
+        fout = std::string(optarg) + ".wenc";
         try
         {
             auto fileSize = std::filesystem::file_size(optarg);
@@ -128,11 +124,21 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
         }
         break;
     case 'k':
-        res->key = new u8_t[16];
-        if (!checkB64Key((u8_t *)optarg, res->key))
+        if (res->key != NULL)
         {
-            strerr("Error", "Invalid base64 key");
+            strerr("Error", "Only one key can be specified");
             return false;
+        }
+        else
+        {
+            u8_t *tmp = new u8_t[16];
+            if (!checkB64Key((u8_t *)optarg, tmp))
+            {
+                delete[] tmp;
+                strerr("Error", "Invalid base64 key");
+                return false;
+            }
+            res->key = tmp;
         }
         break;
     case 'n':
@@ -190,6 +196,20 @@ bool parseOpts(char c, vpak_t *res, WencryInformation wif)
   接口函数
 ################################*/
 /*
+fail_vopt:解析失败的统一清理入口
+关闭已打开的文件句柄、释放密钥与参数包,返回 NULL(与接口约定一致)。
+*/
+static u8_t *fail_vopt(vpak_t *res)
+{
+    if (res->fp != NULL)
+        fclose(res->fp);
+    if (res->out != NULL)
+        fclose(res->out);
+    delete[] res->key;
+    delete res;
+    return NULL;
+}
+/*
 get_v_opt:解析命令行参数
 argc:命令行参数个数
 argv:命令行参数数组
@@ -199,7 +219,7 @@ return:vpak_t结构体指针x
 u8_t *get_v_opt(int argc, char *argv[])
 {
     WencryInformation wif;
-    memset(fout, 0, sizeof(fout));
+    std::string fout;
     int option_index = 0;
     optind = 1;
     vpak_t *res = new vpak_t;
@@ -210,34 +230,32 @@ u8_t *get_v_opt(int argc, char *argv[])
     res->fp = NULL;
     res->out = NULL;
     res->key = NULL;
+    res->r_len = 0;
     while (true)
     {
         int c = getopt_long(argc, argv, shortOpts, longOpts, &option_index);
         if (c == -1)
             break;
-        if (!parseOpts(c, res, wif))
+        if (!parseOpts(c, res, fout))
         {
-            delete res;
-            return NULL;
+            return fail_vopt(res);
         }
     }
     if (res->mode == 'u')
     {
         strerr("Error", "Wrong Mode");
-        delete res;
-        return NULL;
+        return fail_vopt(res);
     }
     else if (res->mode == 'e')
     {
         if (res->ctype == -1)
         {
-            res->ctype = 0;
+            res->ctype = 1;
         }
         else if (!wif.check_ctype(res->ctype))
         {
             strerr("Error", "Wrong ctype");
-            delete res;
-            return NULL;
+            return fail_vopt(res);
         }
         printCryptMode(res->ctype, wif);
         if (res->htype == -1)
@@ -247,8 +265,7 @@ u8_t *get_v_opt(int argc, char *argv[])
         else if (!wif.check_htype(res->htype))
         {
             strerr("Error", "Wrong htype");
-            delete res;
-            return NULL;
+            return fail_vopt(res);
         }
         printHashMode(res->htype, wif);
         if (res->key == NULL)
@@ -258,15 +275,15 @@ u8_t *get_v_opt(int argc, char *argv[])
         if (res->fp == NULL)
         {
             strerr("Error", "No file specified");
-            delete res;
-            return NULL;
+            return fail_vopt(res);
         }
         if (res->out == NULL)
         {
             strlog("Note", "Using default output file name");
-            res->out = fopen(fout, "wb+");
+            res->out = fopen(fout.c_str(), "wb+");
         }
         getRandomBuffer(res->r_buf);
+        res->r_len = 256;
         strlog("Key", printkey(res->key));
     }
     else if (res->mode == 'd' || res->mode == 'v')
@@ -274,14 +291,12 @@ u8_t *get_v_opt(int argc, char *argv[])
         if (res->key == NULL)
         {
             strerr("Error", "No key specified");
-            delete res;
-            return NULL;
+            return fail_vopt(res);
         }
         if (res->fp == NULL)
         {
             strerr("Error", "No file specified");
-            delete res;
-            return NULL;
+            return fail_vopt(res);
         }
     }
     return res->buf;

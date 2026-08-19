@@ -97,6 +97,7 @@ std::string format_size(size_t bytes)
 /*################################
   ConsoleDisplay 实现
 ################################*/
+/* resetPercentage:重置进度计数,并在进度条活动时结束当前行 */
 void ConsoleDisplay::resetPercentage()
 {
   Display::resetPercentage();
@@ -108,17 +109,13 @@ void ConsoleDisplay::resetPercentage()
   }
 }
 
+/* printtask:打印任务名 */
 void ConsoleDisplay::printtask(std::string name)
 {
   strlog("Task", name);
 }
 
-u8_t ConsoleDisplay::printinv(const u8_t ret)
-{
-  strlog("Invalid values", std::to_string(ret));
-  return ret;
-}
-
+/* createTimer:创建并启动计时器 */
 Timer *ConsoleDisplay::createTimer(std::string name)
 {
   Timer *timer = new Timer;
@@ -127,6 +124,7 @@ Timer *ConsoleDisplay::createTimer(std::string name)
   return timer;
 }
 
+/* printTimer:打印计时器耗时并释放 */
 void ConsoleDisplay::printTimer(Timer *timer)
 {
   auto end = std::chrono::system_clock::now();
@@ -143,18 +141,21 @@ void ConsoleDisplay::printTimer(Timer *timer)
   delete timer;
 }
 
+/* printenc:打印加密完成 */
 void ConsoleDisplay::printenc()
 {
   strlog("Result", "Encryption is over!");
   over.store(true);
 }
 
+/* printresv:打印验证结果 */
 void ConsoleDisplay::printresv(int res)
 {
   strlog("Result", this->getResStr(res));
   over.store(true);
 }
 
+/* printresd:打印解密结果 */
 void ConsoleDisplay::printresd(int res)
 {
   if (res <= 0)
@@ -166,16 +167,19 @@ void ConsoleDisplay::printresd(int res)
     printresv(res);
 }
 
+/* printctype:打印加密模式 */
 void ConsoleDisplay::printctype(u8_t type)
 {
   strlog("Crypt mode", std::to_string(type) + "/" + crypt_mode_name(type));
 }
 
+/* printhtype:打印哈希模式 */
 void ConsoleDisplay::printhtype(u8_t type)
 {
   strlog("Hash mode", std::to_string(type) + "/" + hash_mode_name(type));
 }
 
+/* printpercentage:更新进度计数并打印进度条 */
 void ConsoleDisplay::printpercentage(std::string name, size_t now_size, size_t total_size)
 {
   (void)name;

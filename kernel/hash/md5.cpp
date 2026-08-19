@@ -54,6 +54,10 @@
     (a) += (b);                                         \
   }
 
+/*
+getHash:对64字节整块做一步MD5哈希(主循环,4轮共64步)
+input:64字节输入块
+*/
 void md5hash::getHash(const u8_t *input)
 {
   memset(s, 0, sizeof(s));
@@ -145,6 +149,11 @@ void md5hash::getHash(const u8_t *input)
   h[3] += d;
 }
 
+/*
+getHash:处理末尾块(追加 0x80 填充与64位长度字段,MD5按小端写入长度)
+input:末尾块数据
+final_loadsize:末尾块字节数
+*/
 void md5hash::getHash(const u8_t *input, u32_t final_loadsize)
 {
   addtotal(final_loadsize);
@@ -166,6 +175,10 @@ void md5hash::getHash(const u8_t *input, u32_t final_loadsize)
   delete[] temp;
 }
 
+/*
+getres:输出16字节MD5摘要(按小端字节序展开)
+hashout:输出地址
+*/
 void md5hash::getres(u8_t *hashout)
 {
   for (int i = 0; i < 16; ++i)

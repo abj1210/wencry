@@ -8,7 +8,7 @@ FetchContent_Declare(googletest
     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     ${GTEST_FETCH_EXTRACT_TS}
 )
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+set(gtest_force_shared_crt OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
 add_library(GTest::GTest ALIAS gtest)

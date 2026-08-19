@@ -8,11 +8,12 @@
             "cStandard": "c17",
             "includePath": [
                 "${workspaceFolder}/kernel",
+                "${workspaceFolder}/kernel/multi_pipeline",
+                "${workspaceFolder}/kernel/aes",
+                "${workspaceFolder}/kernel/multi_pipeline/buffergroup",
                 "${workspaceFolder}/kernel/hash",
-                "${workspaceFolder}/kernel/multi_aes",
-                "${workspaceFolder}/kernel/multi_aes/aes",
                 "${workspaceFolder}/valget",
-                "${workspaceFolder}/valget/base64",
+                "${workspaceFolder}/valhelper",
                 "${workspaceFolder}/build/vscode/generated",
                 "${workspaceFolder}/build/generated"
             ],
@@ -40,11 +41,12 @@
             "cStandard": "c17",
             "includePath": [
                 "${workspaceFolder}/kernel",
-                "${workspaceFolder}/kernel/hash",
-                "${workspaceFolder}/kernel/multi_aes",
-                "${workspaceFolder}/kernel/multi_aes/aes",
+                "${workspaceFolder}/kernel/multi_pipeline",
+                "${workspaceFolder}/kernel/multi_pipeline/aes",
+                "${workspaceFolder}/kernel/multi_pipeline/buffergroup",
+                "${workspaceFolder}/kernel/multi_pipeline/hash",
                 "${workspaceFolder}/valget",
-                "${workspaceFolder}/valget/base64",
+                "${workspaceFolder}/valhelper",
                 "${workspaceFolder}/build/generated"
             ],
             "defines": [

@@ -29,6 +29,20 @@ using namespace chrono;
 ################################*/
 
 /*
+const_time_eq:常数时间比较两个等长字节串(HMAC/摘要比对用,避免 memcmp 提前退出泄露信息)
+a,b:待比较数据
+len:长度(字节)
+return:相等返回 true
+*/
+static bool const_time_eq(const u8_t *a, const u8_t *b, u8_t len)
+{
+    u8_t diff = 0;
+    for (u8_t i = 0; i < len; ++i)
+        diff |= a[i] ^ b[i];
+    return diff == 0;
+}
+
+/*
 构造函数
 no_echo:是否隐藏输出
 */
@@ -176,13 +190,7 @@ return:校验是否成功
 bool hmac::cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
 {
     getres(hashtype, key, fp, fsize);
-    bool same = true;
-    for (int i = 0; i < length; ++i)
-        if (hmac_out[i] != hmac_res[i])
-        {
-            same = false;
-            break;
-        }
+    bool same = const_time_eq(hmac_out, hmac_res, length);
     delete[] hmac_res;
     hmac_res = NULL;
     return same;
@@ -197,7 +205,7 @@ bool hmac::match_result(const u8_t *expected, u8_t len) const
 {
     if (hmac_res == NULL || len != length)
         return false;
-    return memcmp(expected, hmac_res, len) == 0;
+    return const_time_eq(expected, hmac_res, len);
 }
 /*################################
   文件头辅助函数
@@ -207,11 +215,14 @@ getIV:获取初始向量(从输入)
 r_buf:随机缓冲数组
 iv:初始向量数组
 */
-void FileHeader::getIV(const u8_t *r_buf, u8_t *iv)
+void FileHeader::getIV(const u8_t *r_buf, size_t r_len, u8_t *iv)
 {
     Hashmaster *hm = hf.getHasher(HT_SHA1);
-    size_t len = strnlen((const char *)r_buf, 256);
-    hm->getStringHash(r_buf, len, iv);
+    // r_len==0 表示调用方未显式给出长度(兼容旧接口/GUI),按 C 字符串长度处理;
+    // 命令行随机缓冲路径传入 256,避免随机字节中的 0x00 截断 IV 种子。
+    if (r_len == 0)
+        r_len = strnlen((const char *)r_buf, 256);
+    hm->getStringHash(r_buf, (u32_t)r_len, iv);
     for (int i = 1; i < num; ++i)
         hm->getStringHash(iv + (20 * (i - 1)), 20, iv + (20 * i));
     delete hm;
@@ -245,6 +256,33 @@ void FileHeader::getFileHeader(u8_t *iv)
         fwrite(iv + (20 * i), 1, 20, out);
 }
 /*
+check_header:校验 .wenc 文件头(魔数/加密模式/哈希模式)
+return:0=合法,1=文件过短,3=加密/哈希模式非法,4=魔数错误
+返回值与 runcrypt::check_header 的 res 码一致,可直接透传。
+线程数越界(>THREAD_MAX)不在此校验,交由 checkType 回退为4线程。
+函数不改变 fp 的读写位置。
+*/
+int FileHeader::check_header()
+{
+    if (fp == NULL)
+        return 4;
+    long pos = ftell(fp);
+    rewind(fp);
+    u8_t hdr[48];
+    size_t rd = fread(hdr, 1, sizeof(hdr), fp);
+    fseek(fp, pos, SEEK_SET);
+    if (rd < sizeof(hdr))
+        return 1;
+    // Magic_Num = 0xA5C3A5C3A5C3A5C3,小端写入磁盘的字节序为 C3 A5 C3 A5 C3 A5 C3 A5
+    u64_t mn = 0;
+    memcpy(&mn, hdr, 8);
+    if (mn != Magic_Num)
+        return 4;
+    if (hdr[FILE_MODE_MARK] >= kCryptModeCount || hdr[FILE_MODE_MARK + 1] >= kHashModeCount)
+        return 3;
+    return 0;
+}
+/*
 checkType:检查加密和哈希模式,并读取文件头记录的线程数
 线程数记录于offset 47(始终空闲的填充尾,不参与HMAC)。
 值为0表示旧格式文件,回退为4线程。
@@ -263,18 +301,6 @@ void FileHeader::checkType()
         num = fn;
     else
         num = 4;
-}
-/*
-checkMn:检查魔数
-*/
-bool FileHeader::checkMn()
-{
-    fseek(fp, FILE_MN_MARK, SEEK_SET);
-    u64_t mn = 0;
-    int sum = fread(&mn, 1, 8, fp);
-    if (sum != 8)
-        return false;
-    return (mn == Magic_Num);
 }
 /*
 getHmac:获得HMAC

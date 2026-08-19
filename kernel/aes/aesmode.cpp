@@ -224,6 +224,12 @@ Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type, const u8_t *iv)
     }
   }
 }
+/*
+createCryMaster:按加密模式创建AES加解密器(使用工厂默认IV)
+isenc:是否加密(true加密,false解密)
+type:模式(0=ECB,1=CBC,2=CTR,3=CFB,4=OFB)
+return:创建出的Aesmode子类
+*/
 Aesmode *AesFactory::createCryMaster(bool isenc, u8_t type)
 {
   return createCryMaster(isenc, type, iv);

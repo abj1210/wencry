@@ -36,6 +36,9 @@
             "type": "cmake",
             "label": "CMake: 测试",
             "command": "test",
+            "targets": [
+                "Test"
+            ],
             "problemMatcher": [],
             "detail": "CMake 模板 测试 任务"
         }

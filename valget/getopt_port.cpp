@@ -82,6 +82,10 @@ print_err(const char *argv0, const char *msg, const char *arg)
   }
 }
 
+/*
+getopt_long:解析命令行长/短选项(POSIX getopt_long 的轻量实现)
+参数与返回值说明见 getopt_port.h。
+*/
 int
 getopt_long(int argc, char **argv, const char *optstring,
             const struct option *longopts, int *longindex)

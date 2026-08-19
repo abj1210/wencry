@@ -1,6 +1,10 @@
 #include "sha_ni.h"
 #include <string.h>
 
+/*
+K256:SHA-256 轮常数(前64个素数立方根的小数部分前32位)
+以 4 个 u32 打包进一个 __m128i,供 sha256_ni_block 的 _mm_sha256rnds2 指令直接取用。
+*/
 static const __m128i K256[16] = {
     _mm_setr_epi32(0x428a2f98U, 0x71374491U, 0xb5c0fbcfU, 0xe9b5dba5U),
     _mm_setr_epi32(0x3956c25bU, 0x59f111f1U, 0x923f82a4U, 0xab1c5ed5U),
@@ -341,12 +345,20 @@ static void sha256_ni_block(u32_t h[8], const u8_t *data)
 /*################################
   类实现
 ################################*/
+/*
+sha1ni::getHash:用 SHA1-NI 指令处理一个64字节整块并累加长度
+input:64字节输入块
+*/
 void sha1ni::getHash(const u8_t *input)
 {
     sha1_ni_block(h, input);
     addtotal(64);
 }
 
+/*
+sha256ni::getHash:用 SHA256-NI 指令处理一个64字节整块并累加长度
+input:64字节输入块
+*/
 void sha256ni::getHash(const u8_t *input)
 {
     sha256_ni_block(h, input);

@@ -23,12 +23,18 @@ typedef unsigned long long u64_t;
 ################################*/
 #ifdef PROFILE_THREADS
 extern thread_local const char *g_thread_role;
+/*
+ThreadProfiler:线程事件日志记录器(单例)
+将各线程的流水线事件写入 threads.csv,用于离线分析线程活跃/阻塞情况。
+out:CSV 文件句柄;mtx:串行化写;t0:相对时间基准(微秒)。
+*/
 class ThreadProfiler
 {
   FILE *out;
   std::mutex mtx;
   u64_t t0;
 
+  /* now_us:返回当前时刻相对 epoch 的微秒数 */
   static u64_t now_us()
   {
     return (u64_t)std::chrono::duration_cast<std::chrono::microseconds>(
@@ -37,21 +43,25 @@ class ThreadProfiler
   }
 
 public:
+  /* inst:获取全局单例 */
   static ThreadProfiler &inst()
   {
     static ThreadProfiler p;
     return p;
   }
+  /* ThreadProfiler:构造,打开 threads.csv 并写表头 */
   ThreadProfiler() : out(fopen("threads.csv", "w")), t0(now_us())
   {
     if (out)
       fprintf(out, "role,event,param,us\n");
   }
+  /* ~ThreadProfiler:析构,关闭 CSV 文件 */
   ~ThreadProfiler()
   {
     if (out)
       fclose(out);
   }
+  /* log:记录一条线程事件(加锁串行化写) */
   void log(const char *ev, u32_t param)
   {
     std::lock_guard<std::mutex> lk(mtx);
@@ -128,62 +138,33 @@ enum bufstate_t
 
 /*
 iobuffer:用于aes的16B单元输入输出缓冲区
-BUF_SZ:用于aes的16B单元缓冲区单元数量
-sum:缓冲区总容量
-b:缓冲区数组
-total:缓冲区被填满的单元数量
-now:将要被读写的单元索引
-tail:未被填满的单元中数据的长度
-isfinal:加载是否结束
-state:流水线状态(随对象走,不再用并行数组)
-seq:全局块序号(统一序号,保证读入/写出有序)
-idle_ts:进入空闲池的时间戳(微秒,steady_clock)
+iobuffer类主要包括数据成员和同步成员。
+数据成员负责承载数据和控制读取状态。其修改通过类的接口实现
+同步成员负责保证缓冲区状态、装在序号等控制状态的同步。其修改由并发调度器统一控制
 */
 class iobuffer
 {
 public:
-  static const u32_t BUF_SZ = 0x100000;
-  static const u32_t sum = 0x1000000;
+  static const u32_t BUF_SZ = 0x100000; //用于aes的16B单元缓冲区单元数量
+  static const u32_t sum = 0x1000000;   //缓冲区总容量
 
 private:
-  u8_t b[BUF_SZ][0x10];
-  u32_t total, now, tail;
-  bool isfinal;
+  //数据成员
+  u8_t b[BUF_SZ][0x10];     //缓冲区数组
+  u32_t total, now, tail;   //缓冲区被填满的单元数量、将要被读写的单元索引、未被填满的单元中数据的长度
+  bool isfinal;             //加载是否结束
 
 public:
-  bufstate_t state;
-  u64_t seq;
-  u64_t idle_ts;
+  //同步成员
+  bufstate_t state;   //本缓冲区的流水线状态
+  u64_t seq;          //装载块的序号
+  u64_t idle_ts;      //进入空闲池的时间戳(微秒,steady_clock)
 
-  iobuffer() : total(0), now(0), tail(0), isfinal(false), state(EMPTY), seq(0), idle_ts(0) {};
-  /*
-  get_entry:获取当前缓冲区单元表项
-  return:返回的表项地址
-  */
-  u8_t *get_entry() { return (now < total) ? b[now++] : NULL; };
-  /*
-  get_data:获取缓冲区数据起始地址
-  return:数据起始地址
-  */
-  u8_t *get_data() { return &b[0][0]; };
-  /*
-  data_len:缓冲区实际数据字节数(密文/明文长度,末块含填充)
-  return:字节数
-  */
-  u32_t data_len() const { return total << 4; };
-  /*
-  load_buffer:从文件装载缓冲区(同步fread)
-  fin:输入文件
-  ispadding:是否填充(加密为true,解密/验证为false)
-  return:装载状态
-  */
+  iobuffer();
+  u8_t *get_entry();
+  u8_t *get_data();
+  u32_t data_len() const;
   loadstate_t load_buffer(FILE *fin, bool ispadding);
-  /*
-  export_buffer:将缓冲区内容写入文件(同步fwrite),返回实际写出的字节数
-  fout:输出文件
-  ispadding:是否填充
-  return:写出的字节数
-  */
   u32_t export_buffer(FILE *fout, bool ispadding);
 };
 
@@ -207,17 +188,13 @@ class buffergroup
   std::map<u64_t, iobuffer *> work_pool;    // 工作池(seq -> buffer)
   u32_t total_threads;                      // 工作线程数
   u64_t total_chunks;                       // 装载的总块数
-  FILE *fin, *fout;
   pipe_mode mode;                           // 流水线模式
-  bool ispadding;                           // 加密为true, 解密/验证为false
   bool read_done;                           // 读线程已结束
-
-  std::function<void(const u8_t *, size_t)> hash_feed; // HASH线程喂入HMAC的回调
 
   std::mutex mtx;
   std::condition_variable cv;
 
-  buffergroup() : total_threads(0), total_chunks(0), fin(NULL), fout(NULL), mode(PIPE_ENCRYPT), ispadding(true), read_done(false) {};
+  buffergroup() : total_threads(0), total_chunks(0), mode(PIPE_ENCRYPT), read_done(false) {};
   ~buffergroup()
   {
     for (auto &kv : work_pool)
@@ -244,21 +221,18 @@ public:
   buffergroup &operator=(const buffergroup &) = delete;
   static buffergroup *get_instance();
   static void del_instance();
-  void set_buffergroup(u32_t total_threads, FILE *fin, FILE *fout, pipe_mode mode);
-  void set_hash_feed(const std::function<void(const u8_t *, size_t)> &feed) { hash_feed = feed; };
-  pipe_mode get_mode() const { return mode; };
+  void set_buffergroup(u32_t total_threads, pipe_mode mode);
 
   /* 工作线程接口(指针语义,NULL 为退出哨兵) */
   iobuffer *wait_loaded(const u8_t thread_id);
   bool stop_worker(iobuffer *buffer) { return buffer == NULL; };
-  u8_t *get_entry(iobuffer *buffer);
   void finish_chunk(iobuffer *buffer);
+  iobuffer *wait_unhashed(u64_t next);
+  void finish_hashing(iobuffer *buffer);
+  iobuffer *wait_idle_buffer();
+  bool finish_reading(iobuffer *buffer, loadstate_t ls, u64_t next);
+  iobuffer *wait_processed_buffer(u64_t next);
+  void finish_writing(iobuffer *buffer);
 
-  /* 读线程 */
-  void run_read(const std::function<void(std::string, size_t)> &printload);
-  /* HASH线程(加密读PROCESSED,解密/验证读LOADED) */
-  void run_hash(const std::function<void(std::string, size_t)> &printload);
-  /* 写线程 */
-  void run_write(const std::function<void(std::string, size_t)> &printload);
 };
 #endif

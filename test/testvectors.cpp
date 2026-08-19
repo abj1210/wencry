@@ -8,11 +8,13 @@
   辅助函数
 ################################*/
 
+/* fill_pattern:以 i%251 填充缓冲区(确定性测试数据) */
 static void fill_pattern(u8_t *out, size_t len) {
   for (size_t i = 0; i < len; ++i)
     out[i] = (u8_t)(i % 251);
 }
 
+/* aes_blocks:用指定密钥/IV/模式对多个16字节块执行AES加解密(原地) */
 static void aes_blocks(bool isenc, int mode, const u8_t *key, const u8_t *iv,
                        u8_t *block, size_t blocks) {
   AesFactory af((u8_t *)key);
@@ -58,6 +60,7 @@ static const char sp_pt[] =
     "30c81c46a35ce411e5fbc1191a0a52ef"
     "f69f2445df4f9b17ad2b417be66c3710";
 
+/* check_nist_mode:校验单个 NIST SP 800-38A 模式向量(加密或解密) */
 static void check_nist_mode(int mode, const char *ivhex, const char *cthex,
                             bool enc) {
   u8_t key[16], iv[16], block[64], cmp[64];
@@ -210,6 +213,7 @@ TEST(Testvectors, per_thread_iv_distinct) {
   哈希填充边界 (0/1/55/56/57/63/64/65/1000)
 ################################*/
 
+/* hv_t:哈希填充边界向量(给定长度下 sha1/md5/sha256 的参考摘要) */
 struct hv_t {
   size_t len;
   const char *sha1, *md5, *sha256;
@@ -285,6 +289,7 @@ TEST(Testvectors, sha256_padding_boundaries) {
   HMAC 参考向量 (RFC 2202 / openssl)
 ################################*/
 
+/* hmac_round:用给定密钥对数据做 HMAC 并与期望摘要比对 */
 static void hmac_round(u8_t htype, const u8_t key[16], const char *data,
                        const char *exphex, size_t hlen) {
   FILE *fp = genfile(data);

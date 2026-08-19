@@ -10,9 +10,10 @@ SilentDisplay:静默输出子类
 class SilentDisplay : public Display
 {
 public:
+  /* SilentDisplay:构造,不打印任何内容 */
   SilentDisplay() : Display() {};
+  /* 以下方法实现 Display 接口(静默,仅维护进度计数与完成标志) */
   virtual void printtask(std::string) override {};
-  virtual u8_t printinv(const u8_t ret) override { return ret; };
   virtual Timer *createTimer(std::string) override { return NULL; };
   virtual void printTimer(Timer *) override {};
   virtual void printenc() override { over.store(true); };

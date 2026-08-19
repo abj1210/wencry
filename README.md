@@ -1,11 +1,11 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2026.8.13 (最后修改)  
-版本：v4.3.0
+日期：2026.8.19 (最后修改)  
+版本：v4.5.0
 
-**默认4线程,CBC加密模式,SHA1哈希**  
-**Windows原生处理速度可达1000MB/s以上**  
+**默认4工作线程,CBC加密模式,SHA1哈希**  
+**Windows原生处理速度可达1800MB/s以上**  
 **内存按需动态分配,峰值受缓冲池容量限制**   
 
 ## 加密原理
@@ -45,22 +45,28 @@
     - getval1.cpp:交互式用户输入解析(get_v_mod1)
     - getopt_port.cpp/h:POSIX getopt_long 移植(Windows MSVC 使用)
   - **valhelper:参数包与辅助工具文件夹**
-    - valhelper.h/cpp:vpak_t参数包、base64密钥校验、随机密钥、模式映射
+    - valhelper.h/cpp:vpak_t参数包、base64密钥校验、随机密钥(CSPRNG)、模式映射
     - information.cpp:版本/帮助信息与模式名查询(WencryInformation)
     - base64.h/cpp:base64编码/解码与合法性校验
+    - modes.h:加密/哈希模式枚举(单源)
+    - display.h:结果打印抽象基类(Display)
+    - display/:ConsoleDisplay(终端输出)与 SilentDisplay(静默输出)实现
   - **kernel:加解密核心文件夹**
     - cry.h/cry.cpp:整体加解密流程接口(runcrypt/execute_*,check_header,file_path)
     - fheader.h/fheader.cpp:加密文件头生成/验证、增量HMAC计算、结果打印
-    - **multi_aes:多线程AES加解密文件夹**
+    - **multi_pipeline:多线程统一流水线文件夹**
       - multicry.h/cpp:多线程调度器(multicry_master,按模式启动读/HASH/AES/写线程)
-      - multi_buffergroup.h/cpp:统一读--HASH--AES--写流水线缓冲组(加密/解密/验证三模式)
+      - **buffergroup:动态缓冲池文件夹**
+        - multi_buffergroup.h/cpp:统一读--HASH--AES--写流水线缓冲池(空闲池/工作池,全局序号)
+        - iobuffer.cpp:单缓冲区装载/导出实现
       - **aes:AES加解密实现文件夹**
         - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
         - aes_ni.h/cpp:基于AES-NI指令的AES-128密钥扩展与单块变换
-    - **hash:哈希函数文件夹**
-      - hashmaster.h/cpp:哈希抽象基类/工厂与字符串哈希、增量哈希接口
-      - sha1.cpp、md5.cpp、sha256.cpp:软件实现
-      - sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256
+      - **hash:哈希函数文件夹**
+        - hashmaster.h/cpp:哈希抽象基类/工厂与字符串哈希、增量哈希接口
+        - sha1.cpp/sha256.cpp:哈希状态基类(末尾填充/摘要输出,整块哈希由SHA-NI完成)
+        - md5.cpp:MD5软件实现
+        - sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256整块哈希
   - **test:测试文件夹**
     - testutil.h/cpp:测试工具(临时文件名/模式文件/hex解析)
     - test.h/cpp:复用runcrypt的往返与速度测试函数(exec/cmp_file/makeFullTest等)
@@ -156,8 +162,14 @@ Windows 兼容说明:
 
 ### 示例
 
-- 加密: ./Wencry -e -i ../a.mp4 --cmode 2 -o ../a.mp4.wenc
-- 解密: ./Wencry -d -i ../a.mp4.wenc -o ../aa.mp4 -k Z8Zpc1HSuwpzbqr8vvjRg==
+- 加密: 
+   ```bat
+  ./Wencry -e -i ../a.mp4 --cmode 2 -o ../a.mp4.wenc
+  ```
+- 解密: 
+  ```bat
+  ./Wencry -d -i ../a.mp4.wenc -o ../aa.mp4 -k Z8Zpc1HSuwpzbqr8vvjRg==
+  ```
 
 ## 多线程  
  
@@ -214,7 +226,7 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
   - 3:密文反馈CFB  
   - 4:输出反馈OFB  
 
-进行加解密时可输入相应的序号(命令行参数中的mode)以选择相应的加密方式,若输入不在0-4之间,择默认选择0号ECB模式(个人不建议选择0号).  
+进行加解密时可输入相应的序号(命令行参数中的mode)以选择相应的加密方式;未指定 --cmode 时默认使用 1 号 CBC 模式,输入不在 0-4 之间会被判定为非法并报错退出(个人不建议选择 0 号 ECB).  
 以上五种模式除ECB外均为非确定性加密,需要初始向量IV.在命令行模式中可以手动输入字符串以生成IV(不建议重复使用相同的字符串,会造成安全风险).在命令行参数模式下系统会自动生成随机的IV.  
 
 ### pcks7填充  
@@ -264,9 +276,18 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.2.1 流水线:加密/解密/验证三模式统一到"读--HASH--AES--写"多线程流水线——新增独立HASH线程按块序增量计算HMAC;解密融合HMAC验证(消除单独整读密文验HMAC的一遍I/O,由3遍降为2遍),失败时删除输出文件(从FILE*反推路径,Windows/POSIX);验证(-v)复用同一读+HASH流水线,不做AES与写出.*  
 *V4.2.1 清理:删除filebuffer64/hashbuffer(64字节块文件哈希缓冲)与Hashmaster::getFileHash,统一改用增量哈希;hmac::getres改用增量分块计算(测试兼容).*  
 *V4.2.1 性能:原生Windows缓存态吞吐——加密~1.26GB/s、解密~1.0-1.6GB/s、验证~1.45-1.7GB/s(较融合前显著提升).*  
-*V4.2.1 构建:修复VS生成器多实例环境下MSB8070工具集缺失(CMake默认实例缺目标MSVC工具集)——README补充用 -DCMAKE_GENERATOR_INSTANCE 显式指定装有该工具集的VS实例.*
-*V4.3.0 缓冲池:缓冲区由一次性固定分配改为运行时按需动态分配——buffergroup维护空闲池(idle_pool)与工作池(work_pool)两个缓冲池;工作池满则读线程阻塞,空闲池满/空闲超时则写线程释放;读取完成后写线程(验证模式为HASH线程)自动清理空buffer,内存随流水线结束收敛.*
-*V4.3.0 顺序:删除buffer的threadid/seq双标志,改用统一全局序号seq——HASH/写线程按seq递增消费保证有序,工作线程按seq%total_threads路由并领取最小seq的块,维持链式模式IV链连续.*
-*V4.3.0 接口:set_buffergroup去掉size参数(容量改由WORK_POOL_MAX/IDLE_POOL_MAX/IDLE_TIMEOUT_MS宏控制);工作线程接口由槽号改为buffer指针(NULL为退出哨兵);删除cry.h的REDUNDANCY_BUFFER宏与runcrypt的buffers_num/r_buffers_num.*
-*V4.3.0 健壮性:解密/验证增加空密钥检查——execute_decrypt/execute_verify对空密钥抛"Invalid Key",CLI在缺-k时报"No key specified"退出(修复验证/解密不带密钥时的段错误).*
-*V4.3.0 文档:新增sync_logic.md(缓冲池同步逻辑说明),更新README多线程缓冲池说明.*
+*V4.2.1 构建:修复VS生成器多实例环境下MSB8070工具集缺失(CMake默认实例缺目标MSVC工具集)——README补充用 -DCMAKE_GENERATOR_INSTANCE 显式指定装有该工具集的VS实例.*  
+*V4.3.0 缓冲池:缓冲区由一次性固定分配改为运行时按需动态分配——buffergroup维护空闲池(idle_pool)与工作池(work_pool)两个缓冲池;工作池满则读线程阻塞,空闲池满/空闲超时则写线程释放;读取完成后写线程(验证模式为HASH线程)自动清理空buffer,内存随流水线结束收敛.*  
+*V4.3.0 顺序:删除buffer的threadid/seq双标志,改用统一全局序号seq——HASH/写线程按seq递增消费保证有序,工作线程按seq%total_threads路由并领取最小seq的块,维持链式模式IV链连续.*  
+*V4.3.0 接口:set_buffergroup去掉size参数(容量改由WORK_POOL_MAX/IDLE_POOL_MAX/IDLE_TIMEOUT_MS宏控制);工作线程接口由槽号改为buffer指针(NULL为退出哨兵);删除cry.h的REDUNDANCY_BUFFER宏与runcrypt的buffers_num/r_buffers_num.*  
+*V4.3.0 健壮性:解密/验证增加空密钥检查——execute_decrypt/execute_verify对空密钥抛"Invalid Key",CLI在缺-k时报"No key specified"退出(修复验证/解密不带密钥时的段错误).*  
+*V4.3.0 文档:新增sync_logic.md(缓冲池同步逻辑说明),更新README多线程缓冲池说明.*  
+*V4.4.0 安全:密钥与IV随机源由 rand()/srand(time(NULL)) 改为操作系统加密安全随机源(Windows BCryptGenRandom、Linux getrandom、/dev/urandom 回退),随机源不可用时拒绝继续;修复随机缓冲经 strnlen 按C字符串截断导致的IV种子熵不稳定(vpak_t 新增 r_len 显式传递有效长度,execute_encrypt 增加带默认值的 r_len 参数保持向后兼容).*  
+*V4.4.0 安全:HMAC/摘要比对改为常数时间(异或累加 const_time_eq),消除 memcmp/提前退出的时序侧信道.*  
+*V4.4.0 行为:命令行未指定 --cmode 时默认加密模式由 ECB 改为 CBC(与 Settings 默认值及README一致),非法模式报错退出;修正README"非法输入回退ECB"的错误表述.*  
+*V4.4.0 健壮性:修复 get_v_opt 的密钥与文件句柄泄漏(-k 校验失败先释放临时缓冲并新增重复指定防护;新增 fail_vopt 统一清理入口关闭已打开的 fp/out 并释放 key;移除文件级全局 fout 改为局部 std::string).*  
+*V4.4.0 验证:WSL(离线使用系统 gtest,经 FETCHCONTENT_SOURCE_DIR_GOOGLETEST 指向 /usr/src/googletest)ctest 20/20 通过;Windows 原生 2GiB 大文件吞吐加密 ~1.73GB/s、解密 ~2.00GB/s(纯 AES 阶段 ~2.0GB/s),往返 SHA256 一致.*  
+*V4.5.0 结构:kernel/multi_aes 拆分重组为 kernel/multi_pipeline(多线程调度器 multicry + 动态缓冲池 buffergroup)与 kernel/aes(AES-NI 密钥扩展与五模式加密器).*  
+*V4.5.0 哈希:SHA1/SHA256 移除软件轮函数(80/64轮主循环、消息扩展 getwdata、轮常数表与输入块 union),仅保留 SHA-NI 硬件整块哈希 + 末尾填充/摘要输出等公共逻辑;MD5 无 SHA-NI 对应物仍为软件实现;删除随之失效的 rrot/setbytes 宏.*  
+*V4.5.0 接口:runcrypt 构造/析构改为私有,新增 runcrypt_create/runcrypt_destroy 分配/释放工厂——GUI 等外部模块仅持有 runcrypt* 指针,避免头文件对象尺寸不一致导致越界;移除 wencry_check_header 自由函数(校验逻辑并入 runcrypt::check_header);新增 prepare_cryption_master 统一流水线回调注入.*  
+*V4.5.0 文档:全项目源码注释覆盖检查,为缺失注释的类与函数补充注释(ThreadProfiler、Display 打印接口、Settings/FileHeader 访问器与构造、多线程调度器回调、getopt_long 参数、测试辅助函数与向量结构等).*  

@@ -2,6 +2,10 @@ project(Valhelper)
 
 add_library(${PROJECT_NAME} base64.cpp information.cpp valhelper.cpp display/console_display.cpp)
 
+if(WIN32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC bcrypt)
+endif()
+
 target_include_directories(${PROJECT_NAME} PUBLIC
                            ${CMAKE_CURRENT_SOURCE_DIR}
                            )

@@ -1,7 +1,15 @@
 #include "valhelper.h"
 #include "base64.h"
 #include <stdlib.h>
-#include <time.h>
+#include <stdio.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#include <bcrypt.h>
+#elif defined(__linux__)
+#include <sys/random.h>
+#include <errno.h>
+#endif
 
 /*
 printkey:将16字节密钥转换为base64字符串
@@ -30,15 +38,58 @@ bool checkB64Key(const u8_t* b64key, u8_t *key){
   }
 }
 /*
+csprng_fill:用操作系统加密安全随机源填充缓冲区(跨平台)
+buf:输出缓冲
+len:字节数
+Windows 用 BCryptGenRandom(系统首选 RNG),Linux 优先 getrandom,/dev/urandom 作
+POSIX 回退;随机源不可用时打印错误并终止(加密工具无法在无熵源下安全继续)。
+*/
+static void csprng_fill(u8_t *buf, size_t len)
+{
+  if (len == 0)
+    return;
+#if defined(_WIN32)
+  if (BCryptGenRandom(NULL, (PUCHAR)buf, (ULONG)len,
+                      BCRYPT_USE_SYSTEM_PREFERRED_RNG) == 0)
+    return;
+#elif defined(__linux__)
+  size_t off = 0;
+  while (off < len)
+  {
+    ssize_t n = getrandom(buf + off, len - off, 0);
+    if (n > 0)
+    {
+      off += (size_t)n;
+      continue;
+    }
+    if (n < 0 && errno == EINTR)
+      continue;
+    break;
+  }
+  if (off == len)
+    return;
+#endif
+#if !defined(_WIN32)
+  FILE *f = fopen("/dev/urandom", "rb");
+  if (f != NULL)
+  {
+    size_t got = fread(buf, 1, len, f);
+    fclose(f);
+    if (got == len)
+      return;
+  }
+#endif
+  fprintf(stderr, "Error: system random source unavailable\n");
+  exit(1);
+}
+/*
 getRandomKey:获取随机密钥
 return:返回的密钥
 */
 u8_t *getRandomKey()
 {
-  srand(time(NULL));
   u8_t *keyout = new u8_t[16];
-  for (int i = 0; i < 16; ++i)
-    keyout[i] = rand();
+  csprng_fill(keyout, 16);
   return keyout;
 }
 /*
@@ -47,8 +98,7 @@ r_buf:缓冲数组地址
 */
 void getRandomBuffer(u8_t *r_buf)
 {
-    for (int i = 0; i < 256; ++i)
-        r_buf[i] = rand();
+  csprng_fill(r_buf, 256);
 }
 /*
 getProcessMode:将模式字符映射为任务编号

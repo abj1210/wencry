@@ -32,6 +32,7 @@ enum HashType : unsigned char
   HT_COUNT
 };
 
+/* 模式计数常量(供名称表大小与静态断言使用) */
 constexpr int kCryptModeCount = (int)CM_COUNT;
 constexpr int kHashModeCount = (int)HT_COUNT;
 

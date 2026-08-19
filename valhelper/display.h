@@ -59,24 +59,35 @@ Display:结果打印抽象基类(统一命令解析与内核执行的输出)
 class Display
 {
 protected:
-  std::atomic<size_t> acc_size;
-  std::atomic<size_t> total_size;
-  std::atomic<bool> over;
+  std::atomic<size_t> acc_size;   // 已处理字节数(进度计数)
+  std::atomic<size_t> total_size; // 总字节数(进度分母)
+  std::atomic<bool> over;         // 任务完成标志
 
 public:
+  /* Display:构造,初始化进度计数与完成标志 */
   Display() : acc_size(0), total_size(1), over(false) {};
   virtual ~Display() {};
+  /* printtask:打印任务名 */
   virtual void printtask(std::string name) = 0;
-  virtual u8_t printinv(const u8_t ret) = 0;
+  /* createTimer:创建并启动计时器(打印耗时用) */
   virtual Timer *createTimer(std::string name) = 0;
+  /* printTimer:打印计时器耗时并释放 */
   virtual void printTimer(Timer *timer) = 0;
+  /* printenc:打印加密完成 */
   virtual void printenc() = 0;
+  /* printresd:打印解密结果(含失败原因) */
   virtual void printresd(int res) = 0;
+  /* printresv:打印验证结果(含失败原因) */
   virtual void printresv(int res) = 0;
+  /* printctype:打印加密模式 */
   virtual void printctype(u8_t type) = 0;
+  /* printhtype:打印哈希模式 */
   virtual void printhtype(u8_t type) = 0;
+  /* printpercentage:更新进度计数并打印进度条 */
   virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
+  /* resetPercentage:重置进度计数 */
   virtual void resetPercentage() { acc_size.store(0); };
+  /* getResStr:将返回值编号映射为可读结果描述 */
   std::string getResStr(int res)
   {
     if (res <= 0)
@@ -92,6 +103,7 @@ public:
     else
       return "Unknown res number: " + std::to_string(res);
   }
+  /* getPercentage:计算当前进度百分比(0-100) */
   int getPercentage() const
   {
     size_t t = total_size.load();
@@ -105,6 +117,7 @@ public:
       p = 100;
     return p;
   };
+  /* isOver:返回任务是否已完成 */
   bool isOver() const { return over.load(); };
 };
 
