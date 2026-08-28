@@ -3,13 +3,16 @@
 #include "multicry.h"
 #include "aesmode.h"
 #include "fheader.h"
+#include "display.h"
 
 #include <stdio.h>
 #include <string.h>
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
 
+#ifndef THREAD_NUM
 #define THREAD_NUM 4
+#endif
 #define FILE_MN_MARK 0
 #define FILE_MODE_MARK 8
 #define FILE_HMAC_MARK 10
@@ -74,7 +77,8 @@ class runcrypt
   FileHeader header;      // 文件头构造器
   AesFactory aesfactory;  // aes加解密工厂
   multicry_master crym;   // 并发加解密器
-  hmac hmachandle;        // hmac计算器
+  hmac *hmachandle;        // hmac计算器
+  MerkleTreeMaster mtmaster;//merkle tree构建器
   Display *resultprint;   // 结果打印器
 
   u8_t *prepare_IV(const u8_t *r_buf, size_t r_len);
@@ -82,7 +86,8 @@ class runcrypt
   u8_t check_header(u8_t &hlen, u8_t *&hash);
   Aesmode **prepare_AES(u8_t ctype, u8_t *iv, bool mode);
   void prepare_cryption_master(Aesmode ** aesmode, size_t file_size, pipe_mode pipemode);
-  void release(u8_t *iv, Aesmode **mode);
+  void get_root_hmac(u8_t * buf, u8_t * iv, u8_t n);
+  void release(u8_t *iv, Aesmode **mode, u8_t * buf);
   void over();
   
 

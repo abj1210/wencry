@@ -36,12 +36,12 @@ protected:
   totalsize:累计已处理消息的总长度(位)
   addtotal 逐块累加,末尾块填充时写入64位长度字段
   */
-  u32_t totalsize;
+  u64_t totalsize;
   /*
   addtotal:累加总长度(以位计)
   len:本块字节数
   */
-  void addtotal(u32_t len) { totalsize += (len << 3); };
+  void addtotal(u32_t len) { totalsize += ((u64_t)len << 3); };
 
   /* getHash:处理64字节整块 */
   virtual void getHash(const u8_t *input) = 0;
@@ -58,7 +58,24 @@ public:
   virtual u8_t gethlen() = 0;
   /* getblen:返回块字节长度(64) */
   virtual u8_t getblen() = 0;
-  void getStringHash(const u8_t *string, u32_t length, u8_t *hashres);
+  /*
+  getStringHash:返回字符串哈希
+  string:字符串指针
+  length:长度
+  hashres:结果哈希地址
+  */
+  void getStringHash(const u8_t *string, u32_t length, u8_t *hashres){
+    reset();
+    u32_t nnow = length;
+    for (; nnow >= 64; nnow -= 64)
+      getHash(string + (length - nnow));
+    getHash(string + (length - nnow), nnow);
+    getres(hashres);
+  };
+  /* block_fast_t:处理单个 64 字节整块的函数指针类型(热路径消除虚调用) */
+  typedef void (*block_fast_t)(Hashmaster *self, const u8_t *input);
+  /* get_block_fast:返回本哈希器的整块处理函数 */
+  virtual block_fast_t get_block_fast() const = 0;
   /*
   增量哈希接口(供HMAC融合等场景使用)
   reset_hash:重置哈希状态
@@ -110,19 +127,26 @@ class md5hash : public Hashmaster
     u8_t s[64];
     u32_t x[16];
   };
+  /* getHash:处理64字节整块(4轮64步主循环) */
   void getHash(const u8_t *input);
+  /* getHash:处理末尾块(填充 + 小端长度字段) */
   void getHash(const u8_t *input, u32_t final_loadsize);
+  /* block_fast:热路径整块处理(消除每块一次虚调用) */
+  static void block_fast(Hashmaster *self, const u8_t *input);
   void reset()
   {
     h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476;
     totalsize = 0;
   };
+  /* getres:输出16字节MD5摘要(小端展开) */
   void getres(u8_t *hashout);
 
 public:
   md5hash() { reset(); };
   virtual u8_t gethlen() { return 16; };
   virtual u8_t getblen() { return 64; };
+  /* get_block_fast:返回整块热路径函数指针 */
+  Hashmaster::block_fast_t get_block_fast() const override { return &md5hash::block_fast; };
 };
 
 /*
@@ -154,24 +178,5 @@ public:
   sha256hash() { reset(); };
   virtual u8_t gethlen() { return 32; };
   virtual u8_t getblen() { return 64; };
-};
-/*
-哈希函数工厂类(类型列表单源见 valhelper/modes.h 的 HashType 枚举)
-*/
-class HashFactory
-{
-public:
-  /*
-  getType:根据数字返回哈希类型
-  type:输入的数字
-  return:返回的类型(非法返回 HT_COUNT 哨兵)
-  */
-  static HashType getType(u8_t type);
-  /*
-  getHasher:根据哈希类型返回相应的算法
-  type:哈希类型
-  return:返回的哈希类
-  */
-  Hashmaster *getHasher(HashType type);
 };
 #endif

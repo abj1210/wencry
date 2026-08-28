@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-project(Wencry VERSION 4.5.0 LANGUAGES CXX)
+project(Wencry VERSION 4.6.0 LANGUAGES CXX)
 
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})
@@ -14,11 +14,20 @@ set(build_time    ${COMPILE_TIME})
 # 用生成器表达式兼容单配置(make/ninja,依据 CMAKE_BUILD_TYPE)与多配置(VS)生成器。
 add_compile_definitions($<$<CONFIG:Debug>:DEBUG_ON>)
 
-# 线程事件日志(读/写/工作线程时间线写入 threads.csv),默认关闭。
-option(PROFILE_THREADS "Enable per-thread event logging for pipeline analysis" OFF)
-if (PROFILE_THREADS)
-    add_compile_definitions(PROFILE_THREADS)
+# 统一调度日志(线程时间线 + 缓冲区生成/销毁、状态迁移与池大小,写入 sched_log.csv),默认关闭。
+option(LOG_SCHED "Enable unified scheduling/buffer/thread-timeline logging" OFF)
+if (LOG_SCHED)
+    add_compile_definitions(LOG_SCHED)
 endif ()
+
+# 缓冲池容量(配置时可用 -DWORK_PROCESSED_MAX=... -DIDLE_POOL_MAX=... 覆盖):
+#   WORK_PROCESSED_MAX = 工作池与已处理池共用的总在途 buffer 数(每个 16MB)
+#   IDLE_POOL_MAX      = 空闲池可复用 buffer 数
+set(WORK_PROCESSED_MAX "12" CACHE STRING "Combined work+processed pool capacity (in-flight buffers)")
+set(IDLE_POOL_MAX "4" CACHE STRING "Idle pool capacity (reusable buffers)")
+set(THREAD_NUM "4" CACHE STRING "Default worker thread count")
+add_compile_definitions(WORK_PROCESSED_MAX=${WORK_PROCESSED_MAX} IDLE_POOL_MAX=${IDLE_POOL_MAX})
+add_compile_definitions(THREAD_NUM=${THREAD_NUM})
 
 IF(MSVC)
     message(STATUS "building for: MSVC")

@@ -11,6 +11,9 @@ class ConsoleDisplay : public Display
 {
   bool progress_active; // 进度条是否处于活动状态(决定 resetPercentage 是否换行)
 
+  /* end_progress:若进度条处于活动状态,结束当前行,避免后续输出与进度条重叠 */
+  void end_progress();
+
 public:
   /* ConsoleDisplay:构造,初始无活动进度条 */
   ConsoleDisplay() : Display(), progress_active(false) {};

@@ -9,7 +9,7 @@ using namespace std;
 using namespace chrono;
 
 /*################################
-  模块概述:HMAC 计算、加密文件头、结果打印
+  模块概述:加密文件头、结果打印
   加密文件(.wenc)布局:
     偏移 0   8字节  魔数 0xA5C3A5C3A5C3A5C3
     偏移 8   1字节  加密模式 ctype(0=ECB..4=OFB)
@@ -17,196 +17,8 @@ using namespace chrono;
     偏移 10  38字节 HMAC区(加密后写入,长度取决于htype;offset47恒空闲,用于记录线程数num)
     偏移 48  20*num字节 每线程IV
     之后    密文(含PKCS7填充)
-   HMAC 结构(标准 RFC 2104):
-     HMAC = H( (K xor opad) || H( (K xor ipad) || 数据 ) ),其中 ipad=0x36,opad=0x5c。
-   本文件提供两套HMAC计算路径:
-     - getres/gethmac/cmphmac:基于 FILE* 分块增量计算(测试/独立验证兼容)。
-     - init_hash/feed_hash/final_hash:增量喂入(统一流水线HASH线程融合计算,避免回读)。
 ################################*/
 
-/*################################
-  HMAC函数
-################################*/
-
-/*
-const_time_eq:常数时间比较两个等长字节串(HMAC/摘要比对用,避免 memcmp 提前退出泄露信息)
-a,b:待比较数据
-len:长度(字节)
-return:相等返回 true
-*/
-static bool const_time_eq(const u8_t *a, const u8_t *b, u8_t len)
-{
-    u8_t diff = 0;
-    for (u8_t i = 0; i < len; ++i)
-        diff |= a[i] ^ b[i];
-    return diff == 0;
-}
-
-/*
-构造函数
-no_echo:是否隐藏输出
-*/
-hmac::hmac() : res_printer(new SilentDisplay), hmac_res(NULL), hashmaster(NULL), key1(NULL), h1(NULL), block_len(0), accum_len(0) {};
-
-/*
-析构函数:清理增量HMAC状态
-*/
-hmac::~hmac()
-{
-    clear_incr();
-    delete[] hmac_res;
-}
-
-/*
-clear_incr:释放增量HMAC状态
-*/
-void hmac::clear_incr()
-{
-    delete[] key1;
-    delete[] h1;
-    delete hashmaster;
-    key1 = NULL;
-    h1 = NULL;
-    hashmaster = NULL;
-    accum_len = 0;
-}
-
-/*
-init_hash:初始化增量HMAC,喂入ipad块与prefix(文件头IV区)
-hashtype:哈希模式
-key:密钥
-prefix:需先喂入的前缀数据(IV区)
-prefix_len:前缀长度
-*/
-void hmac::init_hash(u8_t hashtype, u8_t *key, const u8_t *prefix, size_t prefix_len)
-{
-    hashmaster = hf.getHasher(hf.getType(hashtype));
-    block_len = hashmaster->getblen();
-    length = hashmaster->gethlen();
-    hmac_res = new u8_t[length];
-    key1 = new u8_t[block_len];
-    h1 = new u8_t[block_len];
-    memset(key1, 0, block_len);
-    memcpy(key1, key, 16);
-    for (int i = 0; i < block_len; ++i)
-        h1[i] = key1[i] ^ ipad;
-    accum_len = 0;
-    hashmaster->reset_hash();
-    hashmaster->hash_block(h1);
-    feed_hash(prefix, prefix_len);
-}
-
-/*
-feed_hash:喂入密文数据,按64字节块缓冲哈希
-data:数据
-len:数据长度
-*/
-void hmac::feed_hash(const u8_t *data, size_t len)
-{
-    while (len > 0)
-    {
-        size_t take = len < (size_t)(block_len - accum_len) ? len : (size_t)(block_len - accum_len);
-        memcpy(accum + accum_len, data, take);
-        accum_len = (u8_t)(accum_len + take);
-        data += take;
-        len -= take;
-        if (accum_len == block_len)
-        {
-            hashmaster->hash_block(accum);
-            accum_len = 0;
-        }
-    }
-}
-
-/*
-final_hash:完成增量HMAC,结果存于hmac_res
-*/
-void hmac::final_hash()
-{
-    u8_t *h2 = new u8_t[block_len + length];
-    hashmaster->hash_final(accum, accum_len);
-    for (int i = 0; i < block_len; ++i)
-        h2[i] = key1[i] ^ opad;
-    hashmaster->get_result(h2 + block_len);
-    hashmaster->getStringHash(h2, block_len + length, hmac_res);
-    delete[] h2;
-    clear_incr();
-}
-
-/*
-write_hmac:将hmac_res写入文件指定偏移
-fp:文件指针
-writeMark:写入偏移
-*/
-void hmac::write_hmac(FILE *fp, u8_t writeMark)
-{
-    fseek(fp, writeMark, SEEK_SET);
-    fwrite(hmac_res, 1, length, fp);
-    delete[] hmac_res;
-    hmac_res = NULL;
-}
-
-/*
-getres:计算HMAC值(基于FILE*当前位置逐块增量计算,不再使用filebuffer64)
-hashtype:哈希模式
-key:密钥序列
-fp:需验证文件指针
-fsize:文件大小(仅用于进度,可忽略)
-*/
-void hmac::getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize)
-{
-    (void)fsize;
-    init_hash(hashtype, key, NULL, 0); // 喂入ipad块,无前缀
-    u8_t chunk[0x10000];
-    size_t n;
-    while ((n = fread(chunk, 1, sizeof(chunk), fp)) > 0)
-        feed_hash(chunk, (u32_t)n);
-    final_hash();
-}
-/*
-gethmac:获取HMAC值
-hashtype:哈希模式
-key:密钥序列
-fp:需验证文件指针
-hmac_out:输出地址
-fsize:文件大小
-*/
-void hmac::gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize)
-{
-    getres(hashtype, key, fp, fsize);
-    memcpy(hmac_out, hmac_res, length);
-    delete[] hmac_res;
-    hmac_res = NULL;
-}
-/*
-cmphmac:校验HMAC值
-hashtype:哈希模式
-key:密钥序列
-fp:需验证文件指针
-hmac_out:待校验的HMAC值
-fsize:文件大小
-return:校验是否成功
-*/
-bool hmac::cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize)
-{
-    getres(hashtype, key, fp, fsize);
-    bool same = const_time_eq(hmac_out, hmac_res, length);
-    delete[] hmac_res;
-    hmac_res = NULL;
-    return same;
-}
-/*
-match_result:final_hash 后与给定摘要比较
-expected:待比较摘要
-len:摘要长度
-return:一致返回true
-*/
-bool hmac::match_result(const u8_t *expected, u8_t len) const
-{
-    if (hmac_res == NULL || len != length)
-        return false;
-    return const_time_eq(expected, hmac_res, len);
-}
 /*################################
   文件头辅助函数
 ################################*/
@@ -281,6 +93,18 @@ int FileHeader::check_header()
     if (hdr[FILE_MODE_MARK] >= kCryptModeCount || hdr[FILE_MODE_MARK + 1] >= kHashModeCount)
         return 3;
     return 0;
+}
+
+/*
+write_hmac:把已计算的HMAC写入输出文件指定偏移(文件头HMAC区)
+hmac:HMAC摘要地址
+hsize:摘要长度(字节)
+writeMark:写入偏移(通常为 FILE_HMAC_MARK)
+注意:写入目标为 out 文件指针,且只移动 out 的读写位置。
+*/
+void FileHeader::write_hmac(u8_t *hmac, size_t hsize, u8_t writeMark){
+    fseek(out, writeMark, SEEK_SET);
+    fwrite(hmac, 1, hsize, out);
 }
 /*
 checkType:检查加密和哈希模式,并读取文件头记录的线程数

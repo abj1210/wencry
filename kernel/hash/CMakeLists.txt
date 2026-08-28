@@ -1,6 +1,14 @@
-project(Hash)
+project(MerkleTree)
 
-add_library(${PROJECT_NAME} sha1.cpp md5.cpp sha256.cpp sha_ni.cpp hashmaster.cpp)
+add_subdirectory(hashmaster)
 
-# 共享类型枚举(见 valhelper/modes.h)
-target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../valhelper)
+add_library(${PROJECT_NAME} merkletreemaster.cpp hmac.cpp)
+                
+target_link_libraries(${PROJECT_NAME} PUBLIC Hash)
+
+target_include_directories(${PROJECT_NAME} PUBLIC
+                            ${PROJECT_BINARY_DIR}
+                            ${PROJECT_SOURCE_DIR}/hashmaster
+                            )
+
+target_link_libraries(${PROJECT_NAME} PUBLIC Valhelper)

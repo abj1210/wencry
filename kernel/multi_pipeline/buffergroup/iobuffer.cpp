@@ -7,7 +7,19 @@
 /*
 iobuffer:构造函数,初始化块计数与流水线状态(EMPTY)
 */
-iobuffer::iobuffer() : total(0), now(0), tail(0), isfinal(false), state(EMPTY), seq(0), idle_ts(0) {};
+iobuffer::iobuffer()
+    : total(0), now(0), tail(0), isfinal(false), claimed(false), seq(0), idle_ts(0),
+      id(s_next_id.fetch_add(1, std::memory_order_relaxed))
+{
+  SCHED_LOG(g_sched_role, "BUF_NEW", id, -1, "", -1, -1, -1);
+};
+/*
+~iobuffer:析构,记录缓冲区销毁事件
+*/
+iobuffer::~iobuffer()
+{
+  SCHED_LOG(g_sched_role, "BUF_DELETE", id, seq, "", -1, -1, -1);
+};
 /*
 get_entry:获取当前缓冲区单元表项
 return:返回的表项地址

@@ -96,7 +96,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
         }
         break;
     case 'i':
-        res->fp = fopen(optarg, "rb");
+        res->fp = wencry_fopen_read(optarg);
         fout = std::string(optarg) + ".wenc";
         try
         {
@@ -116,7 +116,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
         res->size = fsize;
         break;
     case 'o':
-        res->out = fopen(optarg, "wb+");
+        res->out = wencry_fopen_write(optarg);
         if (res->out == NULL)
         {
             strerr("Error", "Could not open file " + std::string(optarg));
@@ -280,7 +280,7 @@ u8_t *get_v_opt(int argc, char *argv[])
         if (res->out == NULL)
         {
             strlog("Note", "Using default output file name");
-            res->out = fopen(fout.c_str(), "wb+");
+            res->out = wencry_fopen_write(fout.c_str());
         }
         getRandomBuffer(res->r_buf);
         res->r_len = 256;

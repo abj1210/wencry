@@ -1,10 +1,7 @@
 #ifndef FHD
 #define FHD
 
-#include "hashmaster.h"
-#include "display.h"
-#include "display/console_display.h"
-#include "display/silent_display.h"
+#include "merkletree.h"
 #include <iostream>
 #include <iomanip>
 #include <stdio.h>
@@ -37,6 +34,7 @@ public:
   void getIV(FILE *fp, u8_t *iv);
   void getFileHeader(u8_t *iv);
   int check_header();
+  void write_hmac(u8_t *hmac, size_t hsize, u8_t writeMark);
   void checkType();
   /* getctype:获取加密模式 */
   u8_t getctype() const { return ctype; };
@@ -46,48 +44,4 @@ public:
   u8_t get_num() const { return num; };
   u8_t *getHmac(u8_t len);
 };
-
-/*
-hmac:计算HMAC类
-hmac负责增量哈希和hmac计算，并提供并发调度器需要的增量哈希回调。
-*/
-
-class hmac
-{
-  static const u8_t ipad = 0x36, opad = 0x5c;
-  HashFactory hf;
-  Display *res_printer;
-  u8_t *hmac_res, length;
-  void getres(u8_t hashtype, u8_t *key, FILE *fp, size_t fsize);
-
-  // 增量HMAC(加密融合路径)使用的状态
-  Hashmaster *hashmaster;
-  u8_t *key1, *h1;
-  u8_t accum[64];
-  u8_t block_len, accum_len;
-
-  void clear_incr();
-
-public:
-  hmac();
-  ~hmac();
-  /* loadprinter:注入结果打印器 */
-  void loadprinter(Display *res_printer) { this->res_printer = res_printer; };
-  void gethmac(u8_t hashtype, u8_t *key, FILE *fp, u8_t *hmac_out, size_t fsize = 0);
-  bool cmphmac(u8_t hashtype, u8_t *key, FILE *fp, const u8_t *hmac_out, size_t fsize = 0);
-  /*
-  增量HMAC(加密/解密/验证融合时计算,避免回读密文)
-  init_hash:初始化,喂入ipad块与prefix(文件头IV区)
-  feed_hash:喂入密文块
-  final_hash:完成计算,结果存于hmac_res
-  write_hmac:将hmac_res写入文件指定偏移
-  match_result:final_hash 后与给定摘要比较
-  */
-  void init_hash(u8_t hashtype, u8_t *key, const u8_t *prefix, size_t prefix_len);
-  void feed_hash(const u8_t *data, size_t len);
-  void final_hash();
-  void write_hmac(FILE *fp, u8_t writeMark);
-  bool match_result(const u8_t *expected, u8_t len) const;
-};
-
 #endif

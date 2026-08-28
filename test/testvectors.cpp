@@ -1,6 +1,8 @@
 #include "cry.h"
 #include "aesmode.h"
 #include "hashmaster.h"
+#include "display/console_display.h"
+#include "display/silent_display.h"
 #include "testutil.h"
 #include "gtest/gtest.h"
 
@@ -292,14 +294,12 @@ TEST(Testvectors, sha256_padding_boundaries) {
 /* hmac_round:用给定密钥对数据做 HMAC 并与期望摘要比对 */
 static void hmac_round(u8_t htype, const u8_t key[16], const char *data,
                        const char *exphex, size_t hlen) {
-  FILE *fp = genfile(data);
   hmac h;
   u8_t res[32], cmp[32];
   memset(res, 0, sizeof(res));
-  h.gethmac(htype, (u8_t *)key, fp, res);
+  h.gethmac(htype, (u8_t *)key, (const u8_t *)data, res, strlen(data), NULL, 0);
   gethex(exphex, cmp);
-  EXPECT_TRUE(cmpstr(res, cmp, (int)hlen)) << "htype=" << (int)htype;
-  fclose(fp);
+  EXPECT_EQ(memcmp(res, cmp, hlen), 0) << "htype=" << (int)htype;
 }
 
 TEST(Testvectors, hmac_sha1_reference) {

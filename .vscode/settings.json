@@ -74,7 +74,7 @@
         "codecvt": "cpp",
         "iomanip": "cpp"
     },
-    "cmake.sourceDirectory": "/mnt/d/code/wencry",
+    "cmake.sourceDirectory": "D:/code/wencry",
     "cmake.buildDirectory": "${workspaceFolder}/build/vscode",
     "cmake.configureArgs": [
         "-DBUILD_TEST=OFF"

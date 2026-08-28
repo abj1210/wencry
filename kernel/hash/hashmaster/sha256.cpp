@@ -2,6 +2,12 @@
 #include <string.h>
 
 /*
+模块概述:SHA256 公共逻辑
+sha256hash 只保留末尾块填充、长度字段写入与摘要输出等与硬件无关的公共部分;
+64字节整块压缩由派生类 sha256ni 在 sha_ni.cpp 中用 SHA-NI 指令完成。
+*/
+
+/*
 getHash:处理末尾块(追加 0x80 填充与64位长度字段)
 input:末尾块数据
 final_loadsize:末尾块字节数

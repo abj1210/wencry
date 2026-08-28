@@ -19,7 +19,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
                             )
                             
 
-target_link_libraries(${PROJECT_NAME} PUBLIC Hash)
+target_link_libraries(${PROJECT_NAME} PUBLIC MerkleTree)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
                             ${PROJECT_BINARY_DIR}

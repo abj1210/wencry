@@ -6,9 +6,14 @@
 #if defined(_WIN32)
 #include <windows.h>
 #include <bcrypt.h>
+#include <io.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 #elif defined(__linux__)
 #include <sys/random.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 /*
@@ -114,4 +119,79 @@ int getProcessMode(char mode){
     return 2;
   else
     return -1;
+}
+
+/*
+wencry_fopen_read:以"二进制读 + 顺序访问提示"打开输入文件
+见 valhelper.h 声明。
+*/
+FILE *wencry_fopen_read(const char *path)
+{
+#if defined(_WIN32)
+  int fd = _open(path, _O_RDONLY | _O_BINARY | _O_SEQUENTIAL);
+  if (fd < 0)
+    return NULL;
+  FILE *fp = _fdopen(fd, "rb");
+  if (fp == NULL)
+    _close(fd);
+  return fp;
+#else
+  FILE *fp = fopen(path, "rb");
+  if (fp != NULL)
+    posix_fadvise(fileno(fp), 0, 0, POSIX_FADV_SEQUENTIAL);
+  return fp;
+#endif
+}
+
+/*
+wencry_fopen_write:以"二进制写 + 顺序访问提示"打开输出文件
+见 valhelper.h 声明。
+*/
+FILE *wencry_fopen_write(const char *path)
+{
+#if defined(_WIN32)
+  int fd = _open(path, _O_WRONLY | _O_CREAT | _O_TRUNC | _O_BINARY | _O_SEQUENTIAL,
+                 _S_IREAD | _S_IWRITE);
+  if (fd < 0)
+    return NULL;
+  FILE *fp = _fdopen(fd, "wb");
+  if (fp == NULL)
+    _close(fd);
+  return fp;
+#else
+  FILE *fp = fopen(path, "wb");
+  if (fp != NULL)
+    posix_fadvise(fileno(fp), 0, 0, POSIX_FADV_SEQUENTIAL);
+  return fp;
+#endif
+}
+
+/*
+wencry_preallocate:设置文件大小(增长=预留,缩小=截断)
+见 valhelper.h 声明。
+*/
+bool wencry_preallocate(FILE *fp, size_t size)
+{
+  if (fp == NULL)
+    return true;
+#if defined(_WIN32)
+  HANDLE h = (HANDLE)_get_osfhandle(_fileno(fp));
+  if (h == INVALID_HANDLE_VALUE)
+    return false;
+  LARGE_INTEGER zero, target;
+  zero.QuadPart = 0;
+  LARGE_INTEGER original;
+  original.QuadPart = 0;
+  // 记录并恢复文件指针位置,避免与 stdio 缓冲的位置跟踪冲突
+  SetFilePointerEx(h, zero, &original, FILE_CURRENT);
+  target.QuadPart = (LONGLONG)size;
+  if (!SetFilePointerEx(h, target, NULL, FILE_BEGIN))
+    return false;
+  if (!SetEndOfFile(h))
+    return false;
+  SetFilePointerEx(h, original, NULL, FILE_BEGIN);
+  return true;
+#else
+  return ftruncate(fileno(fp), (off_t)size) == 0;
+#endif
 }

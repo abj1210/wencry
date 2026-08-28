@@ -2,6 +2,13 @@
 #include <string.h>
 
 /*
+模块概述:SHA-NI 硬件加速整块变换
+提供 SHA1 与 SHA256 的64字节整块压缩函数(使用 Intel SHA 扩展指令),
+并把它们桥接到 Hashmaster 的 getHash / block_fast 接口,从而让
+sha1ni / sha256ni 走硬件热路径,避免每块一次虚调用。
+*/
+
+/*
 K256:SHA-256 轮常数(前64个素数立方根的小数部分前32位)
 以 4 个 u32 打包进一个 __m128i,供 sha256_ni_block 的 _mm_sha256rnds2 指令直接取用。
 */
@@ -24,9 +31,11 @@ static const __m128i K256[16] = {
     _mm_setr_epi32(0x90befffaU, 0xa4506cebU, 0xbef9a3f7U, 0xc67178f2U)};
 
 
-/*################################
-  SHA1-NI 单块变换
-################################*/
+/*
+sha1_ni_block:SHA1-NI 单块压缩(处理64字节输入块)
+h:5个32位状态寄存器(就地更新)
+data:64字节输入块
+*/
 static void sha1_ni_block(u32_t h[5], const u8_t *data)
 {
     const __m128i SHUF = _mm_set_epi8(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
@@ -165,9 +174,11 @@ static void sha1_ni_block(u32_t h[5], const u8_t *data)
     h[4] = _mm_extract_epi32(e0, 3);
 }
 
-/*################################
-  SHA256-NI 单块变换
-################################*/
+/*
+sha256_ni_block:SHA256-NI 单块压缩(处理64字节输入块)
+h:8个32位状态寄存器(就地更新)
+data:64字节输入块
+*/
 static void sha256_ni_block(u32_t h[8], const u8_t *data)
 {
     const __m128i SHUF = _mm_set_epi8(12, 13, 14, 15, 8, 9, 10, 11, 4, 5, 6, 7, 0, 1, 2, 3);
@@ -356,6 +367,17 @@ void sha1ni::getHash(const u8_t *input)
 }
 
 /*
+sha1ni::block_fast:热路径整块处理(避免每块一次虚调用)
+self:具体哈希器实例;input:64字节输入块
+*/
+void sha1ni::block_fast(Hashmaster *self, const u8_t *input)
+{
+    sha1ni *p = static_cast<sha1ni *>(self);
+    sha1_ni_block(p->h, input);
+    p->addtotal(64);
+}
+
+/*
 sha256ni::getHash:用 SHA256-NI 指令处理一个64字节整块并累加长度
 input:64字节输入块
 */
@@ -363,4 +385,15 @@ void sha256ni::getHash(const u8_t *input)
 {
     sha256_ni_block(h, input);
     addtotal(64);
+}
+
+/*
+sha256ni::block_fast:热路径整块处理(避免每块一次虚调用)
+self:具体哈希器实例;input:64字节输入块
+*/
+void sha256ni::block_fast(Hashmaster *self, const u8_t *input)
+{
+    sha256ni *p = static_cast<sha256ni *>(self);
+    sha256_ni_block(p->h, input);
+    p->addtotal(64);
 }

@@ -19,7 +19,7 @@ static std::string getInputFilep(vpak_t *pak)
   while (1)
   {
     scanf("%127s", fn);
-    fp = fopen(fn, "rb");
+    fp = wencry_fopen_read(fn);
     if (fp != NULL)
       break;
     strerr("Error", "File not found");
@@ -122,7 +122,7 @@ u8_t *get_v_mod1()
       res->key = getInputKey();
     sprintf(outn, "%s.wenc", fname.c_str());
     strlog("Output file", outn);
-    res->out = fopen(outn, "wb+");
+    res->out = wencry_fopen_write(outn);
     strlog("Key", printkey(res->key));
     res->ctype = selectCMode(wif);
     res->htype = selectHMode(wif);
@@ -142,13 +142,13 @@ u8_t *get_v_mod1()
       printf("Enter new name:\n");
       scanf("%*[\n]");
       scanf("%127s", decn);
-      res->out = fopen(decn, "wb+");
+      res->out = wencry_fopen_write(decn);
       strlog("Output file", decn);
     }
     else
     {
       sprintf(outn, "%s.wdec", fname.c_str());
-      res->out = fopen(outn, "wb+");
+      res->out = wencry_fopen_write(outn);
       strlog("Output file", outn);
     }
     res->key = getInputKey();

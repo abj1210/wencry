@@ -1,4 +1,5 @@
-#include "hashmaster.h"
+#include "hashmaster/hashmaster.h"
+#include "merkletree.h"
 #include "testutil.h"
 #include "gtest/gtest.h"
 

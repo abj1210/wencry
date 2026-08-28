@@ -87,4 +87,26 @@ mode:模式字符(e/E/d/D/v)
 return:0=加密,1=解密,2=验证,其余=-1
 */
 int getProcessMode(char mode);
+
+/*
+wencry_fopen_read:以"二进制读 + 顺序访问提示"打开输入文件
+path:文件路径
+return:文件指针(失败返回NULL)
+Windows 用 _O_SEQUENTIAL(对应 FILE_FLAG_SEQUENTIAL_SCAN),Linux 用 posix_fadvise(POSIX_FADV_SEQUENTIAL)。
+*/
+FILE *wencry_fopen_read(const char *path);
+/*
+wencry_fopen_write:以"二进制写 + 顺序访问提示"打开输出文件
+path:文件路径
+return:文件指针(失败返回NULL)
+*/
+FILE *wencry_fopen_write(const char *path);
+/*
+wencry_preallocate:把已打开文件设置到指定大小(增长=预留空间,缩小=截断)
+fp:文件指针(写打开)
+size:目标字节数
+return:成功返回true,失败返回false(失败不致命,调用方可继续流式写)
+Windows 用 SetFilePointerEx + SetEndOfFile(仅设长度、不写零),Linux 用 ftruncate。
+*/
+bool wencry_preallocate(FILE *fp, size_t size);
 #endif

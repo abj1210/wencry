@@ -506,3 +506,7 @@ FodyWeavers.xsd
 build*/
 
 !.vscode/c_cpp_properties.json
+
+# 效率分析脚本输出与临时探针文件
+sched_report/
+wsl_probe.txt

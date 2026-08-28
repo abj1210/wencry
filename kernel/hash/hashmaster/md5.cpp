@@ -1,6 +1,12 @@
 #include "hashmaster.h"
 #include <string.h>
 
+/*
+模块概述:MD5 软件实现
+md5hash 无 SHA-NI 对应物,整块压缩、末尾块填充与摘要输出均在此以软件方式实现。
+主循环为标准的4轮共64步变换(FF/GG/HH/II),常量与循环左移位数见下方宏定义。
+*/
+
 // 循环左移的位数
 
 #define S11 7
@@ -183,4 +189,13 @@ void md5hash::getres(u8_t *hashout)
 {
   for (int i = 0; i < 16; ++i)
     hashout[i] = (u8_t)((h[i >> 2]) >> (((i & 0x3)) << 3));
+}
+
+/*
+block_fast:热路径整块处理(避免每块一次虚调用)
+self:具体哈希器实例;input:64字节输入块
+*/
+void md5hash::block_fast(Hashmaster *self, const u8_t *input)
+{
+  static_cast<md5hash *>(self)->getHash(input);
 }

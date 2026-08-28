@@ -97,10 +97,9 @@ std::string format_size(size_t bytes)
 /*################################
   ConsoleDisplay 实现
 ################################*/
-/* resetPercentage:重置进度计数,并在进度条活动时结束当前行 */
-void ConsoleDisplay::resetPercentage()
+/* end_progress:结束活动中的进度条当前行,避免后续输出重叠 */
+void ConsoleDisplay::end_progress()
 {
-  Display::resetPercentage();
   // 仅当进度条处于活动状态时才结束当前行,避免无进度时打印多余空行
   if (progress_active)
   {
@@ -109,9 +108,17 @@ void ConsoleDisplay::resetPercentage()
   }
 }
 
+/* resetPercentage:重置进度计数,并在进度条活动时结束当前行 */
+void ConsoleDisplay::resetPercentage()
+{
+  Display::resetPercentage();
+  end_progress();
+}
+
 /* printtask:打印任务名 */
 void ConsoleDisplay::printtask(std::string name)
 {
+  end_progress();
   strlog("Task", name);
 }
 
@@ -127,6 +134,7 @@ Timer *ConsoleDisplay::createTimer(std::string name)
 /* printTimer:打印计时器耗时并释放 */
 void ConsoleDisplay::printTimer(Timer *timer)
 {
+  end_progress();
   auto end = std::chrono::system_clock::now();
   auto totalTime = std::chrono::duration_cast<std::chrono::microseconds>(end - timer->start);
   // 计时器名(AES_Encryption_Time 等)转成可读标签(Encryption Time)
@@ -144,6 +152,7 @@ void ConsoleDisplay::printTimer(Timer *timer)
 /* printenc:打印加密完成 */
 void ConsoleDisplay::printenc()
 {
+  end_progress();
   strlog("Result", "Encryption is over!");
   over.store(true);
 }
@@ -151,6 +160,7 @@ void ConsoleDisplay::printenc()
 /* printresv:打印验证结果 */
 void ConsoleDisplay::printresv(int res)
 {
+  end_progress();
   strlog("Result", this->getResStr(res));
   over.store(true);
 }
@@ -158,6 +168,7 @@ void ConsoleDisplay::printresv(int res)
 /* printresd:打印解密结果 */
 void ConsoleDisplay::printresd(int res)
 {
+  end_progress();
   if (res <= 0)
   {
     strlog("Result", "Decryption is over!");
@@ -170,12 +181,14 @@ void ConsoleDisplay::printresd(int res)
 /* printctype:打印加密模式 */
 void ConsoleDisplay::printctype(u8_t type)
 {
+  end_progress();
   strlog("Crypt mode", std::to_string(type) + "/" + crypt_mode_name(type));
 }
 
 /* printhtype:打印哈希模式 */
 void ConsoleDisplay::printhtype(u8_t type)
 {
+  end_progress();
   strlog("Hash mode", std::to_string(type) + "/" + hash_mode_name(type));
 }
 

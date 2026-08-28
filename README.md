@@ -2,10 +2,10 @@
 
 作者：闻嘉迅  
 日期：2026.8.19 (最后修改)  
-版本：v4.5.0
+版本：v4.6.0
 
 **默认4工作线程,CBC加密模式,SHA1哈希**  
-**Windows原生处理速度可达1800MB/s以上**  
+**Windows原生处理速度可达2000MB/s以上**  
 **内存按需动态分配,峰值受缓冲池容量限制**   
 
 ## 加密原理
@@ -19,11 +19,11 @@
 **解密**  
 先检查魔数、加密/哈希模式与线程数等文件头结构,确定为正确加密后的文件  
 提取IV与文件头存储的HMAC  
-读取密文的同时由独立HASH线程增量计算HMAC(解密融合,不再单独整读一遍密文验证),AES128解密并写出明文  
+读取密文的同时由工作线程就地计算HMAC(解密融合,不再单独整读一遍密文验证),AES128解密并写出明文  
 解密完成后再比对HMAC,不匹配则删除输出文件并报错  
 
 **验证**  
-与解密共用同一读+HASH流水线,仅计算并比对HMAC,不做AES解密与写出
+与解密共用同一读+HMAC流水线,仅计算并比对HMAC,不做AES解密与写出
 
 **加密文件结构**  
 加密后的文件带有后缀.wenc,其结构如下:
@@ -63,10 +63,12 @@
         - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
         - aes_ni.h/cpp:基于AES-NI指令的AES-128密钥扩展与单块变换
       - **hash:哈希函数文件夹**
-        - hashmaster.h/cpp:哈希抽象基类/工厂与字符串哈希、增量哈希接口
-        - sha1.cpp/sha256.cpp:哈希状态基类(末尾填充/摘要输出,整块哈希由SHA-NI完成)
-        - md5.cpp:MD5软件实现
-        - sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256整块哈希
+        - hmac.cpp:HMAC 计算(一次性HMAC + 增量原语)
+        - merkletree.h/merkletreemaster.cpp:Merkle 树(块 HMAC 合并与根 HMAC)
+        - hashmaster/hashmaster.h/cpp:哈希抽象基类/工厂与字符串哈希、增量哈希接口
+        - hashmaster/sha1.cpp/sha256.cpp:哈希状态基类(末尾填充/摘要输出,整块哈希由SHA-NI完成)
+        - hashmaster/md5.cpp:MD5软件实现
+        - hashmaster/sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256整块哈希
   - **test:测试文件夹**
     - testutil.h/cpp:测试工具(临时文件名/模式文件/hex解析)
     - test.h/cpp:复用runcrypt的往返与速度测试函数(exec/cmp_file/makeFullTest等)
@@ -126,7 +128,7 @@ Windows 兼容说明:
 **生成 Visual Studio 解决方案**:
 在"开发人员 PowerShell"中执行(需使用 VS 自带的 CMake 或 CMake ≥4.2,以识别 VS 2026 生成器):
    ```bat
-   cmake -G "Visual Studio 18 2026" -A x64 -S . -B build_vs -DBUILD_TEST=OFF
+   cmake -G "Visual Studio 18 2026" -A x64 -S . -B build_vs -DBUILD_TEST=OFF -DLOG_SCHED=OFF
    cmake --build build_vs --config Release
    ```
 生成 `build\vs\Wencry.slnx`(VS 2026 新解决方案格式,含 Wencry/Wenkernel/Multiaes/Hash/Aes/Base64/CMDvals 各工程),可直接用 Visual Studio 打开编译、调试。若需传统 `.sln`,可改用 `-G "Visual Studio 17 2022"`。
@@ -178,21 +180,19 @@ Windows 兼容说明:
 **线程数写入文件头**:自v4.0.1起,加密文件头的offset 47字节记录了加密时的线程数,解密/验证时自动从文件读取(旧格式文件该字节为0,按4线程处理).因此不同线程数构建的程序可以互相解密文件,修改`THREAD_NUM`不再破坏已有文件.
 
 - **多线程流水线原理**  
-加解密/验证采用统一"读线程--HASH线程--工作线程--写线程"流水线:读线程按顺序`fread`装载数据块,独立的HASH线程按块序增量计算HMAC,多个工作线程就地AES加解密,写线程按序号`fwrite`导出,各段可重叠,不再由单一维护线程串行承担全部文件I/O.  
-加密时HASH线程读AES后的密文;解密/验证时HASH线程先于AES读密文(密文被就地覆盖前),解密因此融合了HMAC验证,无需再单独整读一遍.  
-每个工作线程有唯一`id`,chunk k固定由线程`k%N`处理,以保持各线程AES的IV链一致.  
-详细协作逻辑见`multi_buffergroup.cpp`注释.
+加解密/验证采用统一"读线程--工作线程--写线程"流水线:读线程按顺序`fread`装载数据块,多个工作线程就地AES加解密并计算HMAC,写线程按序号`fwrite`导出,各段可重叠,不再由单一维护线程串行承担全部文件I/O.  
+每个工作线程有唯一`id`,chunk k固定由线程`k%N`处理,以保持各线程AES的IV链一致;HMAC也由该工作线程就地计算(无独立HASH线程).  
+详细协作逻辑见`multi_buffergroup.cpp`注释;完整的同步逻辑与缓冲池状态机说明见 [SYNC_LOGIC.md](SYNC_LOGIC.md)。
 
 - **缓冲池与动态分配**  
-缓冲区由一次性固定分配改为运行时按需动态分配,`buffergroup`维护两个缓冲池,容量由`multi_buffergroup.h`中的宏控制:
-  - `WORK_POOL_MAX`(默认8):工作池(在途 buffer)容量上限,读线程装满 buffer 后加入工作池;工作池满则读线程阻塞(背压)。
+缓冲区由一次性固定分配改为运行时按需动态分配,`buffergroup`维护三个缓冲池(空闲池/工作池/已处理池),容量由`multi_buffergroup.h`中的宏控制:
+  - `WORK_PROCESSED_MAX`(默认16):工作池(LOADED)与已处理池(PROCESSED)共用的总在途块数上限,满则读线程阻塞(背压)。
   - `IDLE_POOL_MAX`(默认4):空闲池(可复用空 buffer)容量上限,写线程写出后归还空闲池;空闲池满则写线程直接释放该 buffer。
   - `IDLE_TIMEOUT_MS`(默认1000):空闲 buffer 在空闲池中停留超过该时限即被写线程释放。
-  内存上界 = (工作池 + 空闲池) × 16MB,且读取完成后写线程自动释放全部空 buffer,内存随流水线结束收敛。
-  - **加深流水线**:读线程可把多个块预读入工作池,工作线程不至于因读线程忙而空等;工作池在途深度最多 8 块(128MB)。
-  - **统一序号保证有序**:每个 buffer 携带全局序号 `seq`(取代原 `threadid`/`seq` 双标志),HASH/写线程按 `seq` 递增消费保证顺序;工作线程按 `seq % total_threads` 路由,领取本线程名下最小 `seq` 的块,以维持链式模式(如CBC/CTR)的IV链连续。
-  - **HASH线程按块号顺序消费**:HASH线程独立按块序读密文喂HMAC,与工作线程处理顺序解耦,保证HMAC严格按文件序。
-  - **调节权衡**:增大`WORK_POOL_MAX`可加深流水线、提升I/O与计算重叠(尤其慢盘/高延迟I/O),但内存线性增加(每块16MB);增大`IDLE_POOL_MAX`可提高 buffer 复用率、减少动态分配,但常驻内存增加。
+  内存上界 ≈ (工作池+已处理池+空闲池) × 16MB,且读取完成后写线程自动释放全部空 buffer,内存随流水线结束收敛。
+  - **加深流水线**:读线程可把多个块预读入工作池,工作线程不至于因读线程忙而空等;工作池+已处理池总在途深度最多 `WORK_PROCESSED_MAX` 块。
+  - **统一序号保证有序**:每个 buffer 携带全局序号 `seq`(取代原 `threadid`/`seq` 双标志),写线程按 `seq` 递增消费保证顺序;工作线程按 `seq % total_threads` 路由,领取本线程名下最小 `seq` 的块,以维持链式模式(如CBC/CTR)的IV链连续。
+  - **调节权衡**:增大`WORK_PROCESSED_MAX`可加深流水线、提升I/O与计算重叠(尤其慢盘/高延迟I/O),但内存线性增加(每块16MB);增大`IDLE_POOL_MAX`可提高 buffer 复用率、减少动态分配,但常驻内存增加。
 
 ## WSL运行提速建议
 
@@ -204,8 +204,60 @@ Windows 兼容说明:
   ```
 - 处理大文件时,将数据放在WSL原生ext4(如`/tmp`或`~/`)上再加密,通常比`/mnt/d`快数倍.
 - 实测单次加解密的速度上限主要受文件I/O总吞吐限制(加密需读明文+写密文共两遍;解密HMAC随读取融合,读密文+写明文共两遍),I/O越快吞吐越高.
+- 更完整的 IO 效率、缓冲池容量与哈希线程效率分析见 [PERFORMANCE_ANALYSIS.md](PERFORMANCE_ANALYSIS.md)。
 
 详细过程参阅相关代码.  
+
+## 效率分析
+
+项目提供 `analyze_sched.py`，用于一次性完成「生成输入 → 运行加密/解密/验证 → 收集调度日志 → 分析 → 生成 HTML 报告」。
+
+### 前置条件
+
+- 需要一份开启调度日志的 `Wencry.exe`（编译时加 `-DLOG_SCHED=ON`），例如：
+
+  ```bat
+  cmake -S . -B build_log -G "Visual Studio 18 2026" -A x64 -DBUILD_TEST=OFF -DLOG_SCHED=ON
+  cmake --build build_log --config Release
+  ```
+
+- 脚本仅依赖 Python 标准库，无需安装 matplotlib / pandas。
+
+### 基本用法
+
+```bat
+python analyze_sched.py --exe build_log\Release\Wencry.exe --out sched_report
+```
+
+### 参数
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `--exe` | `build_log/Release/Wencry.exe` | Wencry.exe 路径（需 `-DLOG_SCHED=ON` 编译） |
+| `--sizes` | `32,200,512` | 逗号分隔的输入文件大小（MiB），每个大小都会跑加密/解密/验证 |
+| `--key` | 内置测试密钥 | base64 密钥 |
+| `--out` | `sched_report` | 输出目录（日志与 HTML 报告） |
+| `--runs` | `5` | 每种模式测量次数，去离群值后取稳定值以降低输入输出抖动 |
+| `--warmup` | `2` | 每个大小在计时前的预热轮数（大文件建议 ≥2） |
+
+### 输出
+
+- `sched_report/sched_log_<size>MiB_<mode>.csv`：每次运行采集的调度日志；
+- `sched_report/report.html`：自包含 HTML 报告（内嵌 SVG），包含：
+  - 总览双轴图（吞吐 + 峰值内存，按模式分组）；
+  - 每个大小/模式的 loaded/processed/idle 三池折线图与内存占用折线图；
+  - 线程占用率条形图与线程忙/闲甘特图；
+  - 指标表（耗时、吞吐、峰值内存、池峰值、缓冲区创建/复用等）。
+
+### 示例
+
+只测 200 MiB 与 512 MiB，每种模式跑 7 轮、预热 3 轮：
+
+```bat
+python analyze_sched.py --sizes 200,512 --runs 7 --warmup 3 --out sched_report
+```
+
+更完整的性能结论与关键实测数据见 [PERFORMANCE_ANALYSIS.md](PERFORMANCE_ANALYSIS.md)。
 
 ## 加密流程更新
 
@@ -281,7 +333,7 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.3.0 顺序:删除buffer的threadid/seq双标志,改用统一全局序号seq——HASH/写线程按seq递增消费保证有序,工作线程按seq%total_threads路由并领取最小seq的块,维持链式模式IV链连续.*  
 *V4.3.0 接口:set_buffergroup去掉size参数(容量改由WORK_POOL_MAX/IDLE_POOL_MAX/IDLE_TIMEOUT_MS宏控制);工作线程接口由槽号改为buffer指针(NULL为退出哨兵);删除cry.h的REDUNDANCY_BUFFER宏与runcrypt的buffers_num/r_buffers_num.*  
 *V4.3.0 健壮性:解密/验证增加空密钥检查——execute_decrypt/execute_verify对空密钥抛"Invalid Key",CLI在缺-k时报"No key specified"退出(修复验证/解密不带密钥时的段错误).*  
-*V4.3.0 文档:新增sync_logic.md(缓冲池同步逻辑说明),更新README多线程缓冲池说明.*  
+*V4.3.0 文档:新增SYNC_LOGIC.md(缓冲池同步逻辑说明),更新README多线程缓冲池说明.*  
 *V4.4.0 安全:密钥与IV随机源由 rand()/srand(time(NULL)) 改为操作系统加密安全随机源(Windows BCryptGenRandom、Linux getrandom、/dev/urandom 回退),随机源不可用时拒绝继续;修复随机缓冲经 strnlen 按C字符串截断导致的IV种子熵不稳定(vpak_t 新增 r_len 显式传递有效长度,execute_encrypt 增加带默认值的 r_len 参数保持向后兼容).*  
 *V4.4.0 安全:HMAC/摘要比对改为常数时间(异或累加 const_time_eq),消除 memcmp/提前退出的时序侧信道.*  
 *V4.4.0 行为:命令行未指定 --cmode 时默认加密模式由 ECB 改为 CBC(与 Settings 默认值及README一致),非法模式报错退出;修正README"非法输入回退ECB"的错误表述.*  
@@ -291,3 +343,6 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.5.0 哈希:SHA1/SHA256 移除软件轮函数(80/64轮主循环、消息扩展 getwdata、轮常数表与输入块 union),仅保留 SHA-NI 硬件整块哈希 + 末尾填充/摘要输出等公共逻辑;MD5 无 SHA-NI 对应物仍为软件实现;删除随之失效的 rrot/setbytes 宏.*  
 *V4.5.0 接口:runcrypt 构造/析构改为私有,新增 runcrypt_create/runcrypt_destroy 分配/释放工厂——GUI 等外部模块仅持有 runcrypt* 指针,避免头文件对象尺寸不一致导致越界;移除 wencry_check_header 自由函数(校验逻辑并入 runcrypt::check_header);新增 prepare_cryption_master 统一流水线回调注入.*  
 *V4.5.0 文档:全项目源码注释覆盖检查,为缺失注释的类与函数补充注释(ThreadProfiler、Display 打印接口、Settings/FileHeader 访问器与构造、多线程调度器回调、getopt_long 参数、测试辅助函数与向量结构等).*  
+*V4.6.0 同步:缓冲池重构为三池(空闲池 idle_pool、工作池 work_pool、已处理池 processed_pool),工作池与已处理池共用总在途上限 WORK_PROCESSED_MAX;取消独立 HASH 线程,HMAC 由各工作线程就地计算;读线程认领 buffer 后仍留在空闲池中直到 fread 完成.*  
+*V4.6.0 日志:调度日志新增 processed/live 两列,存活 buffer 数由 SchedLog 内部按 BUF_NEW/BUF_DELETE 计数;池迁移事件增加 _PRE 前置记录,缓冲申请/释放增加 BUF_NEW_PRE/BUF_DELETE_AFTER 前后记录;修复进度条分母与进度条/普通输出重叠问题.*  
+*V4.6.0 文档:更新 SYNC_LOGIC.md 与 PERFORMANCE_ANALYSIS.md 以匹配三池/无独立HASH线程的新同步逻辑.*  
