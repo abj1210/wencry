@@ -25,14 +25,14 @@ static_assert(sizeof(kCryptModeNames) / sizeof(kCryptModeNames[0]) == (size_t)kC
 static_assert(sizeof(kHashModeNames) / sizeof(kHashModeNames[0]) == (size_t)kHashModeCount,
               "hash mode name table out of sync with HashType enum");
 
-const char *crypt_mode_name(u8_t type)
+const char *cryptModeName(u8_t type)
 {
   if (type >= kCryptModeCount)
     return "unknown";
   return kCryptModeNames[type];
 }
 
-const char *hash_mode_name(u8_t type)
+const char *hashModeName(u8_t type)
 {
   if (type >= kHashModeCount)
     return "unknown";
@@ -48,8 +48,8 @@ namespace
   const char *RED = "\033[31m";
   const char *RESET = "\033[0m";
 
-  // color_enabled:仅当 stdout 是终端时启用 ANSI 颜色(管道/重定向/测试捕获时关闭)
-  bool color_enabled()
+  // colorEnabled:仅当 stdout 是终端时启用 ANSI 颜色(管道/重定向/测试捕获时关闭)
+  bool colorEnabled()
   {
 #ifdef _WIN32
     HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -66,20 +66,20 @@ namespace
   }
 }
 
-void strlog(std::string label, std::string value)
+void logLine(std::string label, std::string value)
 {
   std::cout << std::left << std::setw(LABEL_W) << (label + ": ") << value << "\n";
 }
 
-void strerr(std::string label, std::string value)
+void logError(std::string label, std::string value)
 {
-  if (color_enabled())
+  if (colorEnabled())
     std::cout << RED << std::left << std::setw(LABEL_W) << (label + ": ") << value << RESET << "\n";
   else
     std::cout << std::left << std::setw(LABEL_W) << (label + ": ") << value << "\n";
 }
 
-std::string format_size(size_t bytes)
+std::string formatSize(size_t bytes)
 {
   double b = (double)bytes;
   const char *units[] = {"B", "KiB", "MiB", "GiB", "TiB"};
@@ -97,8 +97,8 @@ std::string format_size(size_t bytes)
 /*################################
   ConsoleDisplay 实现
 ################################*/
-/* end_progress:结束活动中的进度条当前行,避免后续输出重叠 */
-void ConsoleDisplay::end_progress()
+/* endProgress:结束活动中的进度条当前行,避免后续输出重叠 */
+void ConsoleDisplay::endProgress()
 {
   // 仅当进度条处于活动状态时才结束当前行,避免无进度时打印多余空行
   if (progress_active)
@@ -112,14 +112,14 @@ void ConsoleDisplay::end_progress()
 void ConsoleDisplay::resetPercentage()
 {
   Display::resetPercentage();
-  end_progress();
+  endProgress();
 }
 
-/* printtask:打印任务名 */
-void ConsoleDisplay::printtask(std::string name)
+/* printTask:打印任务名 */
+void ConsoleDisplay::printTask(std::string name)
 {
-  end_progress();
-  strlog("Task", name);
+  endProgress();
+  logLine("Task", name);
 }
 
 /* createTimer:创建并启动计时器 */
@@ -134,7 +134,7 @@ Timer *ConsoleDisplay::createTimer(std::string name)
 /* printTimer:打印计时器耗时并释放 */
 void ConsoleDisplay::printTimer(Timer *timer)
 {
-  end_progress();
+  endProgress();
   auto end = std::chrono::system_clock::now();
   auto totalTime = std::chrono::duration_cast<std::chrono::microseconds>(end - timer->start);
   // 计时器名(AES_Encryption_Time 等)转成可读标签(Encryption Time)
@@ -145,55 +145,55 @@ void ConsoleDisplay::printTimer(Timer *timer)
   const std::string prefix = "AES ";
   if (disp.compare(0, prefix.size(), prefix) == 0)
     disp = disp.substr(prefix.size());
-  strlog(disp, std::to_string(double(totalTime.count()) * std::chrono::microseconds::period::num / std::chrono::microseconds::period::den) + "s");
+  logLine(disp, std::to_string(double(totalTime.count()) * std::chrono::microseconds::period::num / std::chrono::microseconds::period::den) + "s");
   delete timer;
 }
 
-/* printenc:打印加密完成 */
-void ConsoleDisplay::printenc()
+/* printEncryptDone:打印加密完成 */
+void ConsoleDisplay::printEncryptDone()
 {
-  end_progress();
-  strlog("Result", "Encryption is over!");
+  endProgress();
+  logLine("Result", "Encryption is over!");
   over.store(true);
 }
 
-/* printresv:打印验证结果 */
-void ConsoleDisplay::printresv(int res)
+/* printVerifyResult:打印验证结果 */
+void ConsoleDisplay::printVerifyResult(int res)
 {
-  end_progress();
-  strlog("Result", this->getResStr(res));
+  endProgress();
+  logLine("Result", this->getResultString(res));
   over.store(true);
 }
 
-/* printresd:打印解密结果 */
-void ConsoleDisplay::printresd(int res)
+/* printDecryptResult:打印解密结果 */
+void ConsoleDisplay::printDecryptResult(int res)
 {
-  end_progress();
+  endProgress();
   if (res <= 0)
   {
-    strlog("Result", "Decryption is over!");
+    logLine("Result", "Decryption is over!");
     over.store(true);
   }
   else
-    printresv(res);
+    printVerifyResult(res);
 }
 
-/* printctype:打印加密模式 */
-void ConsoleDisplay::printctype(u8_t type)
+/* printCryptMode:打印加密模式 */
+void ConsoleDisplay::printCryptMode(u8_t type)
 {
-  end_progress();
-  strlog("Crypt mode", std::to_string(type) + "/" + crypt_mode_name(type));
+  endProgress();
+  logLine("Crypt mode", std::to_string(type) + "/" + cryptModeName(type));
 }
 
-/* printhtype:打印哈希模式 */
-void ConsoleDisplay::printhtype(u8_t type)
+/* printHashMode:打印哈希模式 */
+void ConsoleDisplay::printHashMode(u8_t type)
 {
-  end_progress();
-  strlog("Hash mode", std::to_string(type) + "/" + hash_mode_name(type));
+  endProgress();
+  logLine("Hash mode", std::to_string(type) + "/" + hashModeName(type));
 }
 
-/* printpercentage:更新进度计数并打印进度条 */
-void ConsoleDisplay::printpercentage(std::string name, size_t now_size, size_t total_size)
+/* printPercentage:更新进度计数并打印进度条 */
+void ConsoleDisplay::printPercentage(std::string name, size_t now_size, size_t total_size)
 {
   (void)name;
   acc_size.fetch_add(now_size);
@@ -211,7 +211,7 @@ void ConsoleDisplay::printpercentage(std::string name, size_t now_size, size_t t
     std::cout << (i < pos ? '=' : (i == pos ? '>' : ' '));
   char pbuf[16];
   snprintf(pbuf, sizeof(pbuf), "%6.2f%%", percentage);
-  std::cout << "] " << pbuf << "  " << format_size(done) << " / " << format_size(total) << "   \r";
+  std::cout << "] " << pbuf << "  " << formatSize(done) << " / " << formatSize(total) << "   \r";
   std::cout.flush();
   progress_active = true;
 #endif

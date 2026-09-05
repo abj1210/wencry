@@ -22,13 +22,13 @@ const u8_t hex_tab[128] = {
     49,  50,  51,  255, 255, 255, 255, 255};
 
 /*
-hex_to_base64:将十六进制字节串进行base64编码
+hexToBase64:将十六进制字节串进行base64编码
 hex_in:输入的字节串
 len:输入串的长度
 base64_out:编码结果(含末尾'\0')
 return:成功返回true
 */
-bool hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out)
+bool hexToBase64(const u8_t *hex_in, int len, u8_t *base64_out)
 {
   int j = 0, idx = 0;
   u32_t h_in = 0;
@@ -63,13 +63,13 @@ bool hex_to_base64(const u8_t *hex_in, int len, u8_t *base64_out)
   return true;
 }
 /*
-base64_to_hex:将base64编码串解码为字节串
+base64ToHex:将base64编码串解码为字节串
 base64_in:输入的base64编码串
 len:输入串的长度
 hex_out:解码结果
 return:成功返回true,含非法字符返回false
 */
-bool base64_to_hex(const u8_t *base64_in, int len, u8_t *hex_out)
+bool base64ToHex(const u8_t *base64_in, int len, u8_t *hex_out)
 {
   int tail = 0, j = 0, idx = 0;
   u32_t h_in = 0;
@@ -107,12 +107,12 @@ const std::string base64_chars =
 "0123456789+/";
 
 // 判断字符是否是合法的 Base64 字符
-bool is_base64(unsigned char c) {
+bool isBase64Char(unsigned char c) {
     return std::isalnum(c) || c == '+' || c == '/';
 }
 
 /*
-is_valid_b64:校验base64串的合法性
+isValidBase64:校验base64串的合法性
 base64_in:base64输入串
 len:输入长度
 return:合法返回true,否则false
@@ -121,13 +121,13 @@ return:合法返回true,否则false
   - 字符必须在base64字符集内,填充'='只能出现在末尾且最多2个
   - 解码后的字节数必须恰好为16(本项目密钥固定16字节)
 */
-bool is_valid_b64(const u8_t* base64_in, u32_t len) {
+bool isValidBase64(const u8_t* base64_in, u32_t len) {
     if (len % 4 != 0) return false;
     u32_t tail = 0;
 
     // 检查每个字符是否是合法的 Base64 字符或填充字符 '='
     for (u32_t i = 0; i < len; ++i) {
-        if (base64_in[i] != '=' && !is_base64(base64_in[i]))
+        if (base64_in[i] != '=' && !isBase64Char(base64_in[i]))
             return false;
         else if (base64_in[i] == '=') {
             tail++;
@@ -139,7 +139,7 @@ bool is_valid_b64(const u8_t* base64_in, u32_t len) {
     }
     // 必须能精确解码为 16 字节(即 22 个数据字符 + 2 个 '=')。
     // 旧写法 (len/4)*3-2==16 对任何 24 字符输入恒成立,
-    // 会放行无填充的 24 字符串,使 base64_to_hex 解码出 18 字节并越界写坏 key 缓冲。
+    // 会放行无填充的 24 字符串,使 base64ToHex 解码出 18 字节并越界写坏 key 缓冲。
     return (len / 4) * 3 - tail == 16;
 
 }

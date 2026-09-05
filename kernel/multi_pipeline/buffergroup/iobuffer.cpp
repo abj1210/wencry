@@ -5,44 +5,44 @@
 ################################*/
 
 /*
-iobuffer:构造函数,初始化块计数与流水线状态(EMPTY)
+IoBuffer:构造函数,初始化块计数与流水线状态(EMPTY)
 */
-iobuffer::iobuffer()
+IoBuffer::IoBuffer()
     : total(0), now(0), tail(0), isfinal(false), claimed(false), seq(0), idle_ts(0),
       id(s_next_id.fetch_add(1, std::memory_order_relaxed))
 {
   SCHED_LOG(g_sched_role, "BUF_NEW", id, -1, "", -1, -1, -1);
 };
 /*
-~iobuffer:析构,记录缓冲区销毁事件
+~IoBuffer:析构,记录缓冲区销毁事件
 */
-iobuffer::~iobuffer()
+IoBuffer::~IoBuffer()
 {
   SCHED_LOG(g_sched_role, "BUF_DELETE", id, seq, "", -1, -1, -1);
 };
 /*
-get_entry:获取当前缓冲区单元表项
+getEntry:获取当前缓冲区单元表项
 return:返回的表项地址
 */
-u8_t *iobuffer::get_entry() { return (now < total) ? b[now++] : NULL; };
+u8_t *IoBuffer::getEntry() { return (now < total) ? b[now++] : NULL; };
 /*
-get_data:获取缓冲区数据起始地址
+getData:获取缓冲区数据起始地址
 return:数据起始地址
 */
-u8_t *iobuffer::get_data() { return &b[0][0]; };
+u8_t *IoBuffer::getData() { return &b[0][0]; };
 /*
-data_len:缓冲区实际数据字节数(密文/明文长度,末块含填充)
+dataLen:缓冲区实际数据字节数(密文/明文长度,末块含填充)
 return:字节数
 */
-u32_t iobuffer::data_len() const { return total << 4; };
+u32_t IoBuffer::dataLen() const { return total << 4; };
 
 /*
-load_buffer:更新缓冲区
+loadBuffer:更新缓冲区
 fin:输入文件
 ispadding:是否填充
 return:返回装载状态
 */
-loadstate_t iobuffer::load_buffer(FILE *fin, bool ispadding)
+loadstate_t IoBuffer::loadBuffer(FILE *fin, bool ispadding)
 {
   u32_t load = fread(b, 1, sum, fin);
   bool readover = feof(fin);
@@ -73,12 +73,12 @@ loadstate_t iobuffer::load_buffer(FILE *fin, bool ispadding)
   return load == 0 ? NODATA : FULL;
 }
 /*
-export_buffer:将缓冲区内容保存到文件
+exportBuffer:将缓冲区内容保存到文件
 fout:输出文件
 ispadding:是否填充
 return:写出的字节数
 */
-u32_t iobuffer::export_buffer(FILE *fout, bool ispadding)
+u32_t IoBuffer::exportBuffer(FILE *fout, bool ispadding)
 {
   if (now == 0)
     return 0;

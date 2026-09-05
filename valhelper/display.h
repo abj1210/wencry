@@ -10,36 +10,36 @@
 typedef unsigned char u8_t;
 
 /*
-crypt_mode_name:获取加密模式名称(单源)
+cryptModeName:获取加密模式名称(单源)
 type:模式码(0=ECB..4=OFB)
 return:模式名(非法返回 "unknown")
 */
-const char *crypt_mode_name(u8_t type);
+const char *cryptModeName(u8_t type);
 /*
-hash_mode_name:获取哈希模式名称(单源)
+hashModeName:获取哈希模式名称(单源)
 type:模式码(0=sha1,1=md5,2=sha256)
 return:模式名(非法返回 "unknown")
 */
-const char *hash_mode_name(u8_t type);
+const char *hashModeName(u8_t type);
 
 /*
-strlog:格式化打印一行"标签: 值"(标签左对齐到固定宽度)
+logLine:格式化打印一行"标签: 值"(标签左对齐到固定宽度)
 label:标签(自动追加": ")
 value:值
 */
-void strlog(std::string label, std::string value);
+void logLine(std::string label, std::string value);
 /*
-strerr:红色高亮打印一行错误信息(终端支持ANSI且为TTY时生效)
+logError:红色高亮打印一行错误信息(终端支持ANSI且为TTY时生效)
 label:标签(自动追加": ")
 value:值
 */
-void strerr(std::string label, std::string value);
+void logError(std::string label, std::string value);
 /*
-format_size:将字节数格式化为人类可读字符串(1024进制)
+formatSize:将字节数格式化为人类可读字符串(1024进制)
 bytes:字节数
 return:形如 "1.00 GiB" 的字符串
 */
-std::string format_size(size_t bytes);
+std::string formatSize(size_t bytes);
 
 /*
 计时器类
@@ -67,28 +67,28 @@ public:
   /* Display:构造,初始化进度计数与完成标志 */
   Display() : acc_size(0), total_size(1), over(false) {};
   virtual ~Display() {};
-  /* printtask:打印任务名 */
-  virtual void printtask(std::string name) = 0;
+  /* printTask:打印任务名 */
+  virtual void printTask(std::string name) = 0;
   /* createTimer:创建并启动计时器(打印耗时用) */
   virtual Timer *createTimer(std::string name) = 0;
   /* printTimer:打印计时器耗时并释放 */
   virtual void printTimer(Timer *timer) = 0;
-  /* printenc:打印加密完成 */
-  virtual void printenc() = 0;
-  /* printresd:打印解密结果(含失败原因) */
-  virtual void printresd(int res) = 0;
-  /* printresv:打印验证结果(含失败原因) */
-  virtual void printresv(int res) = 0;
-  /* printctype:打印加密模式 */
-  virtual void printctype(u8_t type) = 0;
-  /* printhtype:打印哈希模式 */
-  virtual void printhtype(u8_t type) = 0;
-  /* printpercentage:更新进度计数并打印进度条 */
-  virtual void printpercentage(std::string name, size_t now_size, size_t total_size) = 0;
+  /* printEncryptDone:打印加密完成 */
+  virtual void printEncryptDone() = 0;
+  /* printDecryptResult:打印解密结果(含失败原因) */
+  virtual void printDecryptResult(int res) = 0;
+  /* printVerifyResult:打印验证结果(含失败原因) */
+  virtual void printVerifyResult(int res) = 0;
+  /* printCryptMode:打印加密模式 */
+  virtual void printCryptMode(u8_t type) = 0;
+  /* printHashMode:打印哈希模式 */
+  virtual void printHashMode(u8_t type) = 0;
+  /* printPercentage:更新进度计数并打印进度条 */
+  virtual void printPercentage(std::string name, size_t now_size, size_t total_size) = 0;
   /* resetPercentage:重置进度计数 */
   virtual void resetPercentage() { acc_size.store(0); };
-  /* getResStr:将返回值编号映射为可读结果描述 */
-  std::string getResStr(int res)
+  /* getResultString:将返回值编号映射为可读结果描述 */
+  std::string getResultString(int res)
   {
     if (res <= 0)
       return "Verification passed!";

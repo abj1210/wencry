@@ -21,13 +21,13 @@ static inline __m128i AES_128_ASSIST(__m128i temp1, __m128i temp2) {
 }
 
 /*
-AesniHandle 构造函数:AES-128 密钥扩展。
+AesNiHandle 构造函数:AES-128 密钥扩展。
 AES-128 共11个轮密钥 key[0..10]:
   key[0]  = 原始128位密钥(直接作为第一轮白化密钥)
   key[i]  (i=1..10) 由上一轮密钥经 _mm_aeskeygenassist + AES_128_ASSIST 扩展得到。
 Rcon 序列(01,02,04,08,10,20,40,80,1b,36)为轮常数,与 FIPS-197 一致。
 */
-AesniHandle::AesniHandle(const u8_t * init_key){
+AesNiHandle::AesNiHandle(const u8_t * init_key){
     __m128i raw_key = _mm_loadu_si128((const __m128i*)init_key);
     __m128i temp1, temp2;
     temp1 = raw_key;
@@ -77,11 +77,11 @@ AesniHandle::AesniHandle(const u8_t * init_key){
 }
 
 /*
-EncryAes::runaes_128bit:AES-128 单块加密。
+AesEncryptor::runAes128:AES-128 单块加密。
 标准结构:AddRoundKey(key[0]) -> 9 轮 AESENC -> 1 轮 AESENCLAST。
 AESENC 含 SubBytes+ShiftRows+MixColumns+AddRoundKey;AESENCLAST 不含 MixColumns。
 */
-__m128i EncryAes::runaes_128bit(__m128i w){
+__m128i AesEncryptor::runAes128(__m128i w){
     // 初始轮密钥加
     w = _mm_xor_si128(w, key[0]);
 
@@ -96,13 +96,13 @@ __m128i EncryAes::runaes_128bit(__m128i w){
 }
 
 /*
-DecryAes::aes128_inverse_keys:生成"等价逆密码"的解密轮密钥。
+AesDecryptor::aes128InverseKeys:生成"等价逆密码"的解密轮密钥。
 将扩展密钥按逆序排列,中间9个密钥经 AESIMC(InvMixColumns)变换:
   invkey[0]  = key[10]  (最后轮密钥作为解密第一轮白化)
   invkey[10] = key[0]
   invkey[i]  = AESIMC(key[10-i])  (i=1..9)
 */
-void DecryAes::aes128_inverse_keys(){
+void AesDecryptor::aes128InverseKeys(){
         // 第一个和最后一个轮密钥相同(白化密钥)
     invkey[0] = key[10];
     invkey[10] = key[0];
@@ -116,10 +116,10 @@ void DecryAes::aes128_inverse_keys(){
 }
 
 /*
-DecryAes::runaes_128bit:AES-128 单块解密(等价逆密码)。
+AesDecryptor::runAes128:AES-128 单块解密(等价逆密码)。
 结构:AddRoundKey(invkey[0]) -> 9 轮 AESDEC -> 1 轮 AESDECLAST。
 */
-__m128i DecryAes::runaes_128bit(__m128i w){
+__m128i AesDecryptor::runAes128(__m128i w){
     // 第1轮: AddRoundKey(使用第10个轮密钥)
     w = _mm_xor_si128(w, invkey[0]);
 

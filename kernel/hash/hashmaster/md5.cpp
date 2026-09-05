@@ -3,7 +3,7 @@
 
 /*
 模块概述:MD5 软件实现
-md5hash 无 SHA-NI 对应物,整块压缩、末尾块填充与摘要输出均在此以软件方式实现。
+Md5Hash 无 SHA-NI 对应物,整块压缩、末尾块填充与摘要输出均在此以软件方式实现。
 主循环为标准的4轮共64步变换(FF/GG/HH/II),常量与循环左移位数见下方宏定义。
 */
 
@@ -64,11 +64,11 @@ md5hash 无 SHA-NI 对应物,整块压缩、末尾块填充与摘要输出均在
 getHash:对64字节整块做一步MD5哈希(主循环,4轮共64步)
 input:64字节输入块
 */
-void md5hash::getHash(const u8_t *input)
+void Md5Hash::getHash(const u8_t *input)
 {
   memset(s, 0, sizeof(s));
   memcpy(s, input, sizeof(s));
-  addtotal(64);
+  addTotalLength(64);
   unsigned int a = h[0];
   unsigned int b = h[1];
   unsigned int c = h[2];
@@ -160,18 +160,18 @@ getHash:处理末尾块(追加 0x80 填充与64位长度字段,MD5按小端写�
 input:末尾块数据
 final_loadsize:末尾块字节数
 */
-void md5hash::getHash(const u8_t *input, u32_t final_loadsize)
+void Md5Hash::getHash(const u8_t *input, u32_t final_loadsize)
 {
-  addtotal(final_loadsize);
+  addTotalLength(final_loadsize);
   u64_t bitlen = totalsize;
-  u8_t* temp = new u8_t[getblen()];
-  memset(temp, 0, getblen());
+  u8_t* temp = new u8_t[getBlockLength()];
+  memset(temp, 0, getBlockLength());
   memcpy(temp, input, final_loadsize);
   temp[final_loadsize] = 0x80u;
   if (final_loadsize >= 56)
   {
     getHash(temp);
-    memset(temp, 0, getblen());
+    memset(temp, 0, getBlockLength());
   }
   for (int i = 0; i < 8; ++i)
   {
@@ -182,20 +182,20 @@ void md5hash::getHash(const u8_t *input, u32_t final_loadsize)
 }
 
 /*
-getres:输出16字节MD5摘要(按小端字节序展开)
+computeResult:输出16字节MD5摘要(按小端字节序展开)
 hashout:输出地址
 */
-void md5hash::getres(u8_t *hashout)
+void Md5Hash::computeResult(u8_t *hashout)
 {
   for (int i = 0; i < 16; ++i)
     hashout[i] = (u8_t)((h[i >> 2]) >> (((i & 0x3)) << 3));
 }
 
 /*
-block_fast:热路径整块处理(避免每块一次虚调用)
+blockFast:热路径整块处理(避免每块一次虚调用)
 self:具体哈希器实例;input:64字节输入块
 */
-void md5hash::block_fast(Hashmaster *self, const u8_t *input)
+void Md5Hash::blockFast(HashMaster *self, const u8_t *input)
 {
-  static_cast<md5hash *>(self)->getHash(input);
+  static_cast<Md5Hash *>(self)->getHash(input);
 }

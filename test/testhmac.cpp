@@ -18,8 +18,8 @@ out:输出摘要缓冲(长度应不小于对应摘要长度)
 static void compute_hmac(u8_t htype, const unsigned char *key, const char *data,
                          unsigned char *out)
 {
-  hmac h;
-  h.gethmac(htype, (u8_t *)key, (const u8_t *)data, out, strlen(data), NULL, 0);
+  Hmac h;
+  h.getHmac(htype, (u8_t *)key, (const u8_t *)data, out, strlen(data), NULL, 0);
 }
 
 /*

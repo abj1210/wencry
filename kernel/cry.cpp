@@ -16,11 +16,11 @@ using namespace chrono;
 
 /*################################
   模块概述:加解密总流程(对外接口层)
-  runcrypt 类编排一次完整的文件加/解密:
+  RunCrypt 类编排一次完整的文件加/解密:
     - 加密:生成IV并写文件头 -> 多线程AES流水线(写线程同时增量计算HMAC) -> 回填HMAC。
     - 解密:先验证(魔数/模式/HMAC,失败则不写任何输出) -> 按文件头记录的线程数解密 -> 输出。
     - 验证:仅做魔数/模式/HMAC检查。
-  依赖:cry.h 中的 Settings(runcrypt)/Aesmode/AesFactory/multicry_master/buffergroup/hmac/FileHeader。
+  依赖:cry.h 中的 Settings(RunCrypt)/AesMode/AesFactory/MulticryMaster/BufferGroup/Hmac/FileHeader。
   TIMER_* 宏用于分段计时输出。
 ################################*/
 
@@ -49,7 +49,7 @@ Settings::Settings(char ctype, char htype, bool no_echo) : ctype(ctype), htype(h
     exit(1);
   }
 }
-void Settings::set_ctype(char c)
+void Settings::setCryptMode(char c)
 {
   if (c < -1 || c >= kCryptModeCount)
   {
@@ -59,7 +59,7 @@ void Settings::set_ctype(char c)
   else
     ctype = c;
 };
-void Settings::set_htype(char h)
+void Settings::setHashMode(char h)
 {
   if (h < -1 || h >= kHashModeCount)
   {
@@ -71,11 +71,11 @@ void Settings::set_htype(char h)
 };
 
 /*
-file_path:由FILE*反推文件路径(供解密失败删除输出文件)
+filePath:由FILE*反推文件路径(供解密失败删除输出文件)
 fp:文件指针
 return:文件路径(失败返回空串)
 */
-static std::string file_path(FILE *fp)
+static std::string filePath(FILE *fp)
 {
 #ifdef _WIN32
   HANDLE h = (HANDLE)_get_osfhandle(_fileno(fp));
@@ -105,47 +105,47 @@ static std::string file_path(FILE *fp)
 }
 
 /*
-prepare_IV:准备初始向量
+prepareIv:准备初始向量
 r_buf:随机缓冲数组
 r_len:随机缓冲有效字节数
 return:初始向量地址
 */
-u8_t *runcrypt::prepare_IV(const u8_t *r_buf, size_t r_len)
+u8_t *RunCrypt::prepareIv(const u8_t *r_buf, size_t r_len)
 {
-  u8_t *iv = new u8_t[multicry_master::THREAD_MAX * 20];
-  header.getIV(r_buf, r_len, iv);
-  header.getFileHeader(iv);
+  u8_t *iv = new u8_t[MulticryMaster::THREAD_MAX * 20];
+  header.getIv(r_buf, r_len, iv);
+  header.writeFileHeader(iv);
   return iv;
 }
 /*
-prepare_IV:准备初始向量
+prepareIv:准备初始向量
 return:初始向量地址
 */
-u8_t *runcrypt::prepare_IV()
+u8_t *RunCrypt::prepareIv()
 {
-  u8_t *iv = new u8_t[multicry_master::THREAD_MAX * 20];
-  header.getIV(fin, iv);
+  u8_t *iv = new u8_t[MulticryMaster::THREAD_MAX * 20];
+  header.getIv(fin, iv);
   return iv;
 }
 /*
-check_header:校验文件头结构与读取存储的HMAC(不读密文)
+checkHeader:校验文件头结构与读取存储的HMAC(不读密文)
 hlen_out:输出HMAC长度
 hash_out:输出存储HMAC指针(指向FileHeader内部缓冲,在解密/验证期间保持有效)
 return:0=通过,1=文件过短,3=加密/哈希模式非法,4=魔数错误
 */
-u8_t runcrypt::check_header(u8_t &hlen_out, u8_t *&hash_out)
+u8_t RunCrypt::checkHeader(u8_t &hlen_out, u8_t *&hash_out)
 {
-  resultprint->printtask("Checking file header");
+  resultprint->printTask("Checking file header");
   // 结构校验(魔数/模式/长度),返回值即为 res 码(1=文件过短,3=模式非法,4=魔数错误)
-  int hc = header.check_header();
+  int hc = header.checkHeader();
   if (hc != 0)
     return (u8_t)hc;
   header.checkType(); // 读取 ctype/htype/线程数(含旧格式回退4)
-  resultprint->printctype(header.getctype());
-  resultprint->printhtype(header.gethtype());
+  resultprint->printCryptMode(header.getCryptMode());
+  resultprint->printHashMode(header.getHashMode());
   // HMAC 长度随 htype 为 16/20/32,只读取实际长度(避免读入填充/IV区)。
   u8_t hlen = 32;
-  switch (header.gethtype())
+  switch (header.getHashMode())
   {
   case 0:
     hlen = 20;
@@ -165,51 +165,51 @@ u8_t runcrypt::check_header(u8_t &hlen_out, u8_t *&hash_out)
   return 0;
 }
 /*
-prepare_AES:准备缓冲区和aes加密器
+prepareAes:准备缓冲区和aes加密器
 ctype:加密模式
 iv:初始向量
 cmode:模式(true:加密,false:解密)
 return:加密器地址组
 */
-Aesmode **runcrypt::prepare_AES(u8_t ctype, u8_t *iv, bool cmode)
+AesMode **RunCrypt::prepareAes(u8_t ctype, u8_t *iv, bool cmode)
 {
-  // 解密时输入指针已由 prepare_IV()->getIV(FILE*) 定位到 FILE_TEXT_MARK,
-  // 此处无需再 fseek(见 execute_decrypt 调用顺序)。
-  Aesmode **mode = new Aesmode *[threads_num];
+  // 解密时输入指针已由 prepareIv()->getIv(FILE*) 定位到 FILE_TEXT_MARK,
+  // 此处无需再 fseek(见 executeDecrypt 调用顺序)。
+  AesMode **mode = new AesMode *[threads_num];
   for (int i = 0; i < threads_num; i++)
     mode[i] = aesfactory.createCryMaster(cmode, ctype, iv + 20 * i);
   return mode;
 }
 /*
-prepare_cryption_master:为流水线注入 AES回调、HMAC 喂入回调与进度回调
+prepareCrypter:为流水线注入 AES回调、HMAC 喂入回调与进度回调
 aesmode:AES加密器组
 file_size:文件大小
 pipemode:流水线模式(加密/解密/验证)
 */
-void runcrypt::prepare_cryption_master(Aesmode ** aesmode ,size_t file_size ,pipe_mode pipemode){
-  buffergroup *buffer = buffergroup::get_instance();
-  buffer->set_buffergroup(threads_num, pipemode);
-  mtmaster.set_hashtype(header.gethtype());
-  crym.set_hash_size(mtmaster.get_hash_size());
-  crym.set_mt_func([this](const u8_t * d, size_t id){mtmaster.add_block_hmac(id,d);});
-  crym.set_print_load([this, file_size](std::string name, size_t now_size) { resultprint->printpercentage(name, now_size, file_size ? file_size : 1); });
+void RunCrypt::prepareCrypter(AesMode ** aesmode ,size_t file_size ,pipe_mode pipemode){
+  BufferGroup *buffer = BufferGroup::getInstance();
+  buffer->setBufferGroup(threads_num, pipemode);
+  mtmaster.setHashType(header.getHashMode());
+  crym.setHashSize(mtmaster.getHashSize());
+  crym.setMerkleTreeCallback([this](const u8_t * d, size_t id){mtmaster.addBlockHmac(id,d);});
+  crym.setProgressCallback([this, file_size](std::string name, size_t now_size) { resultprint->printPercentage(name, now_size, file_size ? file_size : 1); });
   for(int i = 0; i < threads_num; i++){
-    crym.set_hmac_func([this, i](const u8_t *d, u8_t *o, size_t n, size_t id) {
+    crym.setHmacCallback([this, i](const u8_t *d, u8_t *o, size_t n, size_t id) {
       u8_t prefix[9];
-      mtmaster.get_leaf_prefix(id, prefix);
-      hmachandle[i].gethmac((u8_t)header.gethtype(), key, d, o, n, prefix, mtmaster.get_prefix_len());
+      mtmaster.getLeafPrefix(id, prefix);
+      hmachandle[i].getHmac((u8_t)header.getHashMode(), key, d, o, n, prefix, mtmaster.getPrefixLen());
     }, i);
     if(aesmode == NULL)
-      crym.set_aes_mode(nullptr, i);
+      crym.setAesCallback(nullptr, i);
     else
-      crym.set_aes_mode([aesmode, i](u8_t * b) { aesmode[i]->runcry(b); }, i);
+      crym.setAesCallback([aesmode, i](u8_t * b) { aesmode[i]->runCrypt(b); }, i);
   }
 }
-void runcrypt::get_root_hmac(u8_t * buf, u8_t * iv, u8_t n){
-  u8_t * temp = (u8_t *)malloc(sizeof(u8_t)*mtmaster.get_hash_size());
-  size_t total_blocks = mtmaster.get_top_hash(buf);
-  hmachandle[0].gethmac(header.gethtype(), key, buf, temp, mtmaster.get_hash_size(), mtmaster.get_root_prefix(total_blocks, iv, n), mtmaster.get_prefix_len()+(20*n));
-  memcpy(buf, temp, mtmaster.get_hash_size());
+void RunCrypt::getRootHmac(u8_t * buf, u8_t * iv, u8_t n){
+  u8_t * temp = (u8_t *)malloc(sizeof(u8_t)*mtmaster.getHashSize());
+  size_t total_blocks = mtmaster.getTopHash(buf);
+  hmachandle[0].getHmac(header.getHashMode(), key, buf, temp, mtmaster.getHashSize(), mtmaster.getRootPrefix(total_blocks, iv, n), mtmaster.getPrefixLen()+(20*n));
+  memcpy(buf, temp, mtmaster.getHashSize());
   free(temp);
 }
 /*
@@ -217,16 +217,16 @@ release:释放空间
 iv:初始向量
 mode:加密器地址组
 */
-void runcrypt::release(u8_t *iv, Aesmode **mode, u8_t * buf)
+void RunCrypt::release(u8_t *iv, AesMode **mode, u8_t * buf)
 {
-  crym.set_mt_func(nullptr);
-  crym.set_print_load(nullptr);
+  crym.setMerkleTreeCallback(nullptr);
+  crym.setProgressCallback(nullptr);
   for(int i = 0; i < threads_num; i++){
-    crym.set_aes_mode(nullptr, i);
-    crym.set_hmac_func(nullptr, i);
+    crym.setAesCallback(nullptr, i);
+    crym.setHmacCallback(nullptr, i);
   }
   resultprint->resetPercentage();
-  buffergroup::del_instance();
+  BufferGroup::delInstance();
   delete[] iv;
   free(buf);
   if(mode!= NULL){
@@ -236,9 +236,9 @@ void runcrypt::release(u8_t *iv, Aesmode **mode, u8_t * buf)
   }
 }
 /*
-over:关闭文件并释放空间
+closeFiles:关闭文件并释放空间
 */
-void runcrypt::over()
+void RunCrypt::closeFiles()
 {
   if (fin != NULL)
     fclose(fin);
@@ -257,21 +257,28 @@ key:密钥
 settings:加解密参数
 threads_num:线程数
 */
-runcrypt::runcrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
-    : fin(fin), out(out), key(key), settings(settings), threads_num(threads_num),
-      header(fin, out, key, settings.get_ctype(), settings.get_htype(), threads_num),
+/* 将工作线程数限制在 [1, THREAD_MAX],非法值回退到默认 THREAD_NUM。 */
+u8_t RunCrypt::clampThreadNum(u8_t n)
+{
+  if (n == 0 || n > MulticryMaster::THREAD_MAX)
+    return THREAD_NUM;
+  return n;
+}
+RunCrypt::RunCrypt(FILE *fin, FILE *out, u8_t *key, Settings settings, u8_t threads_num)
+    : fin(fin), out(out), key(key), settings(settings), threads_num(RunCrypt::clampThreadNum(threads_num)),
+      header(fin, out, key, settings.getCryptMode(), settings.getHashMode(), RunCrypt::clampThreadNum(threads_num)),
       aesfactory(key), crym(fin, out)
 {
-  if (settings.get_no_echo())
+  if (settings.getNoEcho())
     resultprint = new SilentDisplay;
   else
     resultprint = new ConsoleDisplay;
-  hmachandle = new hmac[threads_num];
+  hmachandle = new Hmac[threads_num];
 };
 /*
 析构函数
 */
-runcrypt::~runcrypt() {
+RunCrypt::~RunCrypt() {
 	if (resultprint != nullptr) {
 		delete resultprint;
 		resultprint = nullptr;
@@ -279,12 +286,12 @@ runcrypt::~runcrypt() {
   delete[] hmachandle;
 }
 /*
-execute_encrypt:加密执行过程
+executeEncrypt:加密执行过程
 fsize:文件大小
 r_buf:随机缓冲数组
 r_len:随机缓冲有效字节数
 */
-void runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf, size_t r_len)
+void RunCrypt::executeEncrypt(size_t fsize, u8_t *r_buf, size_t r_len)
 {
   if (fin == NULL)
     throw std::string("Invalid File");
@@ -294,44 +301,44 @@ void runcrypt::execute_encrypt(size_t fsize, u8_t *r_buf, size_t r_len)
   if (out != NULL)
   {
     size_t out_size = (size_t)FILE_TEXT_MARK(threads_num) + (((size_t)fsize >> 4) + 1) * 16;
-    wencry_preallocate(out, out_size);
+    wencryPreallocate(out, out_size);
   }
 
 
   // 准备初始化
-  resultprint->printtask("Preparing encrypt");
-  u8_t *iv = prepare_IV(r_buf, r_len);
-  Aesmode **mode = prepare_AES(settings.get_ctype(), iv, true);
-  prepare_cryption_master(mode, fsize, PIPE_ENCRYPT);
-  u8_t * buf = (u8_t *)malloc(sizeof(u8_t)*mtmaster.get_hash_size());
+  resultprint->printTask("Preparing encrypt");
+  u8_t *iv = prepareIv(r_buf, r_len);
+  AesMode **mode = prepareAes(settings.getCryptMode(), iv, true);
+  prepareCrypter(mode, fsize, PIPE_ENCRYPT);
+  u8_t * buf = (u8_t *)malloc(sizeof(u8_t)*mtmaster.getHashSize());
 
 
   // 运行加密(写线程导出密文时同步喂入HMAC,避免回读)
   TIMER_START(AES_Encryption_Time)
-  resultprint->printtask("Encrypting");
-  crym.run_multicry(threads_num, PIPE_ENCRYPT);
+  resultprint->printTask("Encrypting");
+  crym.runMulticry(threads_num, PIPE_ENCRYPT);
   TIMER_END(AES_Encryption_Time)
 
 
-  // 完成hmac并写入
-  resultprint->printtask("Writing hmac");
-  get_root_hmac(buf, iv, threads_num);
-  header.write_hmac(buf, mtmaster.get_hash_size(), FILE_HMAC_MARK);
+  // 完成Hmac并写入
+  resultprint->printTask("Writing Hmac");
+  getRootHmac(buf, iv, threads_num);
+  header.writeHmac(buf, mtmaster.getHashSize(), FILE_HMAC_MARK);
 
 
   // 释放空间
-  resultprint->printtask("Releasing allocated memory");
+  resultprint->printTask("Releasing allocated memory");
   release(iv, mode, buf);
-  resultprint->printenc(); // 打印结果
-  over();                  // 关闭文件
+  resultprint->printEncryptDone(); // 打印结果
+  closeFiles();                  // 关闭文件
   TIMER_END(Total_Time);   // 打印时间
 }
 /*
-execute_decrypt:解密执行过程
+executeDecrypt:解密执行过程
 fsize:文件大小
 return:高8位-哈希模式 低8位-加密模式
 */
-unsigned short runcrypt::execute_decrypt(size_t fsize)
+unsigned short RunCrypt::executeDecrypt(size_t fsize)
 {
   if (fin == NULL)
     throw std::string("Invalid File");
@@ -343,80 +350,80 @@ unsigned short runcrypt::execute_decrypt(size_t fsize)
   // 结构校验(魔数/模式/线程数/长度,不读密文)
   u8_t hlen = 0;
   u8_t *stored = NULL;
-  int res = check_header(hlen, stored);
+  int res = checkHeader(hlen, stored);
   if (res != 0)
   {
-    resultprint->printresd(res);
-    over();
+    resultprint->printDecryptResult(res);
+    closeFiles();
     TIMER_END(Total_Time);
-    throw resultprint->getResStr(res);
+    throw resultprint->getResultString(res);
   }
 
 
   // 准备初始化
-  resultprint->printtask("Preparing decrypt");
-  threads_num = header.get_num();
+  resultprint->printTask("Preparing decrypt");
+  threads_num = header.getThreadNum();
   // 纵深防御:线程数必须落在 [1, THREAD_MAX],防止越界写 threads[] / IV 缓冲
-  if (threads_num == 0 || threads_num > multicry_master::THREAD_MAX)
+  if (threads_num == 0 || threads_num > MulticryMaster::THREAD_MAX)
     threads_num = THREAD_NUM;
-  u8_t *iv = prepare_IV();
-  Aesmode **mode = prepare_AES(header.getctype(), iv, false);
-  prepare_cryption_master(mode, fsize, PIPE_DECRYPT);
-  u8_t * buf = (u8_t *)malloc(sizeof(u8_t)*mtmaster.get_hash_size());
+  u8_t *iv = prepareIv();
+  AesMode **mode = prepareAes(header.getCryptMode(), iv, false);
+  prepareCrypter(mode, fsize, PIPE_DECRYPT);
+  u8_t * buf = (u8_t *)malloc(sizeof(u8_t)*mtmaster.getHashSize());
 
   // 预留输出空间(上界=密文长度),避免解密写出时反复扩展文件
   if (out != NULL)
   {
     size_t hdr = (size_t)FILE_TEXT_MARK(threads_num);
     size_t cipher_size = (fsize >= hdr) ? (fsize - hdr) : 0;
-    wencry_preallocate(out, cipher_size);
+    wencryPreallocate(out, cipher_size);
   }
 
 
   // 融合解密:读密文时HASH线程增量计算HMAC(消除独立验证读)
   TIMER_START(AES_Decryption_Time)
-  resultprint->printtask("Decrypting & verifying");
-  crym.run_multicry(threads_num, PIPE_DECRYPT);
+  resultprint->printTask("Decrypting & verifying");
+  crym.runMulticry(threads_num, PIPE_DECRYPT);
   TIMER_END(AES_Decryption_Time)
 
   // 按实际写出的明文长度截断(去掉预分配的上界余量)
   if (out != NULL)
   {
     fflush(out);
-    wencry_preallocate(out, crym.get_written_bytes());
+    wencryPreallocate(out, crym.getWrittenBytes());
   }
 
 
   // 完成HMAC并与文件头存储值比对
-  resultprint->printtask("Comparing HMAC");
-  get_root_hmac(buf, iv, threads_num);
-  bool hmac_ok = hmachandle[0].match_result(stored, hlen, buf);
+  resultprint->printTask("Comparing HMAC");
+  getRootHmac(buf, iv, threads_num);
+  bool hmac_ok = hmachandle[0].matchResult(stored, hlen, buf);
 
 
   // 释放空间
-  resultprint->printtask("Releasing allocated memory");
+  resultprint->printTask("Releasing allocated memory");
   release(iv, mode, buf);
   if (!hmac_ok)
   {
-    std::string outpath = file_path(out);
-    resultprint->printresd(2);
-    over();
+    std::string outpath = filePath(out);
+    resultprint->printDecryptResult(2);
+    closeFiles();
     TIMER_END(Total_Time);
     if (!outpath.empty())
       remove(outpath.c_str()); // 失败删除输出文件
-    throw resultprint->getResStr(2);
+    throw resultprint->getResultString(2);
   }
-  resultprint->printresd(0); // 打印结果
-  over();                     // 关闭文件
+  resultprint->printDecryptResult(0); // 打印结果
+  closeFiles();                     // 关闭文件
   TIMER_END(Total_Time);      // 打印时间
-  return header.gethtype() << 8 | header.getctype();
+  return header.getHashMode() << 8 | header.getCryptMode();
 }
 /*
-execute_verify:验证执行过程
+executeVerify:验证执行过程
 fsize:文件大小
 return:高8位-哈希模式 低8位-加密模式
 */
-unsigned short runcrypt::execute_verify(size_t fsize)
+unsigned short RunCrypt::executeVerify(size_t fsize)
 {
   if (fin == NULL)
     throw std::string("Invalid File");
@@ -428,54 +435,54 @@ unsigned short runcrypt::execute_verify(size_t fsize)
   // 结构校验
   u8_t hlen = 0;
   u8_t *stored = NULL;
-  int res = check_header(hlen, stored);
+  int res = checkHeader(hlen, stored);
   if (res != 0)
   {
-    resultprint->printresv(res);
-    over();
+    resultprint->printVerifyResult(res);
+    closeFiles();
     TIMER_END(Total_Time);
-    throw resultprint->getResStr(res);
+    throw resultprint->getResultString(res);
   }
 
 
   // 用统一流水线读+哈希(不AES不写)
-  resultprint->printtask("Preparing Verification");
-  threads_num = header.get_num();
+  resultprint->printTask("Preparing Verification");
+  threads_num = header.getThreadNum();
   // 纵深防御:线程数必须落在 [1, THREAD_MAX]
-  if (threads_num == 0 || threads_num > multicry_master::THREAD_MAX)
+  if (threads_num == 0 || threads_num > MulticryMaster::THREAD_MAX)
     threads_num = THREAD_NUM;
-  u8_t *iv = prepare_IV(); // 读IV,fin定位到FILE_TEXT_MARK
-  prepare_cryption_master(nullptr, fsize, PIPE_VERIFY);
-  u8_t * buf = (u8_t *)malloc(sizeof(u8_t)*mtmaster.get_hash_size());
+  u8_t *iv = prepareIv(); // 读IV,fin定位到FILE_TEXT_MARK
+  prepareCrypter(nullptr, fsize, PIPE_VERIFY);
+  u8_t * buf = (u8_t *)malloc(sizeof(u8_t)*mtmaster.getHashSize());
 
 
   TIMER_START(AES_Hashing_Time)
-  resultprint->printtask("Computing HMAC");
-  crym.run_multicry(threads_num, PIPE_VERIFY);
+  resultprint->printTask("Computing HMAC");
+  crym.runMulticry(threads_num, PIPE_VERIFY);
   TIMER_END(AES_Hashing_Time)
 
-  resultprint->printtask("Comparing HMAC");
-  get_root_hmac(buf, iv, threads_num);
-  bool hmac_ok = hmachandle[0].match_result(stored, hlen, buf);
+  resultprint->printTask("Comparing HMAC");
+  getRootHmac(buf, iv, threads_num);
+  bool hmac_ok = hmachandle[0].matchResult(stored, hlen, buf);
 
 
-  resultprint->printtask("Releasing allocated memory");
+  resultprint->printTask("Releasing allocated memory");
   release(iv, NULL, buf);
   if (!hmac_ok)
     res = 2;
-  resultprint->printresv(res); // 打印结果
-  over();                      // 关闭文件
+  resultprint->printVerifyResult(res); // 打印结果
+  closeFiles();                      // 关闭文件
   TIMER_END(Total_Time);       // 打印时间
   if (res != 0)
-    throw resultprint->getResStr(res);
-  return header.gethtype() << 8 | header.getctype();
+    throw resultprint->getResultString(res);
+  return header.getHashMode() << 8 | header.getCryptMode();
 }
 /*
 get_percentage:获取进度
 return: -1表示已完成, 0-100表示进度
 */
 
-int runcrypt::get_percentage_gui()
+int RunCrypt::getPercentageGui()
 {
   if (resultprint->isOver())
     return -1;
@@ -486,23 +493,23 @@ int runcrypt::get_percentage_gui()
   分配/释放工厂
 ################################*/
 /*
-runcrypt_create:按库自身 sizeof(runcrypt) 分配并构造
+createRunCrypt:按库自身 sizeof(RunCrypt) 分配并构造
 fin:输入文件
 out:输出文件
 key:密钥
 settings:加解密参数
 threads_num:工作线程数(默认 THREAD_NUM)
-return:新分配的 runcrypt 对象
+return:新分配的 RunCrypt 对象
 */
-runcrypt *runcrypt_create(FILE *fin, FILE *out, u8_t *key, const Settings& settings, u8_t threads_num)
+RunCrypt *createRunCrypt(FILE *fin, FILE *out, u8_t *key, const Settings& settings, u8_t threads_num)
 {
-  return new runcrypt(fin, out, key, settings, threads_num);
+  return new RunCrypt(fin, out, key, settings, threads_num);
 }
 /*
-runcrypt_destroy:释放 runcrypt 对象
+destroyRunCrypt:释放 RunCrypt 对象
 r:待释放对象
 */
-void runcrypt_destroy(runcrypt *r)
+void destroyRunCrypt(RunCrypt *r)
 {
   delete r;
 }

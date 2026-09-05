@@ -17,9 +17,9 @@ TEST(TestOFB, testOFB1) {
   unsigned char block[64], blcmp[64];
   memcpy(block, str, 64);
   AesFactory af(key, iv);
-  Aesmode *AEStest = af.createCryMaster(true, 4);
+  AesMode *AEStest = af.createCryMaster(true, 4);
   for (int i = 0; i < 4; i++)
-    AEStest->runcry(block + (16 * i));
+    AEStest->runCrypt(block + (16 * i));
   gethex(res, blcmp);
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
@@ -28,12 +28,12 @@ TEST(TestOFB, testOFB2) {
   memcpy(block, str, 64);
   memcpy(blcmp, str, 64);
   AesFactory af(key, iv);
-  Aesmode * AEStest = af.createCryMaster(true, 4),
+  AesMode * AEStest = af.createCryMaster(true, 4),
           * AESdecrypt = af.createCryMaster(false, 4);
   for (int i = 0; i < 4; i++)
-    AEStest->runcry(block + (16 * i));
+    AEStest->runCrypt(block + (16 * i));
   for (int i = 0; i < 4; i++)
-    AESdecrypt->runcry(block + (16 * i));
+    AESdecrypt->runCrypt(block + (16 * i));
   EXPECT_TRUE(cmpstr(block, blcmp, 64));
 }
 TEST(TestOFB, testOFB3) {
@@ -42,12 +42,12 @@ TEST(TestOFB, testOFB3) {
   memcpy(blcmp, str, 64);
   AesFactory af1(key, iv);
   AesFactory af2(key, iv2);
-  Aesmode * AESt1 = af1.createCryMaster(true, 4);
-  Aesmode * AESt2 = af2.createCryMaster(true, 4);
+  AesMode * AESt1 = af1.createCryMaster(true, 4);
+  AesMode * AESt2 = af2.createCryMaster(true, 4);
   for (int i = 0; i < 4; i++)
-    AESt1->runcry(block + (16 * i));
+    AESt1->runCrypt(block + (16 * i));
   for (int i = 0; i < 4; i++)
-    AESt2->runcry(blcmp + (16 * i));
+    AESt2->runCrypt(blcmp + (16 * i));
   EXPECT_FALSE(cmpstr(block, blcmp, 64));
 }
 

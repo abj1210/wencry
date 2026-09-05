@@ -17,39 +17,39 @@
 #endif
 
 /*
-printkey:将16字节密钥转换为base64字符串
+printKey:将16字节密钥转换为base64字符串
 key:16字节密钥
 return:base64编码后的密钥串
 */
-std::string printkey(u8_t *key)
+std::string printKey(u8_t *key)
 {
   char outk[128];
-  hex_to_base64(key, 16, (u8_t *)outk);
+  hexToBase64(key, 16, (u8_t *)outk);
   std::string skey = outk;
   return skey;
 }
 /*
-checkB64Key:校验base64密钥串并解码为16字节密钥
+checkBase64Key:校验base64密钥串并解码为16字节密钥
 b64key:base64输入串
 key:解码输出的16字节密钥
 return:合法(24字符且解码为16字节)返回true,否则false
 */
-bool checkB64Key(const u8_t* b64key, u8_t *key){
-  if(!is_valid_b64(b64key, strlen((char *)b64key)))
+bool checkBase64Key(const u8_t* b64key, u8_t *key){
+  if(!isValidBase64(b64key, strlen((char *)b64key)))
     return false;
   else{
-    base64_to_hex(b64key, 24, key);
+    base64ToHex(b64key, 24, key);
     return true;
   }
 }
 /*
-csprng_fill:用操作系统加密安全随机源填充缓冲区(跨平台)
+fillFromSystemRandom:用操作系统加密安全随机源填充缓冲区(跨平台)
 buf:输出缓冲
 len:字节数
 Windows 用 BCryptGenRandom(系统首选 RNG),Linux 优先 getrandom,/dev/urandom 作
 POSIX 回退;随机源不可用时打印错误并终止(加密工具无法在无熵源下安全继续)。
 */
-static void csprng_fill(u8_t *buf, size_t len)
+static void fillFromSystemRandom(u8_t *buf, size_t len)
 {
   if (len == 0)
     return;
@@ -94,7 +94,7 @@ return:返回的密钥
 u8_t *getRandomKey()
 {
   u8_t *keyout = new u8_t[16];
-  csprng_fill(keyout, 16);
+  fillFromSystemRandom(keyout, 16);
   return keyout;
 }
 /*
@@ -103,7 +103,7 @@ r_buf:缓冲数组地址
 */
 void getRandomBuffer(u8_t *r_buf)
 {
-  csprng_fill(r_buf, 256);
+  fillFromSystemRandom(r_buf, 256);
 }
 /*
 getProcessMode:将模式字符映射为任务编号
@@ -122,10 +122,10 @@ int getProcessMode(char mode){
 }
 
 /*
-wencry_fopen_read:以"二进制读 + 顺序访问提示"打开输入文件
+wencryOpenRead:以"二进制读 + 顺序访问提示"打开输入文件
 见 valhelper.h 声明。
 */
-FILE *wencry_fopen_read(const char *path)
+FILE *wencryOpenRead(const char *path)
 {
 #if defined(_WIN32)
   int fd = _open(path, _O_RDONLY | _O_BINARY | _O_SEQUENTIAL);
@@ -144,10 +144,10 @@ FILE *wencry_fopen_read(const char *path)
 }
 
 /*
-wencry_fopen_write:以"二进制写 + 顺序访问提示"打开输出文件
+wencryOpenWrite:以"二进制写 + 顺序访问提示"打开输出文件
 见 valhelper.h 声明。
 */
-FILE *wencry_fopen_write(const char *path)
+FILE *wencryOpenWrite(const char *path)
 {
 #if defined(_WIN32)
   int fd = _open(path, _O_WRONLY | _O_CREAT | _O_TRUNC | _O_BINARY | _O_SEQUENTIAL,
@@ -167,10 +167,10 @@ FILE *wencry_fopen_write(const char *path)
 }
 
 /*
-wencry_preallocate:设置文件大小(增长=预留,缩小=截断)
+wencryPreallocate:设置文件大小(增长=预留,缩小=截断)
 见 valhelper.h 声明。
 */
-bool wencry_preallocate(FILE *fp, size_t size)
+bool wencryPreallocate(FILE *fp, size_t size)
 {
   if (fp == NULL)
     return true;

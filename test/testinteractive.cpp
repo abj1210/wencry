@@ -43,7 +43,7 @@ static std::string bin_path() {
 }
 
 /*
-run_bin:以脚本驱动真实 Wencry 二进制(交互式 get_v_mod1)
+run_bin:以脚本驱动真实 Wencry 二进制(交互式 getInteractiveArgs)
 script:输入脚本内容
 logfile:stdout/stderr 输出文件
 return:进程退出码(-1 表示异常)
@@ -85,7 +85,7 @@ static bool cli_encrypt(const char *in, const char *out, const char *cmode,
   return exec(13, (char **)a);
 }
 
-/* 从日志提取 printkey 打印的 24 位 base64 密钥 */
+/* 从日志提取 printKey 打印的 24 位 base64 密钥 */
 static std::string extract_key(const std::string &log) {
   auto isb64 = [](char c) {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||

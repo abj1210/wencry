@@ -8,10 +8,10 @@
 #include <time.h>
 
 /*
-getInputFilep:从输入中获取文件指针
+getInputFileName:从输入中获取文件指针
 return:获取的文件名
 */
-static std::string getInputFilep(vpak_t *pak)
+static std::string getInputFileName(vpak_t *pak)
 {
   char fn[128];
   size_t size = 0;
@@ -19,10 +19,10 @@ static std::string getInputFilep(vpak_t *pak)
   while (1)
   {
     scanf("%127s", fn);
-    fp = wencry_fopen_read(fn);
+    fp = wencryOpenRead(fn);
     if (fp != NULL)
       break;
-    strerr("Error", "File not found");
+    logError("Error", "File not found");
   }
   std::string path(fn);
   size_t pos = path.find_last_of("/\\");
@@ -35,13 +35,13 @@ static std::string getInputFilep(vpak_t *pak)
   {
     size = 0;
   }
-  strlog("File size", format_size((size_t)size));
+  logLine("File size", formatSize((size_t)size));
   pak->fp = fp;
   pak->size = size;
   return filename;
 }
 /*
-getInputFilep:从输入中获取密钥
+getInputFileName:从输入中获取密钥
 return:获取的密钥序列
 */
 static u8_t *getInputKey()
@@ -50,7 +50,7 @@ static u8_t *getInputKey()
   u8_t *keyout = new u8_t[16];
   printf("Enter 128 bits (16 bytes) key in base64 mode:\n");
   scanf("%127s", kn);
-  while (!checkB64Key(kn, keyout))
+  while (!checkBase64Key(kn, keyout))
   {
     printf("Sorry, please enter 128 bits (16 bytes) key in base64 mode:\n");
     scanf("%127s", kn);
@@ -58,47 +58,47 @@ static u8_t *getInputKey()
   return keyout;
 }
 /*
-selectCMode:选择加解密模式
+selectCryptMode:选择加解密模式
 return:选择的模式
 */
-static u8_t selectCMode(WencryInformation wif)
+static u8_t selectCryptMode(WencryInformation wif)
 {
   int c = -1;
-  printf("Select a crypt mode(%s).\n", wif.get_ctypelist().c_str());
+  printf("Select a crypt mode(%s).\n", wif.getCryptModeList().c_str());
   scanf("%d", &c);
-  while (!wif.check_ctype(c))
+  while (!wif.checkCryptMode(c))
   {
     scanf("%*[^\n]");
-    printf("Sorry, please enter a valid mode(%s).\n", wif.get_ctypelist().c_str());
+    printf("Sorry, please enter a valid mode(%s).\n", wif.getCryptModeList().c_str());
     scanf("%d", &c);
   }
-  strlog("Crypt mode", wif.get_cname(c));
+  logLine("Crypt mode", wif.getCryptModeName(c));
   return (u8_t)c;
 }
 /*
-selectHMode:选择哈希模式
+selectHashMode:选择哈希模式
 return:选择的模式
 */
-static u8_t selectHMode(WencryInformation wif)
+static u8_t selectHashMode(WencryInformation wif)
 {
   int h = -1;
-  printf("Select a hash mode(%s).\n", wif.get_htypelist().c_str());
+  printf("Select a hash mode(%s).\n", wif.getHashModeList().c_str());
   scanf("%d", &h);
-  while (!wif.check_htype(h))
+  while (!wif.checkHashMode(h))
   {
     scanf("%*[^\n]");
-    printf("Sorry, please enter a valid mode(%s).\n", wif.get_htypelist().c_str());
+    printf("Sorry, please enter a valid mode(%s).\n", wif.getHashModeList().c_str());
     scanf("%d", &h);
   }
-  strlog("Hash mode", wif.get_hname(h));
+  logLine("Hash mode", wif.getHashModeName(h));
   return (u8_t)h;
 }
 /*
 接口函数
-get_v_mod1:根据用户输入获得参数包
+getInteractiveArgs:根据用户输入获得参数包
 return:返回的参数包
 */
-u8_t *get_v_mod1()
+u8_t *getInteractiveArgs()
 {
   char flag, outn[138], decn[128];
   WencryInformation wif;
@@ -106,12 +106,12 @@ u8_t *get_v_mod1()
   res->no_echo = false;
   res->r_len = 0;
   memset(res->r_buf, 0, sizeof(res->r_buf));
-  strlog("Kernel version", wif.get_version());
-  strlog("Build time", wif.get_buildtime());
+  logLine("Kernel version", wif.getVersion());
+  logLine("Build time", wif.getBuildTime());
   printf("Need encrypt, verify , decrypt or help?(e/v/d/h) ");
   scanf("%c", &res->mode);
   printf("File name:\n");
-  std::string fname = getInputFilep(res);
+  std::string fname = getInputFileName(res);
   if (res->mode == 'e' || res->mode == 'E')
   {
     printf("Need generate a new key?(y/n) ");
@@ -121,11 +121,11 @@ u8_t *get_v_mod1()
     else
       res->key = getInputKey();
     sprintf(outn, "%s.wenc", fname.c_str());
-    strlog("Output file", outn);
-    res->out = wencry_fopen_write(outn);
-    strlog("Key", printkey(res->key));
-    res->ctype = selectCMode(wif);
-    res->htype = selectHMode(wif);
+    logLine("Output file", outn);
+    res->out = wencryOpenWrite(outn);
+    logLine("Key", printKey(res->key));
+    res->ctype = selectCryptMode(wif);
+    res->htype = selectHashMode(wif);
     if (res->ctype != 0)
     {
       printf("Please input some random characters.\n");
@@ -142,14 +142,14 @@ u8_t *get_v_mod1()
       printf("Enter new name:\n");
       scanf("%*[\n]");
       scanf("%127s", decn);
-      res->out = wencry_fopen_write(decn);
-      strlog("Output file", decn);
+      res->out = wencryOpenWrite(decn);
+      logLine("Output file", decn);
     }
     else
     {
       sprintf(outn, "%s.wdec", fname.c_str());
-      res->out = wencry_fopen_write(outn);
-      strlog("Output file", outn);
+      res->out = wencryOpenWrite(outn);
+      logLine("Output file", outn);
     }
     res->key = getInputKey();
     res->ctype = -1;
@@ -163,7 +163,7 @@ u8_t *get_v_mod1()
     res->htype = -1;
   }
   else if (res->mode == 'h')
-    std::cout << wif.get_help();
+    std::cout << wif.getHelp();
   else
     res->fp = NULL;
   return res->buf;

@@ -23,13 +23,13 @@ using namespace chrono;
   文件头辅助函数
 ################################*/
 /*
-getIV:获取初始向量(从输入)
+getIv:获取初始向量(从输入)
 r_buf:随机缓冲数组
 iv:初始向量数组
 */
-void FileHeader::getIV(const u8_t *r_buf, size_t r_len, u8_t *iv)
+void FileHeader::getIv(const u8_t *r_buf, size_t r_len, u8_t *iv)
 {
-    Hashmaster *hm = hf.getHasher(HT_SHA1);
+    HashMaster *hm = hf.getHasher(HT_SHA1);
     // r_len==0 表示调用方未显式给出长度(兼容旧接口/GUI),按 C 字符串长度处理;
     // 命令行随机缓冲路径传入 256,避免随机字节中的 0x00 截断 IV 种子。
     if (r_len == 0)
@@ -40,21 +40,21 @@ void FileHeader::getIV(const u8_t *r_buf, size_t r_len, u8_t *iv)
     delete hm;
 }
 /*
-getIV:获取初始向量(从文件)
+getIv:获取初始向量(从文件)
 fp:文件指针
 iv:初始向量数组
-注意:读取后文件指针停在 48+20*num=FILE_TEXT_MARK,解密时 prepare_AES 依赖此定位。
+注意:读取后文件指针停在 48+20*num=FILE_TEXT_MARK,解密时 prepareAes 依赖此定位。
 */
-void FileHeader::getIV(FILE *fp, u8_t *iv)
+void FileHeader::getIv(FILE *fp, u8_t *iv)
 {
     fseek(fp, FILE_IV_MARK, SEEK_SET);
     fread(iv, 1, 20 * num, fp);
 }
 /*
-getFileHeader:构造加密文件头
+writeFileHeader:构造加密文件头
 iv:初始向量数组
 */
-void FileHeader::getFileHeader(u8_t *iv)
+void FileHeader::writeFileHeader(u8_t *iv)
 {
     u8_t padding[PADDING];
     memset(padding, 0, sizeof(padding));
@@ -68,18 +68,22 @@ void FileHeader::getFileHeader(u8_t *iv)
         fwrite(iv + (20 * i), 1, 20, out);
 }
 /*
-check_header:校验 .wenc 文件头(魔数/加密模式/哈希模式)
+checkHeader:校验 .wenc 文件头(魔数/加密模式/哈希模式)
 return:0=合法,1=文件过短,3=加密/哈希模式非法,4=魔数错误
-返回值与 runcrypt::check_header 的 res 码一致,可直接透传。
+返回值与 RunCrypt::checkHeader 的 res 码一致,可直接透传。
 线程数越界(>THREAD_MAX)不在此校验,交由 checkType 回退为4线程。
 函数不改变 fp 的读写位置。
 */
-int FileHeader::check_header()
+int FileHeader::checkHeader()
 {
     if (fp == NULL)
         return 4;
     long pos = ftell(fp);
-    rewind(fp);
+    if (fseek(fp, 0, SEEK_SET) != 0)
+    {
+      fseek(fp, pos, SEEK_SET);
+      return 4;
+    }
     u8_t hdr[48];
     size_t rd = fread(hdr, 1, sizeof(hdr), fp);
     fseek(fp, pos, SEEK_SET);
@@ -96,15 +100,15 @@ int FileHeader::check_header()
 }
 
 /*
-write_hmac:把已计算的HMAC写入输出文件指定偏移(文件头HMAC区)
-hmac:HMAC摘要地址
+writeHmac:把已计算的HMAC写入输出文件指定偏移(文件头HMAC区)
+Hmac:HMAC摘要地址
 hsize:摘要长度(字节)
 writeMark:写入偏移(通常为 FILE_HMAC_MARK)
 注意:写入目标为 out 文件指针,且只移动 out 的读写位置。
 */
-void FileHeader::write_hmac(u8_t *hmac, size_t hsize, u8_t writeMark){
+void FileHeader::writeHmac(u8_t *Hmac, size_t hsize, u8_t writeMark){
     fseek(out, writeMark, SEEK_SET);
-    fwrite(hmac, 1, hsize, out);
+    fwrite(Hmac, 1, hsize, out);
 }
 /*
 checkType:检查加密和哈希模式,并读取文件头记录的线程数
@@ -119,16 +123,16 @@ void FileHeader::checkType()
     u8_t fn = 0;
     fseek(fp, 47, SEEK_SET);
     // 线程数必须落在 [1, THREAD_MAX] 内,否则回退为4。
-    // 不校验上限会让解密路径使用任意大的 num:getIV 读 20*num 字节越过 iv 缓冲、
-    // run_multicry 越界写 threads[THREAD_MAX] 数组,导致堆/栈破坏。
-    if (fread(&fn, 1, 1, fp) == 1 && fn != 0 && fn <= multicry_master::THREAD_MAX)
+    // 不校验上限会让解密路径使用任意大的 num:getIv 读 20*num 字节越过 iv 缓冲、
+    // runMulticry 越界写 threads[THREAD_MAX] 数组,导致堆/栈破坏。
+    if (fread(&fn, 1, 1, fp) == 1 && fn != 0 && fn <= MulticryMaster::THREAD_MAX)
         num = fn;
     else
         num = 4;
 }
 /*
 getHmac:获得HMAC
-len:hmac长度(应与htype对应:16/20/32)
+len:Hmac长度(应与htype对应:16/20/32)
 return:HMAC地址(不足len字节返回NULL)
 */
 u8_t *FileHeader::getHmac(u8_t len)

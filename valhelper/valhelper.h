@@ -42,35 +42,35 @@ WencryInformation:程序信息与参数校验类
 */
 class WencryInformation{
     std::string description; // 帮助/说明文本(版本、编译时间与帮助信息)
-    std::string get_typelist(int count, const char *(*name)(u8_t));
+    std::string getTypeList(int count, const char *(*name)(u8_t));
 public:
     WencryInformation();
-    std::string get_ctypelist();
-    std::string get_htypelist();
-    bool check_ctype(int ctype_num);
-    bool check_htype(int htype_num);
-    std::string get_cname(int ctype_num);
-    std::string get_hname(int htype_num);
-    int get_cname_num();
-    int get_hname_num();
-    std::string get_version();
-    std::string get_buildtime();
-    std::string get_help();
+    std::string getCryptModeList();
+    std::string getHashModeList();
+    bool checkCryptMode(int ctype_num);
+    bool checkHashMode(int htype_num);
+    std::string getCryptModeName(int ctype_num);
+    std::string getHashModeName(int htype_num);
+    int getCryptModeCount();
+    int getHashModeCount();
+    std::string getVersion();
+    std::string getBuildTime();
+    std::string getHelp();
 };
 
 /*
-printkey:将16字节密钥转为base64字符串
+printKey:将16字节密钥转为base64字符串
 key:16字节密钥
 return:base64编码后的密钥串(24字符)
 */
-std::string printkey(u8_t *key);
+std::string printKey(u8_t *key);
 /*
-checkB64Key:校验base64密钥串并解码为16字节
+checkBase64Key:校验base64密钥串并解码为16字节
 b64key:base64输入串(24字符)
 key:解码输出的16字节密钥
 return:合法且可解码为16字节返回true,否则false
 */
-bool checkB64Key(const u8_t* b64key, u8_t *key);
+bool checkBase64Key(const u8_t* b64key, u8_t *key);
 /*
 getRandomKey:生成随机16字节密钥
 return:新分配的随机密钥
@@ -89,24 +89,24 @@ return:0=加密,1=解密,2=验证,其余=-1
 int getProcessMode(char mode);
 
 /*
-wencry_fopen_read:以"二进制读 + 顺序访问提示"打开输入文件
+wencryOpenRead:以"二进制读 + 顺序访问提示"打开输入文件
 path:文件路径
 return:文件指针(失败返回NULL)
 Windows 用 _O_SEQUENTIAL(对应 FILE_FLAG_SEQUENTIAL_SCAN),Linux 用 posix_fadvise(POSIX_FADV_SEQUENTIAL)。
 */
-FILE *wencry_fopen_read(const char *path);
+FILE *wencryOpenRead(const char *path);
 /*
-wencry_fopen_write:以"二进制写 + 顺序访问提示"打开输出文件
+wencryOpenWrite:以"二进制写 + 顺序访问提示"打开输出文件
 path:文件路径
 return:文件指针(失败返回NULL)
 */
-FILE *wencry_fopen_write(const char *path);
+FILE *wencryOpenWrite(const char *path);
 /*
-wencry_preallocate:把已打开文件设置到指定大小(增长=预留空间,缩小=截断)
+wencryPreallocate:把已打开文件设置到指定大小(增长=预留空间,缩小=截断)
 fp:文件指针(写打开)
 size:目标字节数
 return:成功返回true,失败返回false(失败不致命,调用方可继续流式写)
 Windows 用 SetFilePointerEx + SetEndOfFile(仅设长度、不写零),Linux 用 ftruncate。
 */
-bool wencry_preallocate(FILE *fp, size_t size);
+bool wencryPreallocate(FILE *fp, size_t size);
 #endif

@@ -21,7 +21,7 @@
         写线程写完 total_chunks 个 chunk 后退出。
   同步:单一 mtx + 单一 cv(所有状态变更 notify_all,等待方用谓词自旋);fread/fwrite 在锁外执行。
   背压:工作池+已处理池总在途块数达到 WORK_PROCESSED_MAX 时读线程阻塞。
-  内存回收:读取完成后,写线程不再归还空闲池而直接释放并清空空闲池,内存随流水线结束收敛;del_instance 兜底释放。
+  内存回收:读取完成后,写线程不再归还空闲池而直接释放并清空空闲池,内存随流水线结束收敛;delInstance 兜底释放。
   死锁安全:流水线为读->工作->写单向 DAG,各线程等待的是下游进展,无环。
 ################################*/
 
@@ -31,14 +31,14 @@
   缓冲组管理
 ################################*/
 
-buffergroup *buffergroup::instance = NULL;
-std::mutex buffergroup::mtx_singleton;
+BufferGroup *BufferGroup::instance = NULL;
+std::mutex BufferGroup::mtx_singleton;
 
 /*
-steady_us:steady_clock 微秒时间戳(用于空闲池超时判定)
+steadyUs:steady_clock 微秒时间戳(用于空闲池超时判定)
 return:自进程启动以来的微秒数
 */
-u64_t buffergroup::steady_us()
+u64_t BufferGroup::steadyUs()
 {
   return (u64_t)std::chrono::duration_cast<std::chrono::microseconds>(
              std::chrono::steady_clock::now().time_since_epoch())
@@ -46,23 +46,23 @@ u64_t buffergroup::steady_us()
 }
 
 /*
-get_instance:获取单例实例(双重检查锁定,线程安全)
-return:全局唯一的 buffergroup 实例
+getInstance:获取单例实例(双重检查锁定,线程安全)
+return:全局唯一的 BufferGroup 实例
 */
-buffergroup *buffergroup::get_instance()
+BufferGroup *BufferGroup::getInstance()
 {
   if (instance == NULL)
   {
     std::lock_guard<std::mutex> lock(mtx_singleton);
     if (instance == NULL)
-      instance = new buffergroup();
+      instance = new BufferGroup();
   }
   return instance;
 };
 /*
-del_instance:删除实例(兜底释放所有池内 buffer)
+delInstance:删除实例(兜底释放所有池内 buffer)
 */
-void buffergroup::del_instance()
+void BufferGroup::delInstance()
 {
   if (instance != NULL)
   {
@@ -76,26 +76,26 @@ void buffergroup::del_instance()
   }
 };
 /*
-set_buffergroup:设置缓冲区组选项与流水线模式
+setBufferGroup:设置缓冲区组选项与流水线模式
 total_threads:工作线程数
 fin:输入文件
 fout:输出文件(验证模式可为NULL)
 mode:流水线模式(加密/解密/验证)
 */
-void buffergroup::set_buffergroup(u32_t total_threads, pipe_mode mode)
+void BufferGroup::setBufferGroup(u32_t total_threads, pipe_mode mode)
 {
   std::lock_guard<std::mutex> lock(mtx);
   this->total_threads = total_threads;
   this->mode = mode;
   this->total_chunks = 0;
   this->read_done = false;
-  sweep_idle_locked();
+  sweepIdlePool();
   for (auto &kv : work_pool)
-    release_buffer(kv.second);
+    releaseBuffer(kv.second);
   work_pool.clear();
   while (!processed_pool.empty())
   {
-    release_buffer(processed_pool.top());
+    releaseBuffer(processed_pool.top());
     processed_pool.pop();
   }
   SCHED_LOG("?", "RUN_START", -1, -1,
@@ -107,90 +107,145 @@ void buffergroup::set_buffergroup(u32_t total_threads, pipe_mode mode)
 /*################################
   加锁辅助函数(均要求持有 mtx)
 ################################*/
+
 /*
-has_claimable_locked:工作池中是否有特定序号的缓冲
-seq_next:指定的序号
-return:若有，返回true
+acquireIdleBuffer:从空闲池取一个空 buffer(空则 new),标记 claimed 后返回
+return:待装载的空 buffer
 */
-bool buffergroup::has_claimable_locked(const u64_t seq_next) const
+IoBuffer *BufferGroup::acquireIdleBuffer()
 {
-  return work_pool.find(seq_next) != work_pool.end();
-}
-/*
-claim_locked:领取工作线程中特定序号的缓冲
-thread_id:工作线程标号
-return:领取到的 buffer;无则返回 NULL(退出哨兵)
-*/
-iobuffer *buffergroup::claim_locked(const u64_t seq_next)
-{
-  auto kv = work_pool.find(seq_next);
-  if(kv == work_pool.end()) 
-    return NULL;
+  IoBuffer *buf;
+  if (idle_pool.empty())
+  {
+    SCHED_LOG(g_sched_role, "BUF_NEW_PRE", -1, -1, "",
+              (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+    buf = new IoBuffer;
+    idle_pool.push_back(buf); // 新分配的 buffer 也计入空闲池
+  }
   else
-    return kv->second;
+  {
+    buf = idle_pool.front();
+  }
+  buf->claimed = true; // 认领后仍留在空闲池中
+  SCHED_LOG(g_sched_role, "POP_IDLE_PRE", buf->id, buf->seq, "EMPTY",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  return buf;
 }
+
 /*
-worker_pending_locked:本线程是否仍有未处理完的块
-thread_id:工作线程标号
-return:若有，返回true
+registerLoadedChunk:把已装载的 buffer 注册进工作池(LOADED)
+buf:刚装载完成的 buffer
+next:本块全局序号
 */
-bool buffergroup::worker_pending_locked(const u8_t thread_id) const
+void BufferGroup::registerLoadedChunk(IoBuffer *buf, const u64_t next)
+{
+  buf->seq = next;
+  SCHED_LOG(g_sched_role, "LOADED_PRE", buf->id, buf->seq, "LOADING",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  work_pool[next] = buf;
+  SCHED_LOG(g_sched_role, "LOADED", buf->id, buf->seq, "LOADED",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+}
+
+/*
+workerHasPendingChunk:判断本线程名下是否仍有未处理的 LOADED 块
+thread_id:工作线程标号
+return:有则返回 true
+*/
+bool BufferGroup::workerHasPendingChunk(const u8_t thread_id) const
 {
   for (auto &kv : work_pool)
   {
-    iobuffer *b = kv.second;
-    if (b->seq % total_threads == thread_id)
+    if (kv.second->seq % total_threads == thread_id)
       return true;
   }
   return false;
 }
 
 /*
-chunk_ready_locked:指定序号的块是否位于已处理池的堆顶(用于同步写入顺序)
-seq:块序号
-return:该块存在返回 true
+loadedChunkReady:本线程是否可领取 next 块(该块已入工作池,或读结束且本线程无剩余块)
+next:块序号;thread_id:工作线程标号
 */
-bool buffergroup::chunk_ready_locked(const u64_t seq) const
+bool BufferGroup::loadedChunkReady(const u64_t next, const u8_t thread_id) const
 {
-  if(processed_pool.empty())
-    return false;
-  iobuffer * buf = processed_pool.top();
-  return buf->seq == seq;
+  return (work_pool.find(next) != work_pool.end()) ||
+         (read_done && !workerHasPendingChunk(thread_id));
 }
+
 /*
-claim_processed:领取已处理池中的堆顶缓冲
-return:堆顶缓冲
+hasInFlightCapacity:工作池与已处理池的在途块数是否低于上限(读线程背压)
 */
-iobuffer *buffergroup::claim_processed(){
-  if(processed_pool.empty())
-    return NULL;
-  return processed_pool.top();
+bool BufferGroup::hasInFlightCapacity() const
+{
+  return (work_pool.size() + processed_pool.size()) < WORK_PROCESSED_MAX;
 }
+
 /*
-recycle_locked:回收已消费的 buffer
+processedChunkReady:待写块 next 是否就绪(已位于已处理池堆顶,或读结束且无更多块)
+next:块序号
+*/
+bool BufferGroup::processedChunkReady(const u64_t next) const
+{
+  return (!processed_pool.empty() && processed_pool.top()->seq == next) ||
+         (read_done && next == total_chunks);
+}
+
+/*
+promoteToProcessed:工作线程处理完成后,把 buffer 从工作池移到已处理池
+buf:刚处理完成的 buffer
+*/
+void BufferGroup::promoteToProcessed(IoBuffer *buf)
+{
+  SCHED_LOG(g_sched_role, "POP_WORK_PRE", buf->id, buf->seq, "CLAIMED",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  work_pool.erase(buf->seq);
+  SCHED_LOG(g_sched_role, "POP_WORK", buf->id, buf->seq, "POP_WORK",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  SCHED_LOG(g_sched_role, "PROCESSED_PRE", buf->id, buf->seq, "PROCESSING",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  processed_pool.push(buf);
+  SCHED_LOG(g_sched_role, "PROCESSED", buf->id, buf->seq, "PROCESSED",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+}
+
+/*
+popProcessed:写线程写出后,把 buffer 从已处理池移除
+buf:已写出的 buffer
+*/
+void BufferGroup::popProcessed(IoBuffer *buf)
+{
+  SCHED_LOG(g_sched_role, "POP_PROCESSED_PRE", buf->id, buf->seq, "PROCESSED",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  processed_pool.pop();
+  SCHED_LOG(g_sched_role, "POP_PROCESSED", buf->id, buf->seq, "PROCESSED",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+}
+
+/*
+recycleClearedBuffer:回收已写出的 buffer
 buf:待回收 buffer
 读取完成后(read_done)不再复用,直接释放并清空空闲池;
 读取进行中则淘汰空闲超时的 buffer,空闲池满则释放本 buffer,否则置 EMPTY 归还空闲池。
 */
-void buffergroup::recycle_locked(iobuffer *buf)
+void BufferGroup::recycleClearedBuffer(IoBuffer *buf)
 {
   if (read_done)
   {
-    release_buffer(buf);
-    sweep_idle_locked();
+    releaseBuffer(buf);
+    sweepIdlePool();
     return;
   }
-  u64_t now = steady_us();
+  u64_t now = steadyUs();
   while (!idle_pool.empty() && (now - idle_pool.front()->idle_ts) > (u64_t)IDLE_TIMEOUT_MS * 1000ULL)
   {
     if(idle_pool.front()->claimed)
       break;
-    release_buffer(idle_pool.front());
+    releaseBuffer(idle_pool.front());
     idle_pool.pop_front();
   }
   if ((u32_t)idle_pool.size() >= IDLE_POOL_MAX)
   {
-    release_buffer(buf);
+    releaseBuffer(buf);
     return;
   }
   SCHED_LOG(g_sched_role, "EMPTY_PRE", buf->id, buf->seq, "PROCESSED",
@@ -200,26 +255,27 @@ void buffergroup::recycle_locked(iobuffer *buf)
   SCHED_LOG(g_sched_role, "EMPTY", buf->id, buf->seq, "EMPTY",
             (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
 }
+
 /*
-sweep_idle_locked:清空空闲池(释放全部空 buffer)
+sweepIdlePool:清空空闲池(释放全部空 buffer)
 */
-void buffergroup::sweep_idle_locked()
+void BufferGroup::sweepIdlePool()
 {
   if (!idle_pool.empty())
   {
     SCHED_LOG(g_sched_role, "SWEEP_PRE", -1, -1, "", (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
     for (auto *b : idle_pool)
-      release_buffer(b);
+      releaseBuffer(b);
     idle_pool.clear();
     SCHED_LOG(g_sched_role, "SWEEP", -1, -1, "", (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
   }
 }
 
 /*
-release_buffer:释放一个 buffer,记录释放前后的内存追踪事件
+releaseBuffer:释放一个 buffer,记录释放前后的内存追踪事件
 buf:待释放 buffer
 */
-void buffergroup::release_buffer(iobuffer *buf)
+void BufferGroup::releaseBuffer(IoBuffer *buf)
 {
   u64_t id = buf->id;
   u64_t seq = buf->seq;
@@ -232,83 +288,56 @@ void buffergroup::release_buffer(iobuffer *buf)
   工作线程接口
 ################################*/
 /*
-wait_loaded:等待一个属于本线程的可领取块并领取
+waitLoadedBuffer:等待一个属于本线程的可领取块并领取
 thread_id:工作线程标号
 next:期望领取的缓冲区序号
 return:领取到的 buffer;无任务返回 NULL 哨兵
 */
-iobuffer *buffergroup::wait_loaded_buffer(const u8_t thread_id, const u64_t next)
+IoBuffer *BufferGroup::waitLoadedBuffer(const u8_t thread_id, const u64_t next)
 {
   std::unique_lock<std::mutex> locker(mtx);
-  cv.wait(locker, [&] {
-    return (has_claimable_locked(next) || (read_done && !worker_pending_locked(thread_id)));
-  });
-  return claim_locked(next);
+  cv.wait(locker, [&] { return loadedChunkReady(next, thread_id); });
+  auto kv = work_pool.find(next);
+  return kv == work_pool.end() ? NULL : kv->second;
 }
 
 /*
-finish_processing:工作线程将处理完成的缓冲区从工作池移动到已处理池，并返回下一个期望的缓冲序号
+finishProcessing:工作线程将处理完成的缓冲区从工作池移动到已处理池,并返回下一个期望序号
 buffer:处理完成的缓冲
 return:下一个期望的缓冲序号
-先将缓冲从工作池中移除，并将其加入已处理池进行排序。
 */
-u64_t buffergroup::finish_processing(iobuffer *buffer)
+u64_t BufferGroup::finishProcessing(IoBuffer *buffer)
 {
   std::unique_lock<std::mutex> locker(mtx);
-  SCHED_LOG(g_sched_role, "POP_WORK_PRE", buffer->id, buffer->seq, "CLAIMED",
-            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-  work_pool.erase(buffer->seq);
-  SCHED_LOG(g_sched_role, "POP_WORK", buffer->id, buffer->seq, "POP_WORK",
-              (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-  SCHED_LOG(g_sched_role, "PROCESSED_PRE", buffer->id, buffer->seq, "PROCESSING",
-            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-  processed_pool.push(buffer);
-  SCHED_LOG(g_sched_role, "PROCESSED", buffer->id, buffer->seq, "PROCESSED",
-            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  promoteToProcessed(buffer);
   u64_t next = buffer->seq + total_threads;
   cv.notify_all();
-  return next; 
+  return next;
 }
 
 /*
-wait_cleared_buffer:读线程获取一个空闲 buffer(空闲池空则动态 new)
-return:空闲 buffer
+waitClearedBuffer:读线程获取一个空闲 buffer
+return:空闲 buffer(读取结束后返回 NULL)
 */
-iobuffer *buffergroup::wait_cleared_buffer(){
+IoBuffer *BufferGroup::waitClearedBuffer()
+{
   std::unique_lock<std::mutex> locker(mtx);
-  if(read_done)
+  if (read_done)
     return NULL;
-  iobuffer *buf;
-  if (idle_pool.empty()){
-    SCHED_LOG(g_sched_role, "BUF_NEW_PRE", -1, -1, "",
-              (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-    buf = new iobuffer;
-    idle_pool.push_back(buf); // 新分配的 buffer 也计入空闲池
-  }else{
-    buf = idle_pool.front();
-  }
-  buf->claimed = true; // 认领后仍留在空闲池中
-  SCHED_LOG(g_sched_role, "POP_IDLE_PRE", buf->id, buf->seq, "EMPTY",
-            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-  return buf;
+  return acquireIdleBuffer();
 }
 
 /*
-finish_loading:读线程装入完成后把 buffer 注册进工作池
+finishLoading:读线程装入完成后把 buffer 注册进工作池
 buffer:刚装入的 buffer
 ls:装载状态(FULL/FINAL/NODATA)
 next:本块全局序号
 return:true 表示已读到末尾(FINAL/NODATA),读线程应退出;false 继续读
-FULL:置 LOADED 入工作池;FINAL:入工作池并记录 total_chunks = next+1;
-NODATA:空 buffer 直接释放,total_chunks = next。
-总在途块数(work_pool + processed_pool)达到 WORK_PROCESSED_MAX 时阻塞,实现有界背压。
 */
-bool buffergroup::finish_loading(iobuffer *buffer, const loadstate_t ls, const u64_t next){
+bool BufferGroup::finishLoading(IoBuffer *buffer, const loadstate_t ls, const u64_t next)
+{
   std::unique_lock<std::mutex> locker(mtx);
-  cv.wait(locker, [&] {
-    return (work_pool.size() + processed_pool.size()) < WORK_PROCESSED_MAX;
-  });
-  // 从空闲池取出被认领的 buffer
+  cv.wait(locker, [&] { return hasInFlightCapacity(); });
   if (!idle_pool.empty() && idle_pool.front() == buffer)
     idle_pool.pop_front();
   buffer->claimed = false;
@@ -316,67 +345,52 @@ bool buffergroup::finish_loading(iobuffer *buffer, const loadstate_t ls, const u
             (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
   if (ls == FULL)
   {
-    buffer->seq = next;
-    SCHED_LOG(g_sched_role, "LOADED_PRE", buffer->id, buffer->seq, "LOADING",
-              (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-    work_pool[next] = buffer;
-    SCHED_LOG(g_sched_role, "LOADED", buffer->id, buffer->seq, "LOADED",
-              (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+    registerLoadedChunk(buffer, next);
     cv.notify_all();
     return false;
   }
+  if (ls == FINAL)
+  {
+    registerLoadedChunk(buffer, next);
+    total_chunks = next + 1;
+  }
   else
   {
-    // FINAL:最后一个数据块(含填充); NODATA:无数据
-    if (ls == FINAL)
-    {
-      buffer->seq = next;
-      SCHED_LOG(g_sched_role, "LOADED_PRE", buffer->id, buffer->seq, "LOADING",
-                (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-      work_pool[next] = buffer;
-      total_chunks = next + 1; // 已装入块号为 next,块总数 = next + 1
-      SCHED_LOG(g_sched_role, "LOADED", buffer->id, buffer->seq, "LOADED",
-                (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-    }
-    else
-    {
-      release_buffer(buffer); // NODATA:空缓冲直接释放
-      total_chunks = next; // 未装入新块,块总数 = next
-    }
-    read_done = true;
-    SCHED_LOG(g_sched_role, "READ_DONE", -1, (long long)next, "", (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-    cv.notify_all();
-    return true;
+    releaseBuffer(buffer);
+    total_chunks = next;
   }
+  read_done = true;
+  SCHED_LOG(g_sched_role, "READ_DONE", -1, (long long)next, "",
+            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
+  cv.notify_all();
+  return true;
 }
 
 /*
-wait_processed_buffer:写线程等待指定序号的块进入可写状态
+waitProcessedBuffer:写线程等待指定序号的块进入可写状态
 next:块序号
 return:该块 buffer;读取完成且无更多块返回 NULL(退出哨兵)
 */
-iobuffer *buffergroup::wait_processed_buffer(const u64_t next){
+IoBuffer *BufferGroup::waitProcessedBuffer(const u64_t next)
+{
   std::unique_lock<std::mutex> locker(mtx);
-  cv.wait(locker, [&] { return chunk_ready_locked(next) || (read_done && next == total_chunks); });
+  cv.wait(locker, [&] { return processedChunkReady(next); });
   if (read_done && next == total_chunks)
   {
-    sweep_idle_locked(); // 兜底:读取完成后清空空闲池
+    sweepIdlePool();
     return NULL;
   }
-  return claim_processed();
+  return processed_pool.top();
 }
 
 /*
-finish_clearing:写线程写出一个块后,从工作池移除并回收
+finishClearing:写线程写出一个块后,从已处理池移除并回收
 buffer:已写出的块
 */
-void buffergroup::finish_clearing(iobuffer *buffer){
+void BufferGroup::finishClearing(IoBuffer *buffer)
+{
   std::unique_lock<std::mutex> locker(mtx);
-  SCHED_LOG(g_sched_role, "POP_PROCESSED_PRE", buffer->id, buffer->seq, "PROCESSED",
-            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-  processed_pool.pop();
-  SCHED_LOG(g_sched_role, "POP_PROCESSED", buffer->id, buffer->seq, "PROCESSED",
-            (int)work_pool.size(), (int)idle_pool.size(), (int)processed_pool.size());
-  recycle_locked(buffer);
+  popProcessed(buffer);
+  recycleClearedBuffer(buffer);
   cv.notify_all();
 }

@@ -16,7 +16,7 @@ leaf_hmac:为第 blk_id 块计算叶子摘要
 */
 static std::vector<u8_t> leaf_hmac(u8_t hashtype, size_t blk_id)
 {
-  hmac h;
+  Hmac h;
   u8_t prefix[1 + 8];
   prefix[0] = 'L';
   for (int i = 0; i < 8; ++i)
@@ -27,12 +27,12 @@ static std::vector<u8_t> leaf_hmac(u8_t hashtype, size_t blk_id)
     data[i] = (u8_t)(blk_id * 31u + (size_t)i);
 
   HashFactory hf;
-  Hashmaster *probe = hf.getHasher(HashFactory::getType(hashtype));
-  size_t hs = probe->gethlen();
+  HashMaster *probe = hf.getHasher(HashFactory::getType(hashtype));
+  size_t hs = probe->getHashLength();
   delete probe;
 
   std::vector<u8_t> out(hs);
-  h.gethmac(hashtype, (u8_t *)key, data, out.data(), sizeof(data), prefix, sizeof(prefix));
+  h.getHmac(hashtype, (u8_t *)key, data, out.data(), sizeof(data), prefix, sizeof(prefix));
   return out;
 }
 
@@ -45,8 +45,8 @@ static std::vector<u8_t> reference_root(u8_t hashtype,
                                         const std::vector<std::vector<u8_t>> &leaves)
 {
   HashFactory hf;
-  Hashmaster *hm = hf.getHasher(HashFactory::getType(hashtype));
-  size_t hs = hm->gethlen();
+  HashMaster *hm = hf.getHasher(HashFactory::getType(hashtype));
+  size_t hs = hm->getHashLength();
 
   std::vector<std::vector<u8_t>> level = leaves;
   while (level.size() > 1)
@@ -88,11 +88,11 @@ static void run_case(u8_t hashtype, size_t nblocks)
   // 顺序插入
   {
     MerkleTreeMaster mt;
-    mt.set_hashtype(hashtype);
+    mt.setHashType(hashtype);
     for (size_t i = 0; i < nblocks; ++i)
-      mt.add_block_hmac(i, leaves[i].data());
+      mt.addBlockHmac(i, leaves[i].data());
     std::vector<u8_t> top(hs);
-    size_t cnt = mt.get_top_hash(top.data());
+    size_t cnt = mt.getTopHash(top.data());
     EXPECT_EQ(cnt, nblocks);
     EXPECT_EQ(top, ref);
   }
@@ -100,11 +100,11 @@ static void run_case(u8_t hashtype, size_t nblocks)
   // 逆序插入(验证 sync_queue 的乱序处理)
   {
     MerkleTreeMaster mt;
-    mt.set_hashtype(hashtype);
+    mt.setHashType(hashtype);
     for (size_t i = nblocks; i-- > 0;)
-      mt.add_block_hmac(i, leaves[i].data());
+      mt.addBlockHmac(i, leaves[i].data());
     std::vector<u8_t> top(hs);
-    size_t cnt = mt.get_top_hash(top.data());
+    size_t cnt = mt.getTopHash(top.data());
     EXPECT_EQ(cnt, nblocks);
     EXPECT_EQ(top, ref);
   }
@@ -125,14 +125,14 @@ TEST(MerkleTreeMaster, sha256) {
     run_case(HT_SHA256, n);
 }
 
-/* get_leaf_prefix:校验叶子域分离前缀的字节布局 "L"+8字节小端块号 */
+/* getLeafPrefix:校验叶子域分离前缀的字节布局 "L"+8字节小端块号 */
 TEST(MerkleTreeMaster, LeafPrefixLayout) {
   MerkleTreeMaster mt;
-  mt.set_hashtype(HT_SHA256);
-  EXPECT_EQ(mt.get_prefix_len(), 9u);
+  mt.setHashType(HT_SHA256);
+  EXPECT_EQ(mt.getPrefixLen(), 9u);
 
   u8_t out[9];
-  mt.get_leaf_prefix(0x12345678, out);
+  mt.getLeafPrefix(0x12345678, out);
   EXPECT_EQ(out[0], 'L');
   EXPECT_EQ(out[1], 0x78);
   EXPECT_EQ(out[2], 0x56);
@@ -142,16 +142,16 @@ TEST(MerkleTreeMaster, LeafPrefixLayout) {
     EXPECT_EQ(out[i], 0);
 }
 
-/* get_root_prefix:校验根前缀布局 "R"+8字节小端块数+各线程IV */
+/* getRootPrefix:校验根前缀布局 "R"+8字节小端块数+各线程IV */
 TEST(MerkleTreeMaster, RootPrefixLayout) {
   MerkleTreeMaster mt;
-  mt.set_hashtype(HT_SHA1);
+  mt.setHashType(HT_SHA1);
 
   u8_t iv[40];
   for (int i = 0; i < 40; ++i)
     iv[i] = (u8_t)(i + 1);
 
-  u8_t *p = mt.get_root_prefix(0x01020304, iv, 2);
+  u8_t *p = mt.getRootPrefix(0x01020304, iv, 2);
   ASSERT_NE(p, nullptr);
   EXPECT_EQ(p[0], 'R');
   EXPECT_EQ(p[1], 0x04);
@@ -163,20 +163,20 @@ TEST(MerkleTreeMaster, RootPrefixLayout) {
   EXPECT_EQ(std::memcmp(p + 9, iv, 40), 0);
 }
 
-/* set_hashtype/get_hash_size:不同哈希类型返回正确摘要长度,重复设置不崩溃 */
+/* setHashType/getHashSize:不同哈希类型返回正确摘要长度,重复设置不崩溃 */
 TEST(MerkleTreeMaster, HashtypeAndHashSize) {
   MerkleTreeMaster mt;
-  mt.set_hashtype(HT_SHA1);
-  EXPECT_EQ(mt.get_hash_size(), 20u);
-  mt.set_hashtype(HT_MD5);
-  EXPECT_EQ(mt.get_hash_size(), 16u);
-  mt.set_hashtype(HT_SHA256);
-  EXPECT_EQ(mt.get_hash_size(), 32u);
-  mt.set_hashtype(HT_SHA1);
-  EXPECT_EQ(mt.get_hash_size(), 20u);
+  mt.setHashType(HT_SHA1);
+  EXPECT_EQ(mt.getHashSize(), 20u);
+  mt.setHashType(HT_MD5);
+  EXPECT_EQ(mt.getHashSize(), 16u);
+  mt.setHashType(HT_SHA256);
+  EXPECT_EQ(mt.getHashSize(), 32u);
+  mt.setHashType(HT_SHA1);
+  EXPECT_EQ(mt.getHashSize(), 20u);
 }
 
-/* hmac 一次性缓冲区重载:前缀改变结果、结果可复现、match_result 显式缓冲区路径 */
+/* Hmac 一次性缓冲区重载:前缀改变结果、结果可复现、matchResult 显式缓冲区路径 */
 TEST(Hmac, BufferGethmacPrefixAndMatch) {
   u8_t data[16];
   for (int i = 0; i < 16; ++i)
@@ -188,36 +188,36 @@ TEST(Hmac, BufferGethmacPrefixAndMatch) {
 
   u8_t no_prefix[32], with_prefix[32], with_prefix2[32];
 
-  hmac h;
-  h.gethmac(HT_SHA256, (u8_t *)key, data, no_prefix, sizeof(data), NULL, 0);
-  hmac h2;
-  h2.gethmac(HT_SHA256, (u8_t *)key, data, with_prefix, sizeof(data), prefix, sizeof(prefix));
-  hmac h3;
-  h3.gethmac(HT_SHA256, (u8_t *)key, data, with_prefix2, sizeof(data), prefix, sizeof(prefix));
+  Hmac h;
+  h.getHmac(HT_SHA256, (u8_t *)key, data, no_prefix, sizeof(data), NULL, 0);
+  Hmac h2;
+  h2.getHmac(HT_SHA256, (u8_t *)key, data, with_prefix, sizeof(data), prefix, sizeof(prefix));
+  Hmac h3;
+  h3.getHmac(HT_SHA256, (u8_t *)key, data, with_prefix2, sizeof(data), prefix, sizeof(prefix));
 
   EXPECT_NE(std::memcmp(no_prefix, with_prefix, 32), 0);
   EXPECT_EQ(std::memcmp(with_prefix, with_prefix2, 32), 0);
 
-  // match_result 的显式缓冲区参数版本
-  EXPECT_TRUE(h3.match_result(with_prefix, 32, with_prefix2));
-  EXPECT_FALSE(h3.match_result(no_prefix, 32, with_prefix2));
-  EXPECT_FALSE(h3.match_result(with_prefix, 20, with_prefix2));
+  // matchResult 的显式缓冲区参数版本
+  EXPECT_TRUE(h3.matchResult(with_prefix, 32, with_prefix2));
+  EXPECT_FALSE(h3.matchResult(no_prefix, 32, with_prefix2));
+  EXPECT_FALSE(h3.matchResult(with_prefix, 20, with_prefix2));
 }
 
-/* FileHeader::write_hmac:写入输出文件指定偏移并读回校验 */
+/* FileHeader::writeHmac:写入输出文件指定偏移并读回校验 */
 TEST(FileHeader, WriteHmac) {
   char fname[512];
   make_tmp_name(fname, sizeof(fname), "fh");
 
-  u8_t hmac[20];
+  u8_t Hmac[20];
   for (int i = 0; i < 20; ++i)
-    hmac[i] = (u8_t)(i * 3);
+    Hmac[i] = (u8_t)(i * 3);
 
   {
     FILE *out = fopen(fname, "wb+");
     ASSERT_NE(out, nullptr);
     FileHeader fh(nullptr, out, (u8_t *)key, 4);
-    fh.write_hmac(hmac, sizeof(hmac), 10); // 10 = FILE_HMAC_MARK
+    fh.writeHmac(Hmac, sizeof(Hmac), 10); // 10 = FILE_HMAC_MARK
     fclose(out);
   }
 
@@ -230,7 +230,7 @@ TEST(FileHeader, WriteHmac) {
   remove(fname);
 
   ASSERT_EQ(rd, 20u);
-  EXPECT_EQ(std::memcmp(readback, hmac, 20), 0);
+  EXPECT_EQ(std::memcmp(readback, Hmac, 20), 0);
 }
 
 int main(int argc, char **argv) {

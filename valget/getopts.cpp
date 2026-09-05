@@ -47,7 +47,7 @@ mode:模式
 */
 static void printCryptMode(u8_t mode, WencryInformation wif)
 {
-    strlog("Crypt mode", std::to_string(mode) + "/" + wif.get_cname(mode));
+    logLine("Crypt mode", std::to_string(mode) + "/" + wif.getCryptModeName(mode));
 }
 /*
 printCryptMode:打印Hash模式
@@ -55,15 +55,15 @@ mode:模式
 */
 static void printHashMode(u8_t mode, WencryInformation wif)
 {
-    strlog("Hash mode", std::to_string(mode) + "/" + wif.get_hname(mode));
+    logLine("Hash mode", std::to_string(mode) + "/" + wif.getHashModeName(mode));
 }
 /*
-parseOpts:解析选项
+parseOptions:解析选项
 c:选项字符
 res:参数包指针
 return:是否解析成功
 */
-bool parseOpts(char c, vpak_t *res, std::string &fout)
+bool parseOptions(char c, vpak_t *res, std::string &fout)
 {
     size_t fsize = 0;
     switch (c)
@@ -73,7 +73,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
             res->mode = 'e';
         else
         {
-            strerr("Error", "Only one mode can be specified");
+            logError("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -82,7 +82,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
             res->mode = 'd';
         else
         {
-            strerr("Error", "Only one mode can be specified");
+            logError("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -91,18 +91,18 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
             res->mode = 'v';
         else
         {
-            strerr("Error", "Only one mode can be specified");
+            logError("Error", "Only one mode can be specified");
             return false;
         }
         break;
     case 'i':
-        res->fp = wencry_fopen_read(optarg);
+        res->fp = wencryOpenRead(optarg);
         fout = std::string(optarg) + ".wenc";
         try
         {
             auto fileSize = std::filesystem::file_size(optarg);
             fsize = fileSize;
-            strlog("File size", format_size((size_t)fileSize));
+            logLine("File size", formatSize((size_t)fileSize));
         }
         catch (std::filesystem::filesystem_error &e)
         {
@@ -110,32 +110,32 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
         }
         if (res->fp == NULL)
         {
-            strerr("Error", "Could not open file " + std::string(optarg));
+            logError("Error", "Could not open file " + std::string(optarg));
             return false;
         }
         res->size = fsize;
         break;
     case 'o':
-        res->out = wencry_fopen_write(optarg);
+        res->out = wencryOpenWrite(optarg);
         if (res->out == NULL)
         {
-            strerr("Error", "Could not open file " + std::string(optarg));
+            logError("Error", "Could not open file " + std::string(optarg));
             return false;
         }
         break;
     case 'k':
         if (res->key != NULL)
         {
-            strerr("Error", "Only one key can be specified");
+            logError("Error", "Only one key can be specified");
             return false;
         }
         else
         {
             u8_t *tmp = new u8_t[16];
-            if (!checkB64Key((u8_t *)optarg, tmp))
+            if (!checkBase64Key((u8_t *)optarg, tmp))
             {
                 delete[] tmp;
-                strerr("Error", "Invalid base64 key");
+                logError("Error", "Invalid base64 key");
                 return false;
             }
             res->key = tmp;
@@ -151,7 +151,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
         }
         else
         {
-            strerr("Error", "Only one ctype can be specified");
+            logError("Error", "Only one ctype can be specified");
             return false;
         }
         break;
@@ -162,7 +162,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
         }
         else
         {
-            strerr("Error", "Only one htype can be specified");
+            logError("Error", "Only one htype can be specified");
             return false;
         }
         break;
@@ -171,7 +171,7 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
             res->mode = 'V';
         else
         {
-            strerr("Error", "Only one mode can be specified");
+            logError("Error", "Only one mode can be specified");
             return false;
         }
         break;
@@ -181,13 +181,13 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
             res->mode = 'h';
         else
         {
-            strerr("Error", "Only one mode can be specified");
+            logError("Error", "Only one mode can be specified");
             return false;
         }
 
         break;
     default:
-        strerr("Error", "Unknown option");
+        logError("Error", "Unknown option");
         return false;
     }
     return true;
@@ -196,10 +196,10 @@ bool parseOpts(char c, vpak_t *res, std::string &fout)
   接口函数
 ################################*/
 /*
-fail_vopt:解析失败的统一清理入口
+failArgsCleanup:解析失败的统一清理入口
 关闭已打开的文件句柄、释放密钥与参数包,返回 NULL(与接口约定一致)。
 */
-static u8_t *fail_vopt(vpak_t *res)
+static u8_t *failArgsCleanup(vpak_t *res)
 {
     if (res->fp != NULL)
         fclose(res->fp);
@@ -210,13 +210,13 @@ static u8_t *fail_vopt(vpak_t *res)
     return NULL;
 }
 /*
-get_v_opt:解析命令行参数
+getCommandLineArgs:解析命令行参数
 argc:命令行参数个数
 argv:命令行参数数组
 return:vpak_t结构体指针x
 */
 
-u8_t *get_v_opt(int argc, char *argv[])
+u8_t *getCommandLineArgs(int argc, char *argv[])
 {
     WencryInformation wif;
     std::string fout;
@@ -236,15 +236,15 @@ u8_t *get_v_opt(int argc, char *argv[])
         int c = getopt_long(argc, argv, shortOpts, longOpts, &option_index);
         if (c == -1)
             break;
-        if (!parseOpts(c, res, fout))
+        if (!parseOptions(c, res, fout))
         {
-            return fail_vopt(res);
+            return failArgsCleanup(res);
         }
     }
     if (res->mode == 'u')
     {
-        strerr("Error", "Wrong Mode");
-        return fail_vopt(res);
+        logError("Error", "Wrong Mode");
+        return failArgsCleanup(res);
     }
     else if (res->mode == 'e')
     {
@@ -252,20 +252,20 @@ u8_t *get_v_opt(int argc, char *argv[])
         {
             res->ctype = 1;
         }
-        else if (!wif.check_ctype(res->ctype))
+        else if (!wif.checkCryptMode(res->ctype))
         {
-            strerr("Error", "Wrong ctype");
-            return fail_vopt(res);
+            logError("Error", "Wrong ctype");
+            return failArgsCleanup(res);
         }
         printCryptMode(res->ctype, wif);
         if (res->htype == -1)
         {
             res->htype = 0;
         }
-        else if (!wif.check_htype(res->htype))
+        else if (!wif.checkHashMode(res->htype))
         {
-            strerr("Error", "Wrong htype");
-            return fail_vopt(res);
+            logError("Error", "Wrong htype");
+            return failArgsCleanup(res);
         }
         printHashMode(res->htype, wif);
         if (res->key == NULL)
@@ -274,29 +274,29 @@ u8_t *get_v_opt(int argc, char *argv[])
         }
         if (res->fp == NULL)
         {
-            strerr("Error", "No file specified");
-            return fail_vopt(res);
+            logError("Error", "No file specified");
+            return failArgsCleanup(res);
         }
         if (res->out == NULL)
         {
-            strlog("Note", "Using default output file name");
-            res->out = wencry_fopen_write(fout.c_str());
+            logLine("Note", "Using default output file name");
+            res->out = wencryOpenWrite(fout.c_str());
         }
         getRandomBuffer(res->r_buf);
         res->r_len = 256;
-        strlog("Key", printkey(res->key));
+        logLine("Key", printKey(res->key));
     }
     else if (res->mode == 'd' || res->mode == 'v')
     {
         if (res->key == NULL)
         {
-            strerr("Error", "No key specified");
-            return fail_vopt(res);
+            logError("Error", "No key specified");
+            return failArgsCleanup(res);
         }
         if (res->fp == NULL)
         {
-            strerr("Error", "No file specified");
-            return fail_vopt(res);
+            logError("Error", "No file specified");
+            return failArgsCleanup(res);
         }
     }
     return res->buf;

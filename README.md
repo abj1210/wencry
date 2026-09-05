@@ -2,7 +2,7 @@
 
 作者：闻嘉迅  
 日期：2026.8.28 (最后修改)  
-版本：v4.6.0
+版本：v4.6.1
 
 **默认4工作线程,CBC加密模式,SHA1哈希**  
 **Windows原生处理速度可达2000MB/s以上**  
@@ -36,60 +36,70 @@
 
 ## 文件结构
 
-- **wencry:项目文件夹**  
-  - main.cpp:程序入口(交互式/命令行两种模式)
-  - config.h.in:编译配置模板(生成config.h)
-  - **valget:命令行参数解析文件夹**
-    - getval.h:参数获取接口声明
-    - getopts.cpp:命令行选项解析(get_v_opt)
-    - getval1.cpp:交互式用户输入解析(get_v_mod1)
-    - getopt_port.cpp/h:POSIX getopt_long 移植(Windows MSVC 使用)
-  - **valhelper:参数包与辅助工具文件夹**
-    - valhelper.h/cpp:vpak_t参数包、base64密钥校验、随机密钥(CSPRNG)、模式映射
-    - information.cpp:版本/帮助信息与模式名查询(WencryInformation)
-    - base64.h/cpp:base64编码/解码与合法性校验
-    - modes.h:加密/哈希模式枚举(单源)
-    - display.h:结果打印抽象基类(Display)
-    - display/:ConsoleDisplay(终端输出)与 SilentDisplay(静默输出)实现
-  - **kernel:加解密核心文件夹**
-    - cry.h/cry.cpp:整体加解密流程接口(runcrypt/execute_*,check_header,file_path)
-    - fheader.h/fheader.cpp:加密文件头生成/验证、增量HMAC计算、结果打印
-    - **multi_pipeline:多线程统一流水线文件夹**
-      - multicry.h/cpp:多线程调度器(multicry_master,按模式启动读/HASH/AES/写线程)
-      - **buffergroup:动态缓冲池文件夹**
-        - multi_buffergroup.h/cpp:统一读--HASH--AES--写流水线缓冲池(空闲池/工作池,全局序号)
-        - iobuffer.cpp:单缓冲区装载/导出实现
-      - **aes:AES加解密实现文件夹**
-        - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
-        - aes_ni.h/cpp:基于AES-NI指令的AES-128密钥扩展与单块变换
-      - **hash:哈希函数文件夹**
-        - hmac.cpp:HMAC 计算(一次性HMAC + 增量原语)
-        - merkletree.h/merkletreemaster.cpp:Merkle 树(块 HMAC 合并与根 HMAC)
-        - hashmaster/hashmaster.h/cpp:哈希抽象基类/工厂与字符串哈希、增量哈希接口
-        - hashmaster/sha1.cpp/sha256.cpp:哈希状态基类(末尾填充/摘要输出,整块哈希由SHA-NI完成)
-        - hashmaster/md5.cpp:MD5软件实现
-        - hashmaster/sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256整块哈希
-  - **test:测试文件夹**
-    - testutil.h/cpp:测试工具(临时文件名/模式文件/hex解析)
-    - test.h/cpp:复用runcrypt的往返与速度测试函数(exec/cmp_file/makeFullTest等)
-    - testutest.cpp:testutil函数测试
-    - testsha1.cpp:sha1哈希测试
-    - testaes.cpp:单块aes测试
-    - testbase64.cpp:base64编码测试
-    - testhmac.cpp:HMAC编码测试
-    - testECB.cpp:ECB模式下多块aes测试
-    - testCBC.cpp:CBC模式下多块aes测试
-    - testCTR.cpp:CTR模式下多块aes测试
-    - testCFB.cpp:CFB模式下多块aes测试
-    - testOFB.cpp:OFB模式下多块aes测试
-    - testsmall.cpp:小文件加解密测试
-    - testsmode.cpp:不同加密模式下文件加解密测试  
-    - testshash.cpp:不同哈希模式下文件加解密测试  
-    - testbig.cpp:大文件加解密测试
-    - testspeed.cpp:文件加密速度测试(含吞吐量断言)
-    - testvectors.cpp:NIST/标准向量测试(AES各模式、FIPS-197、哈希填充边界、HMAC参考向量、CTR进位、大缓冲哈希)
-    - testboundary.cpp:边界尺寸往返、线程数变化、文件头布局、失败路径、解密/验证返回值与异常、CLI错误路径测试
-    - testinteractive.cpp:交互式模式子进程E2E测试(加密/解密/验证/错误模式/密钥校验重试/随机密钥)
+**wencry:项目文件夹**  
+- main.cpp:程序入口(交互式/命令行两种模式)
+- config.h.in:编译配置模板(生成config.h)
+- **valget:命令行参数解析文件夹**
+  - getval.h:参数获取接口声明
+  - getopts.cpp:命令行选项解析(getCommandLineArgs)
+  - getval1.cpp:交互式用户输入解析(getInteractiveArgs)
+  - getopt_port.cpp/h:POSIX getopt_long 移植(Windows MSVC 使用)
+- **valhelper:参数包与辅助工具文件夹**
+  - valhelper.h/cpp:vpak_t参数包、base64密钥校验、随机密钥(CSPRNG)、模式映射
+  - information.cpp:版本/帮助信息与模式名查询(WencryInformation)
+  - base64.h/cpp:base64编码/解码与合法性校验
+  - modes.h:加密/哈希模式枚举(单源)
+  - display.h:结果打印抽象基类(Display)
+  - display/:ConsoleDisplay(终端输出)与 SilentDisplay(静默输出)实现
+- **kernel:加解密核心文件夹**
+  - cry.h/cry.cpp:整体加解密流程接口(RunCrypt/executeEncrypt·executeDecrypt·executeVerify、checkHeader、filePath)
+  - fheader.h/fheader.cpp:加密文件头生成/解析、HMAC读写
+  - **multi_pipeline:多线程统一流水线文件夹**
+    - multicry.h/cpp:多线程调度器(MulticryMaster,按模式启动读/工作/写线程)
+    - **buffergroup:动态缓冲池文件夹**
+      - multi_buffergroup.h/cpp:统一读--工作--写流水线缓冲池(空闲池/工作池/已处理池,全局序号)
+      - iobuffer.cpp:单缓冲区装载/导出实现
+      - sched_log.h:调度日志(LOG_SCHED 开关,记录线程时间线与缓冲区生命周期到 sched_log.csv)
+  - **aes:AES加解密实现文件夹**
+    - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
+    - aes_ni.h/cpp:基于AES-NI指令的AES-128密钥扩展与单块变换
+  - **hash:HMAC和MerkleTree支持文件夹**
+    - hmac.cpp:HMAC 计算(一次性HMAC + 增量原语)
+    - merkletree.h/merkletreemaster.cpp:Merkle 树(块 HMAC 合并与根 HMAC)
+    - **hashmaster:哈希函数文件夹**
+      - hashmaster.h:哈希抽象基类/派生类与字符串哈希、增量哈希接口(头文件内联实现)
+      - sha1.cpp/sha256.cpp:哈希状态基类(末尾填充/摘要输出,整块哈希由SHA-NI完成)
+      - md5.cpp:MD5软件实现
+      - sha_ni.h/cpp:SHA-NI硬件加速SHA1/SHA256整块哈希
+- **test:测试文件夹**
+  - testutil.h/cpp:测试工具(临时文件名/模式文件/hex解析)
+  - test.h/cpp:复用RunCrypt的往返与速度测试函数(exec/cmp_file/makeFullTest等)
+  - testutest.cpp:testutil函数测试
+  - testsha1.cpp:sha1哈希测试
+  - testmd5.cpp:md5哈希测试
+  - testsha256.cpp:sha256哈希测试
+  - testaes.cpp:单块aes测试
+  - testbase64.cpp:base64编码测试
+  - testhmac.cpp:HMAC编码测试
+  - testmerkletree.cpp:Merkle树(参考实现对比/乱序插入/前缀布局)测试
+  - testECB.cpp:ECB模式下多块aes测试
+  - testCBC.cpp:CBC模式下多块aes测试
+  - testCTR.cpp:CTR模式下多块aes测试
+  - testCFB.cpp:CFB模式下多块aes测试
+  - testOFB.cpp:OFB模式下多块aes测试
+  - testsmall.cpp:小文件加解密测试
+  - testsmode.cpp:不同加密模式下文件加解密测试  
+  - testshash.cpp:不同哈希模式下文件加解密测试  
+  - testbig.cpp:大文件加解密测试
+  - testspeed.cpp:文件加密速度测试(含吞吐量断言)
+  - testvectors.cpp:NIST/标准向量测试(AES各模式、FIPS-197、哈希填充边界、HMAC参考向量、CTR进位、大缓冲哈希)
+  - testboundary.cpp:边界尺寸往返、线程数变化、文件头布局、失败路径、解密/验证返回值与异常、CLI错误路径测试
+  - testinteractive.cpp:交互式模式子进程E2E测试(加密/解密/验证/错误模式/密钥校验重试/随机密钥)
+  - testinformation.cpp:WencryInformation、模式名表、结果码与进度百分比测试
+  - testvalhelper.cpp:模式映射、密钥编解码、文件辅助函数测试
+  - testfheader.cpp:文件头生成/解析、checkHeader错误码、线程数回退、HMAC读写测试
+  - testgetopt.cpp:命令行参数解析成功与错误分支测试
+  - testbuffergroup.cpp:IoBuffer填充/去填充与缓冲池流水线测试
 
 具体函数和结构体作用与解释参阅源代码注释.  
 
@@ -173,6 +183,58 @@ Windows 兼容说明:
   ./Wencry -d -i ../a.mp4.wenc -o ../aa.mp4 -k Z8Zpc1HSuwpzbqr8vvjRg==
   ```
 
+## 测试
+
+项目使用 GoogleTest 作为测试框架，测试源码位于 `test/`，共 26 个测试可执行程序，覆盖 AES 各模式、SHA1/MD5/SHA256、HMAC、Merkle 树、base64、命令行解析、交互式模式、文件头、缓冲池与端到端往返。
+
+### 构建并运行
+
+```bash
+cmake -S . -B build -DBUILD_TEST=ON
+cmake --build build -j
+cd build && ctest --output-on-failure
+```
+
+GTest 由 CMake FetchContent 自动下载(v1.14.0)；离线环境可设置 `-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=<本地gtest路径>`。不需要测试时配置 `-DBUILD_TEST=OFF`。
+
+### 内存/未定义行为检测
+
+```bash
+cmake -S . -B build_asan -DBUILD_TEST=ON \
+  -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+  -DCMAKE_C_FLAGS="-fsanitize=address,undefined -fno-omit-frame-pointer" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address,undefined"
+cmake --build build_asan -j
+cd build_asan && ASAN_OPTIONS=detect_leaks=0 ctest --output-on-failure
+```
+
+### 数据竞争检测
+
+```bash
+cmake -S . -B build_tsan -DBUILD_TEST=ON \
+  -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_FLAGS="-fsanitize=thread -fno-omit-frame-pointer" \
+  -DCMAKE_C_FLAGS="-fsanitize=thread -fno-omit-frame-pointer" \
+  -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=thread"
+cmake --build build_tsan -j
+cd build_tsan && TSAN_OPTIONS="halt_on_error=1" ctest --output-on-failure
+```
+
+### 覆盖率统计
+
+```bash
+cmake -S . -B build_cov -DBUILD_TEST=ON \
+  -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc \
+  -DCMAKE_CXX_FLAGS="--coverage -O0 -g" -DCMAKE_C_FLAGS="--coverage -O0 -g" \
+  -DCMAKE_EXE_LINKER_FLAGS="--coverage"
+cmake --build build_cov -j
+cd build_cov && ctest
+gcovr --object-directory . --print-summary
+```
+
+当前参考覆盖率(过滤 `test/` 与生成文件后)：行 90.7%、函数 98.1%、分支 56.0%。
+
 ## 多线程  
  
 若想改变线程数量,则可改变`cry.h`中的宏`THREAD_NUM`的值.  
@@ -185,8 +247,8 @@ Windows 兼容说明:
 详细协作逻辑见`multi_buffergroup.cpp`注释;完整的同步逻辑与缓冲池状态机说明见 [SYNC_LOGIC.md](SYNC_LOGIC.md)。
 
 - **缓冲池与动态分配**  
-缓冲区由一次性固定分配改为运行时按需动态分配,`buffergroup`维护三个缓冲池(空闲池/工作池/已处理池),容量由`multi_buffergroup.h`中的宏控制:
-  - `WORK_PROCESSED_MAX`(默认16):工作池(LOADED)与已处理池(PROCESSED)共用的总在途块数上限,满则读线程阻塞(背压)。
+缓冲区由一次性固定分配改为运行时按需动态分配,`BufferGroup`维护三个缓冲池(空闲池/工作池/已处理池),容量由 CMake 选项 `WORK_PROCESSED_MAX`/`IDLE_POOL_MAX` 控制(见根目录 `CMakeLists.txt`),`IDLE_TIMEOUT_MS` 定义于 `multi_buffergroup.h`:
+  - `WORK_PROCESSED_MAX`(默认12):工作池(LOADED)与已处理池(PROCESSED)共用的总在途块数上限,满则读线程阻塞(背压)。
   - `IDLE_POOL_MAX`(默认4):空闲池(可复用空 buffer)容量上限,写线程写出后归还空闲池;空闲池满则写线程直接释放该 buffer。
   - `IDLE_TIMEOUT_MS`(默认1000):空闲 buffer 在空闲池中停留超过该时限即被写线程释放。
   内存上界 ≈ (工作池+已处理池+空闲池) × 16MB,且读取完成后写线程自动释放全部空 buffer,内存随流水线结束收敛。

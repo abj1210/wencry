@@ -6,7 +6,7 @@
 typedef unsigned char u8_t;
 
 /*
-exec:按argv执行一次加解密任务(复用命令行参数解析与runcrypt内核)
+exec:按argv执行一次加解密任务(复用命令行参数解析与RunCrypt内核)
 argc:参数个数
 argv:参数数组(首元素为程序名)
 return:执行成功返回true,失败返回false

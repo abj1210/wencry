@@ -27,12 +27,12 @@ WencryInformation::WencryInformation()
 
 }
 /*
-get_typelist:按单源名称表格式化"编号:名称, "形式的字符串
+getTypeList:按单源名称表格式化"编号:名称, "形式的字符串
 count:模式数量
 name:名称查询函数
 return:格式化后的类型列表
 */
-std::string WencryInformation::get_typelist(int count, const char *(*name)(u8_t))
+std::string WencryInformation::getTypeList(int count, const char *(*name)(u8_t))
 {
   std::string res = "";
   for (int i = 0; i < count; ++i)
@@ -44,76 +44,76 @@ std::string WencryInformation::get_typelist(int count, const char *(*name)(u8_t)
   return res;
 }
 /*
-get_ctypelist:获取加密模式列表
+getCryptModeList:获取加密模式列表
 return:加密模式列表字符串
 */
-std::string WencryInformation::get_ctypelist()
+std::string WencryInformation::getCryptModeList()
 {
-  return get_typelist(kCryptModeCount, crypt_mode_name);
+  return getTypeList(kCryptModeCount, cryptModeName);
 }
 /*
-get_htypelist:获取哈希模式列表
+getHashModeList:获取哈希模式列表
 return:哈希模式列表字符串
 */
-std::string WencryInformation::get_htypelist()
+std::string WencryInformation::getHashModeList()
 {
-  return get_typelist(kHashModeCount, hash_mode_name);
+  return getTypeList(kHashModeCount, hashModeName);
 }
 /*
-check_ctype:校验加密模式编号是否合法
+checkCryptMode:校验加密模式编号是否合法
 ctype_num:待校验的编号
 return:合法返回true,否则false
 */
-bool WencryInformation::check_ctype(int ctype_num)
+bool WencryInformation::checkCryptMode(int ctype_num)
 {
   return ctype_num >= 0 && ctype_num < kCryptModeCount;
 }
 /*
-check_htype:校验哈希模式编号是否合法
+checkHashMode:校验哈希模式编号是否合法
 htype_num:待校验的编号
 return:合法返回true,否则false
 */
-bool WencryInformation::check_htype(int htype_num)
+bool WencryInformation::checkHashMode(int htype_num)
 {
   return htype_num >= 0 && htype_num < kHashModeCount;
 }
 /*
-get_cname:获取加密模式名称
+getCryptModeName:获取加密模式名称
 ctype_num:模式编号
 return:模式名称(非法编号返回"unknown")
 */
-std::string WencryInformation::get_cname(int ctype_num)
+std::string WencryInformation::getCryptModeName(int ctype_num)
 {
-  return check_ctype(ctype_num) ? crypt_mode_name((u8_t)ctype_num) : "unknown";
+  return checkCryptMode(ctype_num) ? cryptModeName((u8_t)ctype_num) : "unknown";
 }
 /*
-get_hname:获取哈希模式名称
+getHashModeName:获取哈希模式名称
 htype_num:模式编号
 return:模式名称(非法编号返回"unknown")
 */
-std::string WencryInformation::get_hname(int htype_num)
+std::string WencryInformation::getHashModeName(int htype_num)
 {
-  return check_htype(htype_num) ? hash_mode_name((u8_t)htype_num) : "unknown";
+  return checkHashMode(htype_num) ? hashModeName((u8_t)htype_num) : "unknown";
 }
 /*
-get_cname_num:获取加密模式数量
+getCryptModeCount:获取加密模式数量
 return:加密模式数量
 */
-int WencryInformation::get_cname_num(){
+int WencryInformation::getCryptModeCount(){
   return kCryptModeCount;
 }
 /*
-get_hname_num:获取哈希模式数量
+getHashModeCount:获取哈希模式数量
 return:哈希模式数量
 */
-int WencryInformation::get_hname_num(){
+int WencryInformation::getHashModeCount(){
   return kHashModeCount;
 }
 /*
-get_version:获取内核版本号(Debug编译附加" Debug"后缀)
+getVersion:获取内核版本号(Debug编译附加" Debug"后缀)
 return:版本号字符串
 */
-std::string WencryInformation::get_version(){
+std::string WencryInformation::getVersion(){
   std::string ver = PROJECT_VERSION;
 #ifdef DEBUG_ON
   ver += " Debug";
@@ -121,17 +121,17 @@ std::string WencryInformation::get_version(){
   return ver;
 }
 /*
-get_buildtime:获取编译时间
+getBuildTime:获取编译时间
 return:编译时间字符串
 */
-std::string WencryInformation::get_buildtime(){
+std::string WencryInformation::getBuildTime(){
   return V_BUILD_TIME;
 }
 /*
-get_help:获取命令行帮助文本
+getHelp:获取命令行帮助文本
 return:帮助文本字符串
 */
-std::string WencryInformation::get_help()
+std::string WencryInformation::getHelp()
 {
   return description;
 }

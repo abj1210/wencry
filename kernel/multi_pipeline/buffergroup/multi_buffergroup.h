@@ -74,12 +74,12 @@ enum loadstate_t
 };
 
 /*
-iobuffer:用于aes的16B单元输入输出缓冲区
-iobuffer类主要包括数据成员和同步成员。
+IoBuffer:用于aes的16B单元输入输出缓冲区
+IoBuffer类主要包括数据成员和同步成员。
 数据成员负责承载数据和控制读取状态。其修改通过类的接口实现
 同步成员负责保证缓冲区状态、装在序号等控制状态的同步。其修改由并发调度器统一控制
 */
-class iobuffer
+class IoBuffer
 {
 public:
   static const u32_t BUF_SZ = 0x100000; //用于aes的16B单元缓冲区单元数量
@@ -99,17 +99,17 @@ public:
   u64_t idle_ts;      //进入空闲池的时间戳(微秒,steady_clock)
   u64_t id;           //本缓冲区唯一编号(用于日志关联生成/销毁)
 
-  iobuffer();
-  ~iobuffer();
-  u8_t *get_entry();
-  u8_t *get_data();
-  u32_t data_len() const;
-  loadstate_t load_buffer(FILE *fin, bool ispadding);
-  u32_t export_buffer(FILE *fout, bool ispadding);
+  IoBuffer();
+  ~IoBuffer();
+  u8_t *getEntry();
+  u8_t *getData();
+  u32_t dataLen() const;
+  loadstate_t loadBuffer(FILE *fin, bool ispadding);
+  u32_t exportBuffer(FILE *fout, bool ispadding);
 };
 
 /*
-buffergroup:统一多线程流水线缓冲组
+BufferGroup:统一多线程流水线缓冲组
 采用"读线程--(工作线程)--写线程"流水线,加密/解密/验证三种模式共用;
 HMAC 由各工作线程就地计算(不再单设 HASH 线程):
   - 加密:读明文 -> 工作线程 AES -> 工作线程 HMAC -> 写密文。
@@ -123,16 +123,16 @@ HMAC 由各工作线程就地计算(不再单设 HASH 线程):
 每个 buffer 携带全局序号 seq,保证按序写;工作线程按 seq%total_threads 路由,领取本线程名下最小 seq 的块。
 写线程按 seq 递增写出并回收 buffer 到空闲池(空闲池满/超时则释放);读取完成后写线程清理残留空 buffer。
 */
-class buffergroup
+class BufferGroup
 {
   struct cmp{
-    bool operator()(const iobuffer * a, const iobuffer * b){
+    bool operator()(const IoBuffer * a, const IoBuffer * b){
       return a->seq > b->seq;
     }
   };
-  std::deque<iobuffer *> idle_pool;         // 空闲池
-  std::map<u64_t, iobuffer *> work_pool;    // 工作池(seq -> buffer)
-  std::priority_queue<iobuffer *, std::vector<iobuffer *>, cmp> processed_pool;//已处理池，按序号递增
+  std::deque<IoBuffer *> idle_pool;         // 空闲池
+  std::map<u64_t, IoBuffer *> work_pool;    // 工作池(seq -> buffer)
+  std::priority_queue<IoBuffer *, std::vector<IoBuffer *>, cmp> processed_pool;//已处理池，按序号递增
   u32_t total_threads;                      // 工作线程数
   u64_t total_chunks;                       // 装载的总块数
   pipe_mode mode;                           // 流水线模式
@@ -141,8 +141,8 @@ class buffergroup
   std::mutex mtx;
   std::condition_variable cv;
 
-  buffergroup() : total_threads(0), total_chunks(0), mode(PIPE_ENCRYPT), read_done(false) {};
-  ~buffergroup()
+  BufferGroup() : total_threads(0), total_chunks(0), mode(PIPE_ENCRYPT), read_done(false) {};
+  ~BufferGroup()
   {
     for (auto &kv : work_pool)
       delete kv.second;
@@ -155,39 +155,40 @@ class buffergroup
     }
   };
 
-  static buffergroup *instance;
+  static BufferGroup *instance;
   static std::mutex mtx_singleton;
 
-  static u64_t steady_us();
+  static u64_t steadyUs();
 
-  /* 以下辅助函数均要求调用者持有 mtx */
-  bool has_claimable_locked(const u64_t seq_next) const;
-  iobuffer *claim_locked(const u64_t seq_next);
-  bool worker_pending_locked(const u8_t thread_id) const;
-
-  bool chunk_ready_locked(const u64_t seq) const;
-  iobuffer *claim_processed();
-  void recycle_locked(iobuffer *buf);
-
-  void sweep_idle_locked();
-  void release_buffer(iobuffer *buf);
+  /* 以下加锁辅助函数均要求调用者持有 mtx,负责具体的池状态迁移与日志记录。 */
+  IoBuffer *acquireIdleBuffer();                            // 取空 buffer(空则 new)并标记 claimed
+  void registerLoadedChunk(IoBuffer *buf, u64_t next);      // 把已装载 buffer 注册进工作池
+  bool workerHasPendingChunk(const u8_t thread_id) const;   // 本线程是否仍有待处理块
+  bool loadedChunkReady(u64_t next, u8_t thread_id) const;  // 本线程可领取的块是否就绪
+  bool hasInFlightCapacity() const;                         // 是否有在途容量(读线程背压)
+  bool processedChunkReady(u64_t next) const;               // 待写块是否就绪
+  void promoteToProcessed(IoBuffer *buf);                   // 工作池 -> 已处理池
+  void popProcessed(IoBuffer *buf);                         // 已处理池出队
+  void recycleClearedBuffer(IoBuffer *buf);                 // 回收已写出的 buffer
+  void sweepIdlePool();                                     // 清空空闲池
+  void releaseBuffer(IoBuffer *buf);                        // 释放 buffer 并记录日志
 
 public:
-  buffergroup(const buffergroup &) = delete;
-  buffergroup &operator=(const buffergroup &) = delete;
-  static buffergroup *get_instance();
-  static void del_instance();
-  void set_buffergroup(u32_t total_threads, pipe_mode mode);
+  BufferGroup(const BufferGroup &) = delete;
+  BufferGroup &operator=(const BufferGroup &) = delete;
+  static BufferGroup *getInstance();
+  static void delInstance();
+  void setBufferGroup(u32_t total_threads, pipe_mode mode);
 
   /* 工作线程接口(指针语义,NULL 为退出哨兵) */
-  bool stop_worker(iobuffer *buffer) { return buffer == NULL; };
+  bool stopWorker(IoBuffer *buffer) { return buffer == NULL; };
 
-  iobuffer *wait_loaded_buffer(const u8_t thread_id, const u64_t next);
-  u64_t finish_processing(iobuffer *buffer);
-  iobuffer *wait_cleared_buffer();
-  bool finish_loading(iobuffer *buffer,const loadstate_t ls,const u64_t next);
-  iobuffer *wait_processed_buffer(const u64_t next);
-  void finish_clearing(iobuffer *buffer);
+  IoBuffer *waitLoadedBuffer(const u8_t thread_id, const u64_t next);
+  u64_t finishProcessing(IoBuffer *buffer);
+  IoBuffer *waitClearedBuffer();
+  bool finishLoading(IoBuffer *buffer,const loadstate_t ls,const u64_t next);
+  IoBuffer *waitProcessedBuffer(const u64_t next);
+  void finishClearing(IoBuffer *buffer);
 
 };
 #endif

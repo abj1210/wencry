@@ -377,6 +377,77 @@ target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
                            ${PROJECT_SOURCE_DIR}/../valhelper
                            )
 
+set(SUBNAME information)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Valhelper)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_SOURCE_DIR}/../valhelper
+                           )
+
+set(SUBNAME valhelper)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Valhelper)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_SOURCE_DIR}/../valhelper
+                           )
+
+set(SUBNAME fheader)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           )
+
+set(SUBNAME getopt)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} CMDvals)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_SOURCE_DIR}/../valget
+                           ${PROJECT_SOURCE_DIR}/../valhelper
+                           )
+
+set(SUBNAME buffergroup)
+
+add_executable(${PROJECT_NAME}${SUBNAME} test${SUBNAME}.cpp testutil.cpp)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} GTest::GTest GTest::Main)
+
+target_link_libraries(${PROJECT_NAME}${SUBNAME} Wenkernel)
+
+add_test(NAME ${PROJECT_NAME}${SUBNAME} COMMAND ${PROJECT_NAME}${SUBNAME})
+
+target_include_directories(${PROJECT_NAME}${SUBNAME} PUBLIC
+                           ${PROJECT_SOURCE_DIR}/../kernel
+                           )
+
 # 为全部测试设置超时,避免并发回归(死锁/挂起)导致 ctest 无限阻塞。
 get_property(_all_tests DIRECTORY PROPERTY TESTS)
 foreach(_t IN LISTS _all_tests)

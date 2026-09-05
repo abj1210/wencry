@@ -20,9 +20,9 @@ static void fill_pattern(u8_t *out, size_t len) {
 static void aes_blocks(bool isenc, int mode, const u8_t *key, const u8_t *iv,
                        u8_t *block, size_t blocks) {
   AesFactory af((u8_t *)key);
-  Aesmode *m = af.createCryMaster(isenc, (u8_t)mode, iv);
+  AesMode *m = af.createCryMaster(isenc, (u8_t)mode, iv);
   for (size_t i = 0; i < blocks; ++i)
-    m->runcry(block + 16 * i);
+    m->runCrypt(block + 16 * i);
   delete m;
 }
 
@@ -186,11 +186,11 @@ TEST(Testvectors, per_thread_iv_distinct) {
     u8_t a[64], b[64];
     memcpy(a, pt, 64);
     memcpy(b, pt, 64);
-    Aesmode *ma = af.createCryMaster(true, (u8_t)m, iv1);
-    Aesmode *mb = af.createCryMaster(true, (u8_t)m, iv2);
+    AesMode *ma = af.createCryMaster(true, (u8_t)m, iv1);
+    AesMode *mb = af.createCryMaster(true, (u8_t)m, iv2);
     for (int i = 0; i < 4; ++i) {
-      ma->runcry(a + 16 * i);
-      mb->runcry(b + 16 * i);
+      ma->runCrypt(a + 16 * i);
+      mb->runCrypt(b + 16 * i);
     }
     EXPECT_FALSE(cmpstr(a, b, 64)) << "mode " << m
                                    << " should differ per IV";
@@ -200,11 +200,11 @@ TEST(Testvectors, per_thread_iv_distinct) {
   u8_t a[64], b[64];
   memcpy(a, pt, 64);
   memcpy(b, pt, 64);
-  Aesmode *ma = af.createCryMaster(true, 0, iv1);
-  Aesmode *mb = af.createCryMaster(true, 0, iv2);
+  AesMode *ma = af.createCryMaster(true, 0, iv1);
+  AesMode *mb = af.createCryMaster(true, 0, iv2);
   for (int i = 0; i < 4; ++i) {
-    ma->runcry(a + 16 * i);
-    mb->runcry(b + 16 * i);
+    ma->runCrypt(a + 16 * i);
+    mb->runCrypt(b + 16 * i);
   }
   EXPECT_TRUE(cmpstr(a, b, 64)) << "ECB ignores IV";
   delete ma;
@@ -252,7 +252,7 @@ static const hv_t hv_bounds[] = {
 
 TEST(Testvectors, sha1_padding_boundaries) {
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HT_SHA1);
+  HashMaster *h = hf.getHasher(HT_SHA1);
   u8_t in[1000], dig[20], cmp[20];
   for (size_t k = 0; k < sizeof(hv_bounds) / sizeof(hv_bounds[0]); ++k) {
     fill_pattern(in, hv_bounds[k].len);
@@ -264,7 +264,7 @@ TEST(Testvectors, sha1_padding_boundaries) {
 }
 TEST(Testvectors, md5_padding_boundaries) {
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HT_MD5);
+  HashMaster *h = hf.getHasher(HT_MD5);
   u8_t in[1000], dig[16], cmp[16];
   for (size_t k = 0; k < sizeof(hv_bounds) / sizeof(hv_bounds[0]); ++k) {
     fill_pattern(in, hv_bounds[k].len);
@@ -276,7 +276,7 @@ TEST(Testvectors, md5_padding_boundaries) {
 }
 TEST(Testvectors, sha256_padding_boundaries) {
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HT_SHA256);
+  HashMaster *h = hf.getHasher(HT_SHA256);
   u8_t in[1000], dig[32], cmp[32];
   for (size_t k = 0; k < sizeof(hv_bounds) / sizeof(hv_bounds[0]); ++k) {
     fill_pattern(in, hv_bounds[k].len);
@@ -294,10 +294,10 @@ TEST(Testvectors, sha256_padding_boundaries) {
 /* hmac_round:用给定密钥对数据做 HMAC 并与期望摘要比对 */
 static void hmac_round(u8_t htype, const u8_t key[16], const char *data,
                        const char *exphex, size_t hlen) {
-  hmac h;
+  Hmac h;
   u8_t res[32], cmp[32];
   memset(res, 0, sizeof(res));
-  h.gethmac(htype, (u8_t *)key, (const u8_t *)data, res, strlen(data), NULL, 0);
+  h.getHmac(htype, (u8_t *)key, (const u8_t *)data, res, strlen(data), NULL, 0);
   gethex(exphex, cmp);
   EXPECT_EQ(memcmp(res, cmp, hlen), 0) << "htype=" << (int)htype;
 }
@@ -343,7 +343,7 @@ TEST(Testvectors, hashfile_refill) {
   for (size_t i = 0; i < N; ++i)
     data[i] = (u8_t)(i % 251);
   HashFactory hf;
-  Hashmaster *h = hf.getHasher(HT_SHA256);
+  HashMaster *h = hf.getHasher(HT_SHA256);
   u8_t dig[32], cmp[32];
   h->getStringHash(data.data(), (u32_t)N, dig);
   gethex("51a5ccc7f50b8ed811ce37d6049aacb5caef6629f17e33f0c952a4e0ed693bfd", cmp);
@@ -358,17 +358,17 @@ TEST(Testvectors, hashfile_refill) {
 
 TEST(Testvectors, getPercentage_logic) {
   ConsoleDisplay rp;
-  rp.printpercentage("t", 50, 100);
+  rp.printPercentage("t", 50, 100);
   EXPECT_EQ(50, rp.getPercentage());
-  rp.printpercentage("t", 50, 100);
+  rp.printPercentage("t", 50, 100);
   EXPECT_EQ(100, rp.getPercentage());
-  rp.printpercentage("t", 10, 100);  // 110% -> 钳制
+  rp.printPercentage("t", 10, 100);  // 110% -> 钳制
   EXPECT_EQ(100, rp.getPercentage());
   rp.resetPercentage();
   EXPECT_EQ(0, rp.getPercentage());
 
   SilentDisplay np;
-  np.printpercentage("t", 25, 100);
+  np.printPercentage("t", 25, 100);
   EXPECT_EQ(25, np.getPercentage());
   np.resetPercentage();
   EXPECT_EQ(0, np.getPercentage());
@@ -388,9 +388,9 @@ TEST(Testvectors, mode_table_factory_consistency) {
   AesFactory af(key);
 
   for (int i = 0; i < kCryptModeCount; ++i) {
-    EXPECT_STRNE(crypt_mode_name((u8_t)i), "unknown") << "crypt name missing for mode " << i;
-    Aesmode *enc = af.createCryMaster(true, (u8_t)i, iv);
-    Aesmode *dec = af.createCryMaster(false, (u8_t)i, iv);
+    EXPECT_STRNE(cryptModeName((u8_t)i), "unknown") << "crypt name missing for mode " << i;
+    AesMode *enc = af.createCryMaster(true, (u8_t)i, iv);
+    AesMode *dec = af.createCryMaster(false, (u8_t)i, iv);
     EXPECT_NE(enc, nullptr) << "AES encrypt factory missing mode " << i;
     EXPECT_NE(dec, nullptr) << "AES decrypt factory missing mode " << i;
     delete enc;
@@ -401,8 +401,8 @@ TEST(Testvectors, mode_table_factory_consistency) {
 
   HashFactory hf;
   for (int i = 0; i < kHashModeCount; ++i) {
-    EXPECT_STRNE(hash_mode_name((u8_t)i), "unknown") << "hash name missing for type " << i;
-    Hashmaster *h = hf.getHasher((HashType)i);
+    EXPECT_STRNE(hashModeName((u8_t)i), "unknown") << "hash name missing for type " << i;
+    HashMaster *h = hf.getHasher((HashType)i);
     EXPECT_NE(h, nullptr) << "hash factory missing type " << i;
     delete h;
   }

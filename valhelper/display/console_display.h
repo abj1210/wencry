@@ -11,23 +11,23 @@ class ConsoleDisplay : public Display
 {
   bool progress_active; // 进度条是否处于活动状态(决定 resetPercentage 是否换行)
 
-  /* end_progress:若进度条处于活动状态,结束当前行,避免后续输出与进度条重叠 */
-  void end_progress();
+  /* endProgress:若进度条处于活动状态,结束当前行,避免后续输出与进度条重叠 */
+  void endProgress();
 
 public:
   /* ConsoleDisplay:构造,初始无活动进度条 */
   ConsoleDisplay() : Display(), progress_active(false) {};
   /* 以下方法实现 Display 接口(终端输出),实现见 console_display.cpp */
-  virtual void printtask(std::string name) override;
+  virtual void printTask(std::string name) override;
   virtual Timer *createTimer(std::string name) override;
   virtual void printTimer(Timer *timer) override;
-  virtual void printenc() override;
-  virtual void printresd(int res) override;
-  virtual void printresv(int res) override;
-  virtual void printctype(u8_t type) override;
-  virtual void printhtype(u8_t type) override;
+  virtual void printEncryptDone() override;
+  virtual void printDecryptResult(int res) override;
+  virtual void printVerifyResult(int res) override;
+  virtual void printCryptMode(u8_t type) override;
+  virtual void printHashMode(u8_t type) override;
   virtual void resetPercentage() override;
-  virtual void printpercentage(std::string name, size_t now_size, size_t total_size) override;
+  virtual void printPercentage(std::string name, size_t now_size, size_t total_size) override;
 };
 
 #endif

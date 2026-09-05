@@ -45,8 +45,8 @@ class SchedLog
   unsigned long long t0;
   long long live_buffers; // 内部维护的存活 buffer 数,由 BUF_NEW/BUF_DELETE 触发增减
 
-  /* now_us:返回当前时刻相对 epoch 的微秒数 */
-  static unsigned long long now_us()
+  /* nowUs:返回当前时刻相对 epoch 的微秒数 */
+  static unsigned long long nowUs()
   {
     return (unsigned long long)std::chrono::duration_cast<std::chrono::microseconds>(
                std::chrono::steady_clock::now().time_since_epoch())
@@ -61,7 +61,7 @@ public:
     return s;
   }
   /* SchedLog:构造,打开 sched_log.csv 并写表头 */
-  SchedLog() : out(fopen("sched_log.csv", "w")), t0(now_us()), live_buffers(0)
+  SchedLog() : out(fopen("sched_log.csv", "w")), t0(nowUs()), live_buffers(0)
   {
     if (out)
       fprintf(out, "us,role,event,id,seq,state,work,idle,processed,live\n");
@@ -83,7 +83,7 @@ public:
       --live_buffers;
     if (out)
       fprintf(out, "%llu,%s,%s,%lld,%lld,%s,%d,%d,%d,%lld\n",
-              (unsigned long long)(now_us() - t0),
+              (unsigned long long)(nowUs() - t0),
               role ? role : "?", ev, id, seq, state ? state : "", work, idle, processed,
               live_buffers);
   }

@@ -12,32 +12,32 @@
 
 /*
 SHA-NI硬件加速的SHA1哈希类
-仅重写64字节整块哈希,末尾块/填充/长度/输出继承自sha1hash
+仅重写64字节整块哈希,末尾块/填充/长度/输出继承自Sha1Hash
 */
-class sha1ni : public sha1hash
+class Sha1Ni : public Sha1Hash
 {
-  /* block_fast:热路径整块处理(消除每块一次虚调用) */
-  static void block_fast(Hashmaster *self, const u8_t *input);
+  /* blockFast:热路径整块处理(消除每块一次虚调用) */
+  static void blockFast(HashMaster *self, const u8_t *input);
   /* getHash:用 SHA1-NI 指令处理一个64字节整块 */
   void getHash(const u8_t *input) override;
 public:
-  /* get_block_fast:返回整块热路径函数指针 */
-  Hashmaster::block_fast_t get_block_fast() const override { return &sha1ni::block_fast; };
+  /* getBlockFast:返回整块热路径函数指针 */
+  HashMaster::blockFast_t getBlockFast() const override { return &Sha1Ni::blockFast; };
 };
 
 /*
 SHA-NI硬件加速的SHA256哈希类
-仅重写64字节整块哈希,末尾块/填充/长度/输出继承自sha256hash
+仅重写64字节整块哈希,末尾块/填充/长度/输出继承自Sha256Hash
 */
-class sha256ni : public sha256hash
+class Sha256Ni : public Sha256Hash
 {
-  /* block_fast:热路径整块处理(消除每块一次虚调用) */
-  static void block_fast(Hashmaster *self, const u8_t *input);
+  /* blockFast:热路径整块处理(消除每块一次虚调用) */
+  static void blockFast(HashMaster *self, const u8_t *input);
   /* getHash:用 SHA256-NI 指令处理一个64字节整块 */
   void getHash(const u8_t *input) override;
 public:
-  /* get_block_fast:返回整块热路径函数指针 */
-  Hashmaster::block_fast_t get_block_fast() const override { return &sha256ni::block_fast; };
+  /* getBlockFast:返回整块热路径函数指针 */
+  HashMaster::blockFast_t getBlockFast() const override { return &Sha256Ni::blockFast; };
 };
 
 #endif

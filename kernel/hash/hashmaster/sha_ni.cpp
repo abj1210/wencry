@@ -4,8 +4,8 @@
 /*
 模块概述:SHA-NI 硬件加速整块变换
 提供 SHA1 与 SHA256 的64字节整块压缩函数(使用 Intel SHA 扩展指令),
-并把它们桥接到 Hashmaster 的 getHash / block_fast 接口,从而让
-sha1ni / sha256ni 走硬件热路径,避免每块一次虚调用。
+并把它们桥接到 HashMaster 的 getHash / blockFast 接口,从而让
+Sha1Ni / Sha256Ni 走硬件热路径,避免每块一次虚调用。
 */
 
 /*
@@ -357,43 +357,43 @@ static void sha256_ni_block(u32_t h[8], const u8_t *data)
   类实现
 ################################*/
 /*
-sha1ni::getHash:用 SHA1-NI 指令处理一个64字节整块并累加长度
+Sha1Ni::getHash:用 SHA1-NI 指令处理一个64字节整块并累加长度
 input:64字节输入块
 */
-void sha1ni::getHash(const u8_t *input)
+void Sha1Ni::getHash(const u8_t *input)
 {
     sha1_ni_block(h, input);
-    addtotal(64);
+    addTotalLength(64);
 }
 
 /*
-sha1ni::block_fast:热路径整块处理(避免每块一次虚调用)
+Sha1Ni::blockFast:热路径整块处理(避免每块一次虚调用)
 self:具体哈希器实例;input:64字节输入块
 */
-void sha1ni::block_fast(Hashmaster *self, const u8_t *input)
+void Sha1Ni::blockFast(HashMaster *self, const u8_t *input)
 {
-    sha1ni *p = static_cast<sha1ni *>(self);
+    Sha1Ni *p = static_cast<Sha1Ni *>(self);
     sha1_ni_block(p->h, input);
-    p->addtotal(64);
+    p->addTotalLength(64);
 }
 
 /*
-sha256ni::getHash:用 SHA256-NI 指令处理一个64字节整块并累加长度
+Sha256Ni::getHash:用 SHA256-NI 指令处理一个64字节整块并累加长度
 input:64字节输入块
 */
-void sha256ni::getHash(const u8_t *input)
+void Sha256Ni::getHash(const u8_t *input)
 {
     sha256_ni_block(h, input);
-    addtotal(64);
+    addTotalLength(64);
 }
 
 /*
-sha256ni::block_fast:热路径整块处理(避免每块一次虚调用)
+Sha256Ni::blockFast:热路径整块处理(避免每块一次虚调用)
 self:具体哈希器实例;input:64字节输入块
 */
-void sha256ni::block_fast(Hashmaster *self, const u8_t *input)
+void Sha256Ni::blockFast(HashMaster *self, const u8_t *input)
 {
-    sha256ni *p = static_cast<sha256ni *>(self);
+    Sha256Ni *p = static_cast<Sha256Ni *>(self);
     sha256_ni_block(p->h, input);
-    p->addtotal(64);
+    p->addTotalLength(64);
 }

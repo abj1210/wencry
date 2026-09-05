@@ -7,12 +7,12 @@
 
 /*################################
   模块概述:哈希算法框架(抽象基类 + 实现 + 工厂)
-  Hashmaster 定义统一接口:
+  HashMaster 定义统一接口:
     - getStringHash(str, len, ...)  : 哈希内存字符串。
-    - reset_hash/hash_block/hash_final/get_result : 增量哈希(HMAC融合路径)。
-  SHA1/SHA256 仅保留 SHA-NI 硬件实现(sha1ni/sha256ni),整块哈希由硬件指令完成;
-  软件基类 sha1hash/sha256hash 只保留状态初始化、末尾块填充与摘要输出等公共逻辑。
-  MD5 无 SHA-NI 对应物,由软件 md5hash 实现。
+    - resetHash/hashBlock/hashFinal/getResult : 增量哈希(HMAC融合路径)。
+  SHA1/SHA256 仅保留 SHA-NI 硬件实现(Sha1Ni/Sha256Ni),整块哈希由硬件指令完成;
+  软件基类 Sha1Hash/Sha256Hash 只保留状态初始化、末尾块填充与摘要输出等公共逻辑。
+  MD5 无 SHA-NI 对应物,由软件 Md5Hash 实现。
   工厂 HashFactory 按 htype 返回对应实例。
   长度字段:各实现按块大小64、末尾填充为 0x80+长度(位),与标准一致。
 ################################*/
@@ -23,25 +23,25 @@ typedef unsigned long long u64_t;
 /* lrot:将x循环左移i位(MD5 软件实现使用) */
 #define lrot(x, i) (((x) << (i)) | ((x) >> (32 - (i))))
 /*
-Hashmaster:哈希算法抽象基类
+HashMaster:哈希算法抽象基类
 统一接口:
   - getStringHash(str,len,out)          : 哈希内存字符串。
-  - reset_hash/hash_block/hash_final/get_result : 增量哈希(HMAC融合路径)。
-派生类实现纯虚的 getHash(整块/末块)/reset/getres 轮函数。
+  - resetHash/hashBlock/hashFinal/getResult : 增量哈希(HMAC融合路径)。
+派生类实现纯虚的 getHash(整块/末块)/reset/computeResult 轮函数。
 */
-class Hashmaster
+class HashMaster
 {
 protected:
   /*
   totalsize:累计已处理消息的总长度(位)
-  addtotal 逐块累加,末尾块填充时写入64位长度字段
+  addTotalLength 逐块累加,末尾块填充时写入64位长度字段
   */
   u64_t totalsize;
   /*
-  addtotal:累加总长度(以位计)
+  addTotalLength:累加总长度(以位计)
   len:本块字节数
   */
-  void addtotal(u32_t len) { totalsize += ((u64_t)len << 3); };
+  void addTotalLength(u32_t len) { totalsize += ((u64_t)len << 3); };
 
   /* getHash:处理64字节整块 */
   virtual void getHash(const u8_t *input) = 0;
@@ -49,15 +49,15 @@ protected:
   virtual void getHash(const u8_t *input, u32_t final_loadsize) = 0;
   /* reset:重置哈希状态 */
   virtual void reset() = 0;
-  /* getres:输出摘要 */
-  virtual void getres(u8_t *hashout) = 0;
+  /* computeResult:输出摘要 */
+  virtual void computeResult(u8_t *hashout) = 0;
 
 public:
-  virtual ~Hashmaster() {};
-  /* gethlen:返回摘要字节长度 */
-  virtual u8_t gethlen() = 0;
-  /* getblen:返回块字节长度(64) */
-  virtual u8_t getblen() = 0;
+  virtual ~HashMaster() {};
+  /* getHashLength:返回摘要字节长度 */
+  virtual u8_t getHashLength() = 0;
+  /* getBlockLength:返回块字节长度(64) */
+  virtual u8_t getBlockLength() = 0;
   /*
   getStringHash:返回字符串哈希
   string:字符串指针
@@ -70,56 +70,57 @@ public:
     for (; nnow >= 64; nnow -= 64)
       getHash(string + (length - nnow));
     getHash(string + (length - nnow), nnow);
-    getres(hashres);
+    computeResult(hashres);
   };
-  /* block_fast_t:处理单个 64 字节整块的函数指针类型(热路径消除虚调用) */
-  typedef void (*block_fast_t)(Hashmaster *self, const u8_t *input);
-  /* get_block_fast:返回本哈希器的整块处理函数 */
-  virtual block_fast_t get_block_fast() const = 0;
+  /* blockFast_t:处理单个 64 字节整块的函数指针类型(热路径消除虚调用) */
+  typedef void (*blockFast_t)(HashMaster *self, const u8_t *input);
+  /* getBlockFast:返回本哈希器的整块处理函数 */
+  virtual blockFast_t getBlockFast() const = 0;
   /*
   增量哈希接口(供HMAC融合等场景使用)
-  reset_hash:重置哈希状态
-  hash_block:喂入64字节整块(累积)
-  hash_final:喂入末尾块(含填充与长度)
-  get_result:输出摘要
+  resetHash:重置哈希状态
+  hashBlock:喂入64字节整块(累积)
+  hashFinal:喂入末尾块(含填充与长度)
+  getResult:输出摘要
   */
-  void reset_hash() { reset(); };
-  void hash_block(const u8_t *input) { getHash(input); };
-  void hash_final(const u8_t *input, u32_t final_loadsize) { getHash(input, final_loadsize); };
-  void get_result(u8_t *hashout) { getres(hashout); };
+  void resetHash() { reset(); };
+  void hashBlock(const u8_t *input) { getHash(input); };
+  void hashFinal(const u8_t *input, u32_t final_loadsize) { getHash(input, final_loadsize); };
+  void getResult(u8_t *hashout) { computeResult(hashout); };
 };
 
 /*
-sha1hash:SHA1 基类(整块哈希由子类 sha1ni 用 SHA-NI 实现,本类不可单独实例化)
+Sha1Hash:SHA1 基类(整块哈希由子类 Sha1Ni 用 SHA-NI 实现,本类不可单独实例化)
 h[5]:状态寄存器(初始常量 0x67452301...)
 仅保留末尾块填充与摘要输出等公共逻辑。
 */
-class sha1hash : public Hashmaster
+class Sha1Hash : public HashMaster
 {
 protected:
   u32_t h[5];
-  using Hashmaster::getHash;
+  using HashMaster::getHash;
   void getHash(const u8_t *input, u32_t final_loadsize);
-  void reset()
+  void init()
   {
     h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476,
     h[4] = 0xC3D2E1F0;
     totalsize = 0;
   };
-  void getres(u8_t *hashout);
+  void reset() { init(); };
+  void computeResult(u8_t *hashout);
 
 public:
-  sha1hash() { reset(); };
-  virtual u8_t gethlen() { return 20; };
-  virtual u8_t getblen() { return 64; };
+  Sha1Hash() { init(); };
+  virtual u8_t getHashLength() { return 20; };
+  virtual u8_t getBlockLength() { return 64; };
 };
 
 /*
-md5hash:MD5 软件实现
+Md5Hash:MD5 软件实现
 h[4]:状态寄存器
 s/x:输入块(64字节/16字共用)
 */
-class md5hash : public Hashmaster
+class Md5Hash : public HashMaster
 {
   u32_t h[4];
   union
@@ -131,36 +132,37 @@ class md5hash : public Hashmaster
   void getHash(const u8_t *input);
   /* getHash:处理末尾块(填充 + 小端长度字段) */
   void getHash(const u8_t *input, u32_t final_loadsize);
-  /* block_fast:热路径整块处理(消除每块一次虚调用) */
-  static void block_fast(Hashmaster *self, const u8_t *input);
-  void reset()
+  /* blockFast:热路径整块处理(消除每块一次虚调用) */
+  static void blockFast(HashMaster *self, const u8_t *input);
+  void init()
   {
     h[0] = 0x67452301, h[1] = 0xEFCDAB89, h[2] = 0x98BADCFE, h[3] = 0x10325476;
     totalsize = 0;
   };
-  /* getres:输出16字节MD5摘要(小端展开) */
-  void getres(u8_t *hashout);
+  void reset() { init(); };
+  /* computeResult:输出16字节MD5摘要(小端展开) */
+  void computeResult(u8_t *hashout);
 
 public:
-  md5hash() { reset(); };
-  virtual u8_t gethlen() { return 16; };
-  virtual u8_t getblen() { return 64; };
-  /* get_block_fast:返回整块热路径函数指针 */
-  Hashmaster::block_fast_t get_block_fast() const override { return &md5hash::block_fast; };
+  Md5Hash() { init(); };
+  virtual u8_t getHashLength() { return 16; };
+  virtual u8_t getBlockLength() { return 64; };
+  /* getBlockFast:返回整块热路径函数指针 */
+  HashMaster::blockFast_t getBlockFast() const override { return &Md5Hash::blockFast; };
 };
 
 /*
-sha256hash:SHA256 基类(整块哈希由子类 sha256ni 用 SHA-NI 实现,本类不可单独实例化)
+Sha256Hash:SHA256 基类(整块哈希由子类 Sha256Ni 用 SHA-NI 实现,本类不可单独实例化)
 h[8]:状态寄存器(初始常量 0x6a09e667...)
 仅保留末尾块填充与摘要输出等公共逻辑。
 */
-class sha256hash : public Hashmaster
+class Sha256Hash : public HashMaster
 {
 protected:
   u32_t h[8];
-  using Hashmaster::getHash;
+  using HashMaster::getHash;
   void getHash(const u8_t *input, u32_t final_loadsize);
-  void reset()
+  void init()
   {
     h[0] = 0x6a09e667;
     h[1] = 0xbb67ae85;
@@ -172,11 +174,12 @@ protected:
     h[7] = 0x5be0cd19;
     totalsize = 0;
   };
-  void getres(u8_t *hashout);
+  void reset() { init(); };
+  void computeResult(u8_t *hashout);
 
 public:
-  sha256hash() { reset(); };
-  virtual u8_t gethlen() { return 32; };
-  virtual u8_t getblen() { return 64; };
+  Sha256Hash() { init(); };
+  virtual u8_t getHashLength() { return 32; };
+  virtual u8_t getBlockLength() { return 64; };
 };
 #endif
