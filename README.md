@@ -408,3 +408,8 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.6.0 同步:缓冲池重构为三池(空闲池 idle_pool、工作池 work_pool、已处理池 processed_pool),工作池与已处理池共用总在途上限 WORK_PROCESSED_MAX;取消独立 HASH 线程,HMAC 由各工作线程就地计算;读线程认领 buffer 后仍留在空闲池中直到 fread 完成.*  
 *V4.6.0 日志:调度日志新增 processed/live 两列,存活 buffer 数由 SchedLog 内部按 BUF_NEW/BUF_DELETE 计数;池迁移事件增加 _PRE 前置记录,缓冲申请/释放增加 BUF_NEW_PRE/BUF_DELETE_AFTER 前后记录;修复进度条分母与进度条/普通输出重叠问题.*  
 *V4.6.0 文档:更新 SYNC_LOGIC.md 与 PERFORMANCE_ANALYSIS.md 以匹配三池/无独立HASH线程的新同步逻辑.*  
+*V4.6.1 命名:统一命名规范——类名采用 PascalCase(runcrypt→RunCrypt、multicry_master→MulticryMaster、iobuffer→IoBuffer、buffergroup→BufferGroup、hmac→Hmac、Hashmaster→HashMaster、sha1hash/md5hash/sha256hash→Sha1Hash/Md5Hash/Sha256Hash 等),方法/函数采用 lowerCamelCase,并同步源码注释与 README/SYNC_LOGIC/PERFORMANCE_ANALYSIS.*  
+*V4.6.1 同步:重构 BufferGroup 加锁辅助函数——将池状态迁移提取为 acquireIdleBuffer/registerLoadedChunk/promoteToProcessed/popProcessed 等辅助函数,简单访问器内联回工作线程接口;条件变量等待条件统一为 loadedChunkReady/hasInFlightCapacity/processedChunkReady 命名谓词.*  
+*V4.6.1 健壮性:修复静态分析发现的问题——RunCrypt::clampThreadNum 将工作线程数限制到 [1, THREAD_MAX];AesFactory 单参构造初始化 iv=nullptr;哈希构造函数改调非虚 init() 避免构造期虚调用;FILE_TEXT_MARK 宏参数加括号;checkHeader 用 fseek 替代 rewind 并检查返回值.*  
+*V4.6.1 测试:新增 testinformation/testvalhelper/testfheader/testgetopt/testbuffergroup 五个测试可执行程序,扩充 base64/getopt 错误分支测试,测试总数 26;README 新增测试章节(构建/运行/sanitizer/gcovr 覆盖率).*  
+*V4.6.1 清理:删除空实现 hashmaster.cpp(哈希框架逻辑已在 hashmaster.h 内联).*  
