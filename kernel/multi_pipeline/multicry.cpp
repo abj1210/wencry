@@ -14,7 +14,7 @@ thread_local const char *g_sched_role = NULL;
 /*
 runReader:读线程,按序装载chunk并分配全局序号
 mode:流水线模式
-从空闲池认领 buffer(fread 期间仍留在空闲池),装满后移入工作池;
+从空闲池认领 buffer(认领时即移出空闲池),fread 装满后由 finishLoading 移入工作池;
 工作池+已处理池达到 WORK_PROCESSED_MAX 时阻塞(背压)。
 */
 void MulticryMaster::runReader(pipe_mode mode)
@@ -30,12 +30,15 @@ void MulticryMaster::runReader(pipe_mode mode)
   BufferGroup * bg = BufferGroup::getInstance();
   while (true)
   {
-    IoBuffer *buf = bg->waitClearedBuffer();
+    IoBuffer *buf = bg->recvIdlePool(next);
     SCHED_LOG(g_sched_role, "LOAD_BEGIN", -1, (long long)next, "", -1, -1, -1);
     loadstate_t ls = buf->loadBuffer(fin, ispadding);
     SCHED_LOG(g_sched_role, "LOAD_END", -1, (long long)next, "", -1, -1, -1);
-    if(bg->finishLoading(buf, ls, next++))
+    // 登记已装载块(FINAL/NODATA 时在锁内置位 read_done,避免末块与"读取结束"出现空窗);
+    // 返回 true 表示本线程已读到末尾,应退出。
+    if (bg->finishLoading(buf, ls, next))
       break;
+    ++next;   // 下一个块的全局序号
   }
 }
 
@@ -46,7 +49,7 @@ void MulticryMaster::runReader(pipe_mode mode)
 runWriter:写线程,按全局序号顺序导出
 mode:流水线模式
 加密/解密均按序写入已处理池的缓冲;验证模式不写文件。
-写出后回收 buffer:读取完成后直接释放并清空空闲池,否则归还空闲池(满/超时则释放)。
+写出后回收 buffer:读取完成后直接释放,否则归还空闲池(池满同样直接释放)。
 */
 void MulticryMaster::runWriter(pipe_mode mode)
 {
@@ -61,17 +64,17 @@ void MulticryMaster::runWriter(pipe_mode mode)
   BufferGroup * bg = BufferGroup::getInstance();
   while (true)
   {
-    IoBuffer *buf = bg->waitProcessedBuffer(next);
+    IoBuffer *buf = bg->recvProcessedPool(next);
     if(bg->stopWorker(buf))
       break;
     if(mode != PIPE_VERIFY){
       SCHED_LOG(g_sched_role, "WRITE_BEGIN", -1, (long long)next, "", -1, -1, -1);
-      u32_t n = buf->exportBuffer(fout, ispadding);
+      u32_t n = buf->exportBuffer(fout, bg->getFinalBlock(next), ispadding);
       SCHED_LOG(g_sched_role, "WRITE_END", -1, (long long)next, "", -1, -1, -1);
       written_bytes += n;
       printload("Chunk " + std::to_string(next), n);
     }
-    bg->finishClearing(buf);
+    bg->sendIdlePool(buf);
     next++;
   }
 }
@@ -99,7 +102,7 @@ void MulticryMaster::runWorker(pipe_mode mode, u8_t id)
   u64_t next = id;
   while (true)
   {
-    IoBuffer *buffer = bg->waitLoadedBuffer(id, next);
+    IoBuffer *buffer = bg->recvWorkPool(next);
     // 哨兵(NULL)表示本线程已无任务,退出。
     if (bg->stopWorker(buffer))
       break;
@@ -110,34 +113,34 @@ void MulticryMaster::runWorker(pipe_mode mode, u8_t id)
       for (u8_t *block = buffer->getEntry(); block != NULL; block = buffer->getEntry())
         aes_func[id](block);
       SCHED_LOG(g_sched_role, "AES_END", (long long)id, -1, "", -1, -1, -1);
-      SCHED_LOG(g_sched_role, "HASH_BEGIN", (long long)id, (long long)buffer->seq, "", -1, -1, -1);
-      hmac_func[id](buffer->getData(), hash_buffer, buffer->dataLen(), buffer->seq);
-      mt_func(hash_buffer, buffer->seq);
-      SCHED_LOG(g_sched_role, "HASH_END", (long long)id, (long long)buffer->seq, "", -1, -1, -1);
+      SCHED_LOG(g_sched_role, "HASH_BEGIN", (long long)id, (long long)buffer->get_seq(), "", -1, -1, -1);
+      hmac_func[id](buffer->getData(), hash_buffer, buffer->dataLen(), buffer->get_seq());
+      mt_func(hash_buffer, buffer->get_seq());
+      SCHED_LOG(g_sched_role, "HASH_END", (long long)id, (long long)buffer->get_seq(), "", -1, -1, -1);
       break;
     case PIPE_DECRYPT:
-      SCHED_LOG(g_sched_role, "HASH_BEGIN", (long long)id, (long long)buffer->seq, "", -1, -1, -1);
-      hmac_func[id](buffer->getData(), hash_buffer, buffer->dataLen(), buffer->seq);
-      mt_func(hash_buffer, buffer->seq);
-      SCHED_LOG(g_sched_role, "HASH_END", (long long)id, (long long)buffer->seq, "", -1, -1, -1);
+      SCHED_LOG(g_sched_role, "HASH_BEGIN", (long long)id, (long long)buffer->get_seq(), "", -1, -1, -1);
+      hmac_func[id](buffer->getData(), hash_buffer, buffer->dataLen(), buffer->get_seq());
+      mt_func(hash_buffer, buffer->get_seq());
+      SCHED_LOG(g_sched_role, "HASH_END", (long long)id, (long long)buffer->get_seq(), "", -1, -1, -1);
       SCHED_LOG(g_sched_role, "AES_BEGIN", (long long)id, -1, "", -1, -1, -1);
       for (u8_t *block = buffer->getEntry(); block != NULL; block = buffer->getEntry())
         aes_func[id](block);
       SCHED_LOG(g_sched_role, "AES_END", (long long)id, -1, "", -1, -1, -1);
       break;
     case PIPE_VERIFY:
-      SCHED_LOG(g_sched_role, "HASH_BEGIN", (long long)id, (long long)buffer->seq, "", -1, -1, -1);
-      hmac_func[id](buffer->getData(), hash_buffer, buffer->dataLen(), buffer->seq);
-      mt_func(hash_buffer, buffer->seq);
-      SCHED_LOG(g_sched_role, "HASH_END", (long long)id, (long long)buffer->seq, "", -1, -1, -1);
+      SCHED_LOG(g_sched_role, "HASH_BEGIN", (long long)id, (long long)buffer->get_seq(), "", -1, -1, -1);
+      hmac_func[id](buffer->getData(), hash_buffer, buffer->dataLen(), buffer->get_seq());
+      mt_func(hash_buffer, buffer->get_seq());
+      SCHED_LOG(g_sched_role, "HASH_END", (long long)id, (long long)buffer->get_seq(), "", -1, -1, -1);
       break;
     default:
       break;
     }
     // 处理完当前块后继续循环排空本线程名下剩余的就绪块,
-    // 收尾统一由 wait_loaded/stopWorker 的 NULL 哨兵判定;不能因 read_done 提前退出,
+    // 收尾统一由 recvWorkPool/stopWorker 的 NULL 哨兵判定;不能因 read_done 提前退出,
     // 否则工作池中尚未处理的块会被遗弃,导致写线程死锁。
-    next = bg->finishProcessing(buffer);
+    next = bg->sendProcessedPool(buffer);
     
   }
   free(hash_buffer);

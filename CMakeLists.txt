@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 
-project(Wencry VERSION 4.6.1 LANGUAGES CXX)
+project(Wencry VERSION 4.6.2 LANGUAGES CXX)
 
 string(TIMESTAMP COMPILE_TIME %Y%m%d_%H%M%S)
 set(build_time    ${COMPILE_TIME})

@@ -1,12 +1,4 @@
 #include "cry.h"
-#include <chrono>
-#include <string>
-#include <iostream>
-#include <math.h>
-#include <iomanip>
-#include <functional>
-using namespace std;
-using namespace chrono;
 
 /*################################
   模块概述:加密文件头、结果打印

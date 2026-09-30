@@ -6,7 +6,6 @@
 #include "display.h"
 
 #include <stdio.h>
-#include <string.h>
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;
 

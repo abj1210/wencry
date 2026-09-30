@@ -31,16 +31,12 @@ typedef unsigned long long u64_t;
   WORK_PROCESSED_MAX : 工作池(LOADED)与已处理池(PROCESSED)共用的总在途块数上限,
                        满则读线程阻塞(背压)。
   IDLE_POOL_MAX      : 可复用空闲 buffer 数量上限,满则写线程直接释放。
-  IDLE_TIMEOUT_MS    : 空闲 buffer 在空闲池中停留超过该时限(毫秒)即被释放。
 ################################*/
 #ifndef WORK_PROCESSED_MAX
 #define WORK_PROCESSED_MAX 16
 #endif
 #ifndef IDLE_POOL_MAX
 #define IDLE_POOL_MAX 4
-#endif
-#ifndef IDLE_TIMEOUT_MS
-#define IDLE_TIMEOUT_MS 1000
 #endif
 
 /*################################
@@ -89,23 +85,20 @@ public:
 private:
   //数据成员
   u8_t b[BUF_SZ][0x10];     //缓冲区数组
-  u32_t total, now, tail;   //缓冲区被填满的单元数量、将要被读写的单元索引、未被填满的单元中数据的长度
-  bool isfinal;             //加载是否结束
-
-public:
-  //同步成员
-  bool claimed;       //是否已被读线程认领(认领后仍留在空闲池中)
+  u32_t total, now;         //缓冲区被填满的单元数量、将要被读写的单元索引
   u64_t seq;          //装载块的序号
-  u64_t idle_ts;      //进入空闲池的时间戳(微秒,steady_clock)
-  u64_t id;           //本缓冲区唯一编号(用于日志关联生成/销毁)
+public:
+  u64_t id;
 
   IoBuffer();
   ~IoBuffer();
   u8_t *getEntry();
   u8_t *getData();
   u32_t dataLen() const;
+  u64_t get_seq() const;
+  void set_seq(u64_t seq);
   loadstate_t loadBuffer(FILE *fin, bool ispadding);
-  u32_t exportBuffer(FILE *fout, bool ispadding);
+  u32_t exportBuffer(FILE *fout, bool isfinal, bool ispadding);
 };
 
 /*
@@ -116,32 +109,36 @@ HMAC 由各工作线程就地计算(不再单设 HASH 线程):
   - 解密:读密文 -> 工作线程 HMAC -> 工作线程 AES -> 写明文。
   - 验证:读密文 -> 工作线程 HMAC,不 AES 不写。
 缓冲按需动态分配,维护三个池:
-  - 空闲池 idle_pool:可复用的空 buffer;读线程认领后仍留在空闲池中,直到读完(fread 期间不离开)。
+  - 空闲池 idle_pool(锁 mtxi):可复用的空 buffer;读线程认领时即移出,写完/验证完由写线程归还。
   - 工作池 work_pool:已装载未领取(LOADED)的块,键为全局序号 seq。
   - 已处理池 processed_pool:AES/HMAC 完成待写的块(最小堆,按 seq 递增出队)。
-工作池与已处理池共用一个总在途上限 WORK_PROCESSED_MAX。
-每个 buffer 携带全局序号 seq,保证按序写;工作线程按 seq%total_threads 路由,领取本线程名下最小 seq 的块。
-写线程按 seq 递增写出并回收 buffer 到空闲池(空闲池满/超时则释放);读取完成后写线程清理残留空 buffer。
+工作池与已处理池共用一个总在途上限 WORK_PROCESSED_MAX(锁 mtxwp),满则读线程阻塞(背压)。
+每个 buffer 携带全局序号 seq,保证按序写;工作线程按 seq%total_threads 路由,只领取自己名下的块。
+终止:读线程读到 FINAL/NODATA 后由 finishLoading 在锁内登记 total_chunks 并置 read_done,
+      工作线程/写线程据此判定"不会再有本序号/更小序号的块",空指针即退出哨兵;
+      写线程按 seq 递增写出 total_chunks 个块后退出,并把 buffer 归还空闲池。
+内存收敛:read_done 之后写线程不再归还空闲池而是直接释放(空闲池满同样直接释放),
+          并在流水线线程全部汇合后由 delInstance 兜底释放。
 */
 class BufferGroup
 {
   struct cmp{
     bool operator()(const IoBuffer * a, const IoBuffer * b){
-      return a->seq > b->seq;
+      return a->get_seq() > b->get_seq();
     }
   };
   std::deque<IoBuffer *> idle_pool;         // 空闲池
   std::map<u64_t, IoBuffer *> work_pool;    // 工作池(seq -> buffer)
   std::priority_queue<IoBuffer *, std::vector<IoBuffer *>, cmp> processed_pool;//已处理池，按序号递增
   u32_t total_threads;                      // 工作线程数
-  u64_t total_chunks;                       // 装载的总块数
-  pipe_mode mode;                           // 流水线模式
-  bool read_done;                           // 读线程已结束
+  std::atomic<u64_t> total_chunks;          // 已装载的块总数(seq 取值 0..total_chunks-1)
+  std::atomic<bool> read_done;              // 读线程已结束(不会再产生新块)
 
-  std::mutex mtx;
-  std::condition_variable cv;
+  std::mutex mtxi;                          // 保护 idle_pool
+  std::mutex mtxwp;                         // 保护 work_pool/processed_pool/total_chunks/read_done 与 cvwp
+  std::condition_variable cvwp;             // 流水线状态变化通知(work/processed/read_done)
 
-  BufferGroup() : total_threads(0), total_chunks(0), mode(PIPE_ENCRYPT), read_done(false) {};
+  BufferGroup() : total_threads(0), total_chunks(0), read_done(false) {};
   ~BufferGroup()
   {
     for (auto &kv : work_pool)
@@ -157,38 +154,35 @@ class BufferGroup
 
   static BufferGroup *instance;
   static std::mutex mtx_singleton;
-
-  static u64_t steadyUs();
-
-  /* 以下加锁辅助函数均要求调用者持有 mtx,负责具体的池状态迁移与日志记录。 */
-  IoBuffer *acquireIdleBuffer();                            // 取空 buffer(空则 new)并标记 claimed
-  void registerLoadedChunk(IoBuffer *buf, u64_t next);      // 把已装载 buffer 注册进工作池
-  bool workerHasPendingChunk(const u8_t thread_id) const;   // 本线程是否仍有待处理块
-  bool loadedChunkReady(u64_t next, u8_t thread_id) const;  // 本线程可领取的块是否就绪
-  bool hasInFlightCapacity() const;                         // 是否有在途容量(读线程背压)
-  bool processedChunkReady(u64_t next) const;               // 待写块是否就绪
-  void promoteToProcessed(IoBuffer *buf);                   // 工作池 -> 已处理池
-  void popProcessed(IoBuffer *buf);                         // 已处理池出队
-  void recycleClearedBuffer(IoBuffer *buf);                 // 回收已写出的 buffer
-  void sweepIdlePool();                                     // 清空空闲池
-  void releaseBuffer(IoBuffer *buf);                        // 释放 buffer 并记录日志
+  void releaseBuffer(IoBuffer *buf);
 
 public:
   BufferGroup(const BufferGroup &) = delete;
   BufferGroup &operator=(const BufferGroup &) = delete;
   static BufferGroup *getInstance();
   static void delInstance();
-  void setBufferGroup(u32_t total_threads, pipe_mode mode);
+  void setBufferGroup(u32_t total_threads, [[maybe_unused]] pipe_mode mode);
 
-  /* 工作线程接口(指针语义,NULL 为退出哨兵) */
+  /* 退出哨兵判定:工作线程与写线程均以 NULL 表示"已无任务/已写完" */
   bool stopWorker(IoBuffer *buffer) { return buffer == NULL; };
 
-  IoBuffer *waitLoadedBuffer(const u8_t thread_id, const u64_t next);
-  u64_t finishProcessing(IoBuffer *buffer);
-  IoBuffer *waitClearedBuffer();
-  bool finishLoading(IoBuffer *buffer,const loadstate_t ls,const u64_t next);
-  IoBuffer *waitProcessedBuffer(const u64_t next);
-  void finishClearing(IoBuffer *buffer);
+  /* 读线程接口 */
+  IoBuffer * recvIdlePool(u64_t seq);                          // 认领空闲 buffer(空则新建)并置序号 seq
+  bool finishLoading(IoBuffer *buf, loadstate_t ls, u64_t next); // 登记已装载块(含背压);返回 true 表示已读到末尾
+
+  /* 工作线程接口 */
+  IoBuffer * recvWorkPool(u64_t next);                         // 领取本线程名下的块;NULL 为退出哨兵
+  u64_t sendProcessedPool(IoBuffer * buf);                     // 处理完成移入已处理池,返回本线程下一个序号
+
+  /* 写线程接口 */
+  IoBuffer * recvProcessedPool(u64_t next);                    // 按序取待写块;NULL 为退出哨兵
+  void sendIdlePool(IoBuffer * buf);                           // 归还空闲池(read_done 后/池满则释放)
+
+  /* 是否为最后一块(末块含 PKCS7 填充,解密时需按填充长度截断) */
+  bool getFinalBlock(u64_t seq) const
+  {
+    return read_done.load() && seq + 1 == total_chunks.load();
+  }
 
 };
 #endif

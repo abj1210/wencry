@@ -1,8 +1,8 @@
 # 数据加密解密程序
 
 作者：闻嘉迅  
-日期：2026.9.05 (最后修改)  
-版本：v4.6.1
+日期：2026.9.30 (最后修改)  
+版本：v4.6.2
 
 **默认4工作线程,CBC加密模式,SHA1哈希**  
 **Windows原生处理速度可达2000MB/s以上**  
@@ -57,8 +57,8 @@
   - **multi_pipeline:多线程统一流水线文件夹**
     - multicry.h/cpp:多线程调度器(MulticryMaster,按模式启动读/工作/写线程)
     - **buffergroup:动态缓冲池文件夹**
-      - multi_buffergroup.h/cpp:统一读--工作--写流水线缓冲池(空闲池/工作池/已处理池,全局序号)
-      - iobuffer.cpp:单缓冲区装载/导出实现
+      - multi_buffergroup.h/cpp:统一读--工作--写流水线缓冲池(空闲池/工作池/已处理池,全局序号;mtxwp+mtxi 双锁、cvwp 背压等待、NULL 哨兵终止)
+      - iobuffer.cpp:单缓冲区装载/导出实现(含 PKCS7 填充与末块按填充长度截断)
       - sched_log.h:调度日志(LOG_SCHED 开关,记录线程时间线与缓冲区生命周期到 sched_log.csv)
   - **aes:AES加解密实现文件夹**
     - aesmode.h/cpp:五种模式(ECB/CBC/CTR/CFB/OFB)加密器
@@ -99,7 +99,7 @@
   - testvalhelper.cpp:模式映射、密钥编解码、文件辅助函数测试
   - testfheader.cpp:文件头生成/解析、checkHeader错误码、线程数回退、HMAC读写测试
   - testgetopt.cpp:命令行参数解析成功与错误分支测试
-  - testbuffergroup.cpp:IoBuffer填充/去填充与缓冲池流水线测试
+  - testbuffergroup.cpp:IoBuffer填充/去填充、空输入状态、以及用真实线程驱动的缓冲池流水线测试(单/多线程往返、块数少于线程数、空文件加密→解密、仅验证模式、多块16MB+16)
 
 具体函数和结构体作用与解释参阅源代码注释.  
 
@@ -197,6 +197,8 @@ cd build && ctest --output-on-failure
 
 GTest 由 CMake FetchContent 自动下载(v1.14.0)；离线环境可设置 `-DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=<本地gtest路径>`。不需要测试时配置 `-DBUILD_TEST=OFF`。
 
+Windows 原生(MSVC)同样可运行:tests 与主程序一起构建,`cmake -G "NMake Makefiles" -S . -B build -DCMAKE_BUILD_TYPE=Release -DBUILD_TEST=ON && cmake --build build && cd build && ctest --output-on-failure`(VS 生成器则改用 `ctest -C Release`)。当前 Windows/MSVC Release 下 26 个测试可执行程序、共 162 个用例全部通过。
+
 ### 内存/未定义行为检测
 
 ```bash
@@ -247,11 +249,11 @@ gcovr --object-directory . --print-summary
 详细协作逻辑见`multi_buffergroup.cpp`注释;完整的同步逻辑与缓冲池状态机说明见 [SYNC_LOGIC.md](SYNC_LOGIC.md)。
 
 - **缓冲池与动态分配**  
-缓冲区由一次性固定分配改为运行时按需动态分配,`BufferGroup`维护三个缓冲池(空闲池/工作池/已处理池),容量由 CMake 选项 `WORK_PROCESSED_MAX`/`IDLE_POOL_MAX` 控制(见根目录 `CMakeLists.txt`),`IDLE_TIMEOUT_MS` 定义于 `multi_buffergroup.h`:
+缓冲区由一次性固定分配改为运行时按需动态分配,`BufferGroup`维护三个缓冲池(空闲池/工作池/已处理池),容量由 CMake 选项 `WORK_PROCESSED_MAX`/`IDLE_POOL_MAX` 控制(见根目录 `CMakeLists.txt`):
   - `WORK_PROCESSED_MAX`(默认12):工作池(LOADED)与已处理池(PROCESSED)共用的总在途块数上限,满则读线程阻塞(背压)。
   - `IDLE_POOL_MAX`(默认4):空闲池(可复用空 buffer)容量上限,写线程写出后归还空闲池;空闲池满则写线程直接释放该 buffer。
-  - `IDLE_TIMEOUT_MS`(默认1000):空闲 buffer 在空闲池中停留超过该时限即被写线程释放。
-  内存上界 ≈ (工作池+已处理池+空闲池) × 16MB,且读取完成后写线程自动释放全部空 buffer,内存随流水线结束收敛。
+  读线程认领 buffer 时即移出空闲池,`fread` 完成后由 `finishLoading` 在锁内登记进工作池(FINAL/NODATA 时同一把锁内置位"读取结束");读取结束后写线程不再归还空闲池而是直接释放,内存随流水线结束收敛。内存上界 ≈ (工作池+已处理池+空闲池+1) × 16MB。
+  终止不再依赖"某个池恰好为空"这类会被调度顺序影响的瞬时状态:读线程读到 FINAL/NODATA 置 `read_done` 并记录 `total_chunks`,工作线程与写线程分别以"本线程序号已越界""已写满 total_chunks 个块"判定并以 `NULL` 哨兵退出。
   - **加深流水线**:读线程可把多个块预读入工作池,工作线程不至于因读线程忙而空等;工作池+已处理池总在途深度最多 `WORK_PROCESSED_MAX` 块。
   - **统一序号保证有序**:每个 buffer 携带全局序号 `seq`(取代原 `threadid`/`seq` 双标志),写线程按 `seq` 递增消费保证顺序;工作线程按 `seq % total_threads` 路由,领取本线程名下最小 `seq` 的块,以维持链式模式(如CBC/CTR)的IV链连续。
   - **调节权衡**:增大`WORK_PROCESSED_MAX`可加深流水线、提升I/O与计算重叠(尤其慢盘/高延迟I/O),但内存线性增加(每块16MB);增大`IDLE_POOL_MAX`可提高 buffer 复用率、减少动态分配,但常驻内存增加。
@@ -413,3 +415,10 @@ HMAC,即哈希消息验证码,是对密文和密钥的一个信息摘要,通过�
 *V4.6.1 健壮性:修复静态分析发现的问题——RunCrypt::clampThreadNum 将工作线程数限制到 [1, THREAD_MAX];AesFactory 单参构造初始化 iv=nullptr;哈希构造函数改调非虚 init() 避免构造期虚调用;FILE_TEXT_MARK 宏参数加括号;checkHeader 用 fseek 替代 rewind 并检查返回值.*  
 *V4.6.1 测试:新增 testinformation/testvalhelper/testfheader/testgetopt/testbuffergroup 五个测试可执行程序,扩充 base64/getopt 错误分支测试,测试总数 26;README 新增测试章节(构建/运行/sanitizer/gcovr 覆盖率).*  
 *V4.6.1 清理:删除空实现 hashmaster.cpp(哈希框架逻辑已在 hashmaster.h 内联).*  
+*V4.6.2 同步:修复三池流水线的收尾与序号逻辑——写线程改为按 total_chunks 判定退出(原"已处理池为空即收尾"会在空优先队列上取堆顶,导致死锁/空转),读线程补齐块序号自增(seq 恒为0会使 work_pool 重复键静默丢块),工作线程终止条件改回"本线程名下无待处理块";块的登记与 read_done 置位合并进 finishLoading 同锁完成,消除"已宣布读完、末块却未进工作池"的空窗.*  
+*V4.6.2 同步:read_done/total_chunks 改为原子量并在 mtxwp 内更新,消除数据竞争;NODATA 不再泄漏缓冲区;读取结束后写线程不再归还空闲池而直接释放,内存随流水线收敛;exportBuffer 改按 total 计长并对末块做 PKCS7 截断;删除已失效的 IDLE_TIMEOUT_MS 宏.*  
+*V4.6.2 日志:修复 LOG_SCHED 配置——multicry.cpp 改用 get_seq() 访问块序号(原直接访问 IoBuffer 私有成员导致编译失败);SWEEP 事件改为释放前先取标识,消除 use-after-free;POP_IDLE/LOADED/POP_WORK/PROCESSED/POP_PROCESSED/READ_DONE/SWEEP 事件恢复完整,analyze_sched.py 可端到端生成报告.*  
+*V4.6.2 测试:重写 testbuffergroup(改用真实三线程驱动,新增多块、多线程块数少于线程数、空文件加密→解密、仅验证模式等用例);修复 testsha1/testmd5/testsha256 的变长数组(非标准 C++,MSVC 报 C2131)与 testinteractive 在 Windows 下 system() 命令行以引号开头且含 <> 时被 cmd 剥离引号的失败(改用 call 前缀),并补齐 test.cpp 缺失的 <string>/<iostream>.*  
+*V4.6.2 构建:Windows/MSVC(Visual Studio 18 2026, NMake/VS 生成器)下 26 个测试可执行程序、共 162 个用例全部通过;离线环境可用 -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST 指向本地 googletest 源码.*  
+*V4.6.2 清理:删除死代码——BufferGroup::mode(只写不读)与 IoBuffer::tail(实为函数内临时量)、未使用的 catch 变量;移除 hashmaster.h/fheader.h/fheader.cpp/aesmode.h/cry.h/sha_ni.cpp/testboundary.cpp 中的死包含;调度日志专用量标注 [[maybe_unused]].*  
+*V4.6.2 文档:SYNC_LOGIC.md 对齐最终实现(双锁分工、原子量、背压、NULL 哨兵终止、内存收敛);README 同步文件结构、缓冲池与测试章节,并补充 Windows/MSVC 运行说明.*  

@@ -1,5 +1,4 @@
 #include "sha_ni.h"
-#include <string.h>
 
 /*
 模块概述:SHA-NI 硬件加速整块变换

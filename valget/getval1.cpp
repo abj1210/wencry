@@ -31,7 +31,7 @@ static std::string getInputFileName(vpak_t *pak)
   {
     size = (size_t)std::filesystem::file_size(path);
   }
-  catch (std::filesystem::filesystem_error &e)
+  catch (std::filesystem::filesystem_error &)
   {
     size = 0;
   }

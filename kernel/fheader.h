@@ -2,12 +2,8 @@
 #define FHD
 
 #include "merkletree.h"
-#include <iostream>
-#include <iomanip>
 #include <stdio.h>
 #include <string.h>
-#include <chrono>
-#include <atomic>
 
 typedef unsigned char u8_t;
 typedef unsigned long long u64_t;

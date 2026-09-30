@@ -2,8 +2,6 @@
 #define HSM
 
 #include "modes.h"
-#include <string>
-#include <map>
 
 /*################################
   模块概述:哈希算法框架(抽象基类 + 实现 + 工厂)

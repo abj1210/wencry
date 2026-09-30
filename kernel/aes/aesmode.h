@@ -1,11 +1,7 @@
 #ifndef AMD
 #define AMD
 
-//#include "aes.h"
 #include "aes_ni.h"
-#include <string.h>
-#include <string>
-#include <stdio.h>
 /*
 AesMode:带模式的AES加解密单元(策略模式基类)
 每个实例由某个工作线程独占,内部维护该线程独立的IV状态链:

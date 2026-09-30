@@ -42,7 +42,7 @@ cmake --build build_log --config Release
 | BUF_NEW_PRE / BUF_DELETE_AFTER | 缓冲申请前 / 释放后的池状态记录 |
 | POP_IDLE | 读线程取用空闲缓冲（含 POP_IDLE_PRE） |
 | LOADED / POP_WORK / PROCESSED / POP_PROCESSED / EMPTY | 三池迁移（各含 _PRE 前置记录） |
-| READ_DONE / SWEEP | 读取完成 / 空闲池被清空 |
+| READ_DONE / SWEEP | 读取完成 / 缓冲区直接释放(读取结束后不再回收,或空闲池已满) |
 | LOAD_BEGIN / LOAD_END | 读线程装载一块，seq 为块号 |
 | AES_BEGIN / AES_END | 工作线程 AES 一块，id 为工作线程号 |
 | HASH_BEGIN / HASH_END | 工作线程 HMAC 一块，seq 为块号 |

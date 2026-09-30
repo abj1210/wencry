@@ -56,8 +56,16 @@ static int run_bin(const char *script, const std::string &logfile) {
     return -1;
   fputs(script, fp);
   fclose(fp);
+#ifdef _WIN32
+  /* cmd /c 的规则:当命令行以引号开头且含 < > 等特殊字符时,会剥离首尾引号,
+     导致 "...Wencry.exe" -V < "in" > "out" 变成非法命令。加 call 前缀后命令行
+     不再以引号开头,带空格的路径同样能正确执行(退出码照常传递)。 */
+  std::string cmd = "call \"" + bin_path() + "\" < \"" + scriptfile +
+                    "\" > \"" + logfile + "\" 2>&1";
+#else
   std::string cmd = std::string("\"") + bin_path() + "\" < \"" + scriptfile +
                     "\" > \"" + logfile + "\" 2>&1";
+#endif
   int rc = system(cmd.c_str());
   remove(scriptfile);
 #ifdef _WIN32
